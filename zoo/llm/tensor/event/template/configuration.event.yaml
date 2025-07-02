@@ -1,0 +1,17 @@
+network:
+  single_node:
+  multi_node:
+    path: zoo/llm/tensor/event/template/hardware/router.event.yaml
+
+hardware:
+  tensor:
+    gemm:
+      path: zoo/llm/tensor/event/template/hardware/tensor/gemm.event.yaml
+    nonlinear:
+      path: zoo/llm/tensor/event/template/hardware/tensor/nonlinear.event.yaml
+
+default:
+  software:
+    path: zoo/llm/tensor/event/template/software.event.yaml
+  memory:
+    path: zoo/llm/tensor/event/template/hardware/memory.event.yaml

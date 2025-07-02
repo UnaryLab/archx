@@ -9,6 +9,8 @@ instance:
   height_tree: [63]
   node: [1]
   vector: [8]
+  lut_height: [8, 2, 8, 12]
+  decoder_height: [8]
 width:
   isram: 128
   wsram: 128

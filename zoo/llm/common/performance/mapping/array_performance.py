@@ -1,6 +1,6 @@
 from zoo.llm.common.performance.utils import TiledGEMM, TiledMatrix, sum_subevents
 from archx.utils import get_prod
-import math
+import math, inspect
 from collections import OrderedDict
 
 def gemm_events(tiling: list[TiledGEMM], architecture_dict: OrderedDict, workload_dict: OrderedDict, performance_dict: OrderedDict) -> OrderedDict:
@@ -45,12 +45,17 @@ def gemm_tile_events(tiles: TiledGEMM, architecture_dict: OrderedDict, workload_
     stationary = workload_dict['node_stationary']
     et_cycles = workload_dict.get('early_termination_cycles')
     cycles = workload_dict.get('cycles')
+    
+    k_dim = architecture_dict['multiplier']['instance'][-2]
 
     performance_dict = OrderedDict()
     performance_dict['subevent'] = OrderedDict()
 
     # load input
-    input_events = tiles.n_total_tiles * tiles.k if stationary == 'is' else tiles.m_n_total_tiles * tiles.k
+    if architecture == 'tensor':
+        input_events = tiles.n_total_tiles * tiles.k_tiles if stationary == 'is' else tiles.m_n_total_tiles * tiles.k_tiles
+    else:
+        input_events = tiles.n_total_tiles * tiles.k if stationary == 'is' else tiles.m_n_total_tiles * tiles.k
     input_event_utilization = (tiles.m / (tiles.m_tiles * tiles.tile_m)) * tiles.m_util
     input_events *= input_event_utilization
     cycle_count_utilization = 1 / input_event_utilization
@@ -77,7 +82,10 @@ def gemm_tile_events(tiles: TiledGEMM, architecture_dict: OrderedDict, workload_
                                                                                    'runtime': input_reuse_cycle_utilization}})
     
     # load weight
-    weight_events = tiles.m_total_tiles * tiles.k if stationary == 'ws' else tiles.m_n_total_tiles * tiles.k
+    if architecture == 'tensor':
+        weight_events = tiles.m_total_tiles * tiles.k_tiles if stationary == 'ws' else tiles.m_n_total_tiles * tiles.k_tiles
+    else:
+        weight_events = tiles.m_total_tiles * tiles.k if stationary == 'ws' else tiles.m_n_total_tiles * tiles.k
     weight_event_utilization = (tiles.n / (tiles.n_tiles * tiles.tile_n)) * tiles.n_util
     weight_events *= weight_event_utilization
     weight_cycle_utilization = 1 / weight_event_utilization
@@ -97,7 +105,10 @@ def gemm_tile_events(tiles: TiledGEMM, architecture_dict: OrderedDict, workload_
                                                                                     'runtime': weight_reuse_cycle_utilization}})
 
     # array computation
-    array_events = tiles.m_n_total_tiles * tiles.k
+    if architecture == 'tensor':
+        array_events = tiles.m_k_n_total_tiles
+    else:
+        array_events = tiles.m_n_total_tiles * tiles.k
     array_events_utilization = input_event_utilization * weight_event_utilization
     array_events *= array_events_utilization
     array_cycle_utilization = et_cycles / cycles if et_cycles is not None else 1
@@ -105,6 +116,17 @@ def gemm_tile_events(tiles: TiledGEMM, architecture_dict: OrderedDict, workload_
     performance_dict['subevent']['array_gemm'] = OrderedDict({'count': array_events,
                                                               'factor': {'cycle_count': array_cycle_utilization,
                                                                          'runtime': array_cycle_utilization}})
+    
+    # hardwarea for multiple spikes in compute array.
+    if architecture in ['mugi', 'carat']:
+        array_events = tiles.m_n_total_tiles * tiles.k
+        array_events_utilization = input_event_utilization * weight_event_utilization * 0.5
+        array_events *= array_events_utilization
+        array_cycle_utilization = et_cycles / cycles if et_cycles is not None else 1
+        array_cycle_utilization *= 1 if array_events_utilization == 0 else 1 / array_events_utilization
+        performance_dict['subevent']['array_fifo_gemm'] = OrderedDict({'count': array_events,
+                                                                'factor': {'cycle_count': array_cycle_utilization,
+                                                                            'runtime': array_cycle_utilization}})
 
     # vector scaling
     if architecture in ['mugi']:
@@ -123,7 +145,15 @@ def gemm_tile_events(tiles: TiledGEMM, architecture_dict: OrderedDict, workload_
         performance_dict['subevent']['vector_gemm'] = OrderedDict({'count': vector_events,
                                                           'factor': {'cycle_count': vector_cycle_utilization,
                                                                      'runtime': vector_cycle_utilization}})
-    
+    elif architecture in ['tensor']:
+        vector_events = tiles.m_total_tiles * tiles.n_tiles
+        vector_events_utilization = tiles.n / (tiles.n_tiles * tiles.tile_n)
+        vector_events *= vector_events_utilization
+        vector_cycle_utilization = 1 / vector_events_utilization
+        performance_dict['subevent']['vector_gemm'] = OrderedDict({'count': vector_events,
+                                                          'factor': {'cycle_count': vector_cycle_utilization,
+                                                                     'runtime': vector_cycle_utilization}})
+
     # unused events
     if architecture == 'mugi':
         nonlinear_dict = 0
@@ -211,6 +241,10 @@ def nonlinear_tile_events(function: str, tiles: TiledMatrix, architecture_dict: 
             performance_dict['subevent']['vector'] = OrderedDict({'count': vector_events})
     
 
+        # hardware for multiple spikes in compute array.
+        array_events = 0
+        performance_dict['subevent']['array_fifo_nonlinear'] = OrderedDict({'count': array_events})
+
     # nonlinear vector
     if architecture in ['carat', 'simd', 'systolic']:
         vector_events = tiles.m_tiles * tiles.n_total
@@ -226,7 +260,17 @@ def nonlinear_tile_events(function: str, tiles: TiledMatrix, architecture_dict: 
             performance_dict['subevent']['vector_nonlinear'] = OrderedDict({'count': vector_events,
                                                                             'factor': {'cycle_count': vector_cycle_utilization,
                                                                                        'runtime': vector_cycle_utilization}})
-    
+
+    if architecture in ['tensor']:
+        vector_events = tiles.m_tiles * tiles.n_total
+        vector_events_utilization = tiles.m / (tiles.m_tiles * tiles.tile_m) * tiles.m_util
+        vector_events *= vector_events_utilization
+        vector_cycle_utilization = 1 / vector_events_utilization
+
+        performance_dict['subevent']['vector_nonlinear'] = OrderedDict({'count': vector_events,
+                                                                        'factor': {'cycle_count': vector_cycle_utilization,
+                                                                                    'runtime': vector_cycle_utilization}})
+
     # unused events
     gemm_events = 0
     performance_dict['subevent']['gemm_nonlinear'] = OrderedDict({'count': gemm_events})

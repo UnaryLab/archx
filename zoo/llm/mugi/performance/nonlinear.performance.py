@@ -31,10 +31,7 @@ def weight_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=
     sign_mantissa_register_dim = architecture_dict['sign_mantissa_register']['instance'][-1]
     exponent_register_dim = architecture_dict['exponent_register']['instance'][-1]
     exp_clamp_dim = architecture_dict['exp_clamp']['instance'][-1]
-    window_select_dim = architecture_dict['window_select']['instance'][-1]
     wfifo_dim = architecture_dict['wfifo']['instance'][-1]
-    min_tree_dim = architecture_dict['min_tree']['instance'][-1]
-    min_tree_register_dim = architecture_dict['min_tree_register']['instance'][-1]
     max_tree_dim = architecture_dict['max_tree']['instance'][-1]
     max_tree_register_dim = architecture_dict['max_tree_register']['instance'][-1]
     magnitude_register_dim = architecture_dict['magnitude_register']['instance'][-1]
@@ -42,6 +39,13 @@ def weight_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=
     sign_fifo_dim = architecture_dict['sign_fifo']['instance'][-1]
     post_comp_dim = architecture_dict['post_comp']['instance'][-1]
     ofifo_dim = architecture_dict['ofifo']['instance'][-1]
+
+    if 'window_select' in architecture_dict:
+        window_select_dim = architecture_dict['window_select']['instance'][-1]
+    if 'lut_register' in architecture_dict:
+        lut_register_dim = architecture_dict['lut_register']['instance'][-2] * architecture_dict['lut_register']['instance'][-4]
+    if 'lut_decoder' in architecture_dict:
+        lut_decoder_dim = architecture_dict['lut_decoder']['instance'][-1]
 
     cycle_count = lut_height / router_dim
     performance_dict['cycle_count'] = OrderedDict({'value': cycle_count, 'unit': 'cycle'})
@@ -51,10 +55,7 @@ def weight_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=
     sign_mantissa_register_dict = OrderedDict({'count': sign_mantissa_register_dim})
     exponent_register_dict = OrderedDict({'count': exponent_register_dim})
     exp_clamp_dict = OrderedDict({'count': exp_clamp_dim})
-    window_select_dict = OrderedDict({'count': window_select_dim})
     wfifo_dict = OrderedDict({'count': wfifo_dim})
-    min_tree_dict = OrderedDict({'count': min_tree_dim})
-    min_tree_register_dict = OrderedDict({'count': min_tree_register_dim})
     max_tree_dict = OrderedDict({'count': max_tree_dim})
     max_tree_register_dict = OrderedDict({'count': max_tree_register_dim})
     magnitude_register_dict = OrderedDict({'count': magnitude_register_dim})
@@ -63,14 +64,18 @@ def weight_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=
     post_comp_dict = OrderedDict({'count': post_comp_dim})
     ofifo_dict = OrderedDict({'count': ofifo_dim})
 
+    if 'window_select' in architecture_dict:
+        window_select_dict = OrderedDict({'count': window_select_dim})
+    if 'lut_register' in architecture_dict:
+        lut_register_dict = OrderedDict({'count': lut_register_dim})
+    if 'lut_decoder' in architecture_dict:
+        lut_decoder_dict = OrderedDict({'count': lut_decoder_dim * lut_height})
+
     performance_dict['subevent'] = OrderedDict({'round': round_dict,
                                                 'sign_mantissa_register': sign_mantissa_register_dict,
                                                 'exponent_register': exponent_register_dict,
                                                 'exp_clamp': exp_clamp_dict,
-                                                'window_select': window_select_dict,
                                                 'wfifo': wfifo_dict,
-                                                'min_tree': min_tree_dict,
-                                                'min_tree_register': min_tree_register_dict,
                                                 'max_tree': max_tree_dict,
                                                 'max_tree_register': max_tree_register_dict,
                                                 'magnitude_register': magnitude_register_dict,
@@ -78,6 +83,14 @@ def weight_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=
                                                 'sign_fifo': sign_fifo_dict,
                                                 'post_comp': post_comp_dict,
                                                 'ofifo': ofifo_dict})
+    
+    if 'window_select' in architecture_dict:
+        performance_dict['subevent']['window_select'] = window_select_dict
+    if 'lut_register' in architecture_dict:
+        performance_dict['subevent']['lut_register'] = lut_register_dict
+    if 'lut_decoder' in architecture_dict:
+        performance_dict['subevent']['lut_decoder'] = lut_decoder_dict
+
     return performance_dict
 
 def weight_reuse_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)->OrderedDict:
@@ -107,8 +120,7 @@ def array_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=N
 
     temporal_register_dim = get_prod(architecture_dict['temporal_register']['instance'][-2:])
     and_gate_dim = get_prod(architecture_dict['and_gate']['instance'][-2:])
-    or_gate_dim = get_prod(architecture_dict['or_gate']['instance'][-2:])
-    pe_fifo_dim = get_prod(architecture_dict['pe_fifo']['instance'][-2:])
+    or_gate_dim = get_prod(architecture_dict['or_gate']['instance'][-3:-1])
 
     cycle_count = cycles / router_dim
     performance_dict['cycle_count'] = OrderedDict({'value': cycle_count, 'unit': 'cycle'})
@@ -117,24 +129,43 @@ def array_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=N
     temporal_register_dict = OrderedDict({'count': temporal_register_dim})
     and_gate_dict = OrderedDict({'count': and_gate_dim})
     or_gate_dict = OrderedDict({'count': or_gate_dim})
-    pe_fifo_dict = OrderedDict({'count': pe_fifo_dim * cycle_count})
 
     performance_dict['subevent'] = OrderedDict({'temporal_register': temporal_register_dict,
                                                 'and_gate': and_gate_dict,
-                                                'or_gate': or_gate_dict,
+                                                'or_gate': or_gate_dict})
+    return performance_dict
+
+def array_fifo_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)->OrderedDict:
+    performance_dict = OrderedDict()
+    router_dim = get_prod(architecture_dict['irouter']['instance']) if 'irouter' in architecture_dict else 1
+    cycles = next(iter(workload_dict.values()))['configuration']['cycles']
+
+    frequency = architecture_dict['pe_fifo']['query']['frequency']
+
+    or_gate_dim = get_prod(architecture_dict['or_gate']['instance'][-3:1])
+    pe_fifo_dim = architecture_dict['pe_fifo']['instance'][-1]
+
+    cycle_count = cycles / router_dim
+    performance_dict['cycle_count'] = OrderedDict({'value': cycle_count, 'unit': 'cycle'})
+    performance_dict['runtime'] = OrderedDict({'value': cycle_count / 1000 / frequency, 'unit': 'ms'})
+
+    or_gate_dict = OrderedDict({'count': or_gate_dim})
+    pe_fifo_dict = OrderedDict({'count': pe_fifo_dim})
+
+    performance_dict['subevent'] = OrderedDict({'or_gate': or_gate_dict,
                                                 'pe_fifo': pe_fifo_dict})
-    
     return performance_dict
 
 def summation(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)->OrderedDict:
     performance_dict = OrderedDict()
     router_dim = get_prod(architecture_dict['irouter']['instance']) if 'irouter' in architecture_dict else 1
+    cycles = next(iter(workload_dict.values()))['configuration']['cycles']
 
     frequency = architecture_dict['adder']['query']['frequency']
 
     adder_dim = architecture_dict['adder']['instance'][-1]
 
-    cycle_count = 8 / router_dim
+    cycle_count = cycles / router_dim
     performance_dict['cycle_count'] = OrderedDict({'value': cycle_count, 'unit': 'cycle'})
     performance_dict['runtime'] = OrderedDict({'value': cycle_count / 1000 / frequency, 'unit': 'ms'})
 

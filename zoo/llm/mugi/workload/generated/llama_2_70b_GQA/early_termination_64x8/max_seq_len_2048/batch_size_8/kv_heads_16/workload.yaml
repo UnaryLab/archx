@@ -1,0 +1,27 @@
+workload:
+  llama_2_70b_GQA:
+    configuration:
+      activation_bitwidth: 16
+      architecture: mugi
+      batch_size: 8
+      cycles: 8
+      default_avg_early_termination_cycles: 8
+      dim: 8192
+      ffn_avg_early_termination_cycles: 6.28
+      heads: 64
+      hidden_dim: 28672
+      k_avg_early_termination_cycles: 6.9924
+      kv_heads: 16
+      layers: 80
+      lut_height: 8
+      lut_width: 12
+      max_seq_len: 2048
+      noc_stationary: os
+      node_stationary: os
+      nonlinear_avg_early_termination_cycles: 8
+      prefill_seq_len: 64
+      proj_avg_early_termination_cycles: 6.28
+      v_avg_early_termination_cycles: 7.576
+      vocab_size: 32000
+      weight_bitwidth: 4
+      window_width: 8

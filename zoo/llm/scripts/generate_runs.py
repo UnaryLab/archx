@@ -1,5 +1,5 @@
 from archx.utils import read_yaml
-import itertools, os
+import itertools, os, copy
 
 def main():
     base_path = 'zoo/llm/'
@@ -23,13 +23,20 @@ def main():
                             subarch_path = subarch_key + '/'
                             workload_config_dict = read_yaml(base_path + arch_path + 'workload/template/configuration.yaml')
                             workload_dict = read_yaml(base_path + arch_path + 'workload/template/workload.yaml')
-                            config_combinations = [dict(zip(workload_config_dict['configuration'].keys(), combination)) for combination in itertools.product(*workload_config_dict['configuration'].values())]
+                            
                             for model in workload_dict['workload'].keys():
                                 model_path = model + '/'
+                                filtered_workload_config_dict = copy.deepcopy(workload_config_dict)
+                                model_key_set = set(workload_dict['workload'][model]['configuration'].keys())
+                                config_combination_key_set = set(workload_config_dict['configuration'].keys())
+                                shared_keys = set(model_key_set) & set(config_combination_key_set)
+                                for shared_key in shared_keys:
+                                    del filtered_workload_config_dict['configuration'][shared_key]
+                                config_combinations = [dict(zip(filtered_workload_config_dict['configuration'].keys(), combination)) for combination in itertools.product(*filtered_workload_config_dict['configuration'].values())]
                                 for config_combination in config_combinations:
                                     workload_config_path = ''
                                     for key, value in config_combination.items():
-                                        if len(workload_config_dict['configuration'][key]) > 1:
+                                        if len(filtered_workload_config_dict['configuration'][key]) > 1:
                                             workload_config_path += '/' + key + '_' + str(value)
                                     workload_config_path += '/'
 
@@ -59,11 +66,11 @@ def main():
                                         if array_key != '16x16' and subarch_key in ['pwl', 'taylor']:
                                             continue
 
-                                        event_subarch = 'vlp/' if subarch_path == '/' else subarch_path
+                                        event_subarch = arch + '/' if subarch_path == '/' else subarch_path
 
                                         architecture_path = os.path.normpath('./' + base_path + arch_path + '/architecture/generated/' + subarch_path + network_dim_path + array_path + 'architecture.yaml')
                                         event_path = os.path.normpath('./' + base_path + arch_path + 'event/generated/' + network_path + event_subarch + 'event.yaml')
-                                        metric_path = os.path.normpath('./' + base_path + 'metric/metric.yaml')
+                                        metric_path = os.path.normpath('./' + base_path + 'common/metric/metric.yaml')
                                         runs_path = os.path.normpath('./' + base_path + 'runs/' + arch_path + network_dim_path + subarch_path + array_path + model_path + workload_config_path + runs_termination_path)
                                         workload_path = os.path.normpath('./' + base_path + arch_path + 'workload/generated/' + model_path + workload_termination_path + workload_config_path + 'workload.yaml')
                                         checkpoint_path = os.path.normpath(runs_path + '/checkpoint.gt/')

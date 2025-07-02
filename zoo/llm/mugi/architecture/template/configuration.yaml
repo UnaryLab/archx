@@ -9,7 +9,7 @@ network:
     path: zoo/llm/mugi/architecture/template/network_configuration/multi_node.architecture.yaml
 
 tag:
-  node_memory: [onchip, memory]
+  node_memory: [onchip, node_memory, memory]
   fifo: [onchip, array, fifo]
   array: [onchip, array]
   control: [onchip, array, control]
@@ -33,3 +33,10 @@ array:
 
   256x8:
     path: zoo/llm/mugi/architecture/template/configuration/256x8.configuration.yaml
+
+subarchitecture:
+  vlp:
+    path: zoo/llm/mugi/architecture/template/subarchitecture/vlp.architecture.yaml
+  
+  lut:
+    path: zoo/llm/mugi/architecture/template/subarchitecture/lut.architecture.yaml

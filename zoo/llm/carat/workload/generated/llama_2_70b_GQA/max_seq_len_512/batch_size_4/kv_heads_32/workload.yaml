@@ -1,0 +1,21 @@
+workload:
+  llama_2_70b_GQA:
+    configuration:
+      accumulation_cycles: 1
+      activation_bitwidth: 16
+      architecture: carat
+      batch_size: 4
+      cycles: 8
+      dim: 8192
+      division_mult_cycles: 14
+      exp_mult_cycles: 30
+      heads: 64
+      hidden_dim: 28672
+      kv_heads: 32
+      layers: 80
+      max_seq_len: 512
+      noc_stationary: os
+      node_stationary: os
+      prefill_seq_len: 64
+      vocab_size: 32000
+      weight_bitwidth: 4

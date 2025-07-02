@@ -25,5 +25,4 @@ workload:
       dim: 8192
       layers: 80
       heads: 64
-      kv_heads: 8
       hidden_dim: 28672

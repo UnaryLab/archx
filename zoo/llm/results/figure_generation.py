@@ -1,4 +1,5 @@
-from zoo.llm.results.query import area_power_breakdown, batch_size_breakdown, comprehensive_table, gemm_breakdown, noc_breakdown, nonlinear_breakdown
+from zoo.llm.results.query import area_power_breakdown, area_power_breakdown_scaled, attention_size_breakdown, batch_size_breakdown, comprehensive_table, dram_roofline, end_to_end_latency_breakdown, \
+    gemm_breakdown, noc_breakdown, nonlinear_breakdown
 
 from loguru import logger
 import os, sys
@@ -21,10 +22,18 @@ if not os.path.exists(table_path):
 
 area_power_breakdown.query(input_path=input_path, output_path=csv_path)
 print('Area and power breakdown query complete.')
+area_power_breakdown_scaled.query(input_path=input_path, output_path=csv_path)
+print('Scaled area and power breakdown query complete.')
+attention_size_breakdown.query(input_path=input_path, output_path=csv_path)
+print('Attention size breakdown query complete.')
 batch_size_breakdown.query(input_path=input_path, output_path=csv_path)
 print('Batch size breakdown query complete.')
 comprehensive_table.query(input_path=input_path, output_path=csv_path)
 print('Comprehensive table query complete.')
+dram_roofline.query(input_path=input_path, output_path=csv_path)
+print('DRAM roofline query complete.')
+end_to_end_latency_breakdown.query(input_path=input_path, output_path=csv_path)
+print('End-to-end latency breakdown query complete.')
 gemm_breakdown.query(input_path=input_path, output_path=csv_path)
 print('GEMM breakdown query complete.')
 noc_breakdown.query(input_path=input_path, output_path=csv_path)
@@ -33,8 +42,12 @@ nonlinear_breakdown.query(input_path=input_path, output_path=csv_path)
 print('Model query complete.')
 
 area_power_breakdown.figure(input_path=csv_path, output_path=fig_path)
+area_power_breakdown_scaled.figure(input_path=csv_path, output_path=fig_path)
+attention_size_breakdown.figure(input_path=csv_path, output_path=fig_path)
 batch_size_breakdown.figure(input_path=csv_path, output_path=fig_path)
 comprehensive_table.table(input_path=csv_path, output_path=table_path)
+dram_roofline.figure(input_path=csv_path, output_path=fig_path)
+end_to_end_latency_breakdown.figure(input_path=csv_path, output_path=fig_path)
 gemm_breakdown.figure(input_path=csv_path, output_path=fig_path)
 noc_breakdown.figure(input_path=csv_path, output_path=fig_path)
 nonlinear_breakdown.figure(input_path=csv_path, output_path=fig_path)

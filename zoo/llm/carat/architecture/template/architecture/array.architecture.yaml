@@ -36,19 +36,19 @@ architecture:
 
     sign_fifo:
       tag: fifo
-      instance: height
+      instance: height_double
       query:
         class: fifo
-        width: 12
-        depth: 2
+        width: 8
+        depth: 1
 
     pe_fifo:
       tag: fifo
-      instance: height
+      instance: height_double
       query:
         class: fifo
         width: 16
-        depth: 8
+        depth: 4
 
     adder:
       tag: accumulator

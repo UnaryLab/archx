@@ -13,20 +13,7 @@ architecture:
       query:
         class: register
         width: 3
-
-    min_tree:
-      tag: value_reuse
-      instance: height_tree
-      query:
-        class: min
-
-    min_tree_register:
-      tag: value_reuse
-      instance: height_pipeline_tree
-      query:
-        class: register
-        width: 3
-        
+      
     max_tree:
       tag: nonlinear
       instance: height_tree

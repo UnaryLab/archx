@@ -1,0 +1,403 @@
+architecture:
+  attribute:
+    technology: 32
+    frequency: 400
+    interface: csv_cmos
+  module:
+    accumulator:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 4
+      - 4
+      - 16
+      - 16
+      query:
+        class: adderbf16
+    accumulator_vector:
+      tag:
+      - onchip
+      - array
+      - vector
+      instance:
+      - 4
+      - 4
+      - 16
+      query:
+        class: adderbf16
+    adder:
+      tag:
+      - onchip
+      - array
+      - accumulator
+      instance:
+      - 4
+      - 4
+      - 16
+      query:
+        class: adderbf16
+    adder_vector:
+      tag:
+      - onchip
+      - array
+      - nonlinear
+      instance:
+      - 4
+      - 4
+      - 16
+      query:
+        class: adderbf16
+    dram:
+      tag:
+      - memory
+      instance:
+      - 1
+      query:
+        interface: cacti7
+        class: dram
+        size: 8589934592
+        bandwidth: 128
+    iadd:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 4
+      - 4
+      - 16
+      - 16
+      query:
+        class: register
+        width: 3
+    icmp:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 4
+      - 4
+      - 16
+      - 16
+      query:
+        class: register
+        width: 3
+    icnt:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 4
+      - 4
+      - 16
+      - 16
+      query:
+        class: register
+        width: 3
+    ififo:
+      tag:
+      - onchip
+      - array
+      - fifo
+      instance:
+      - 4
+      - 4
+      - 16
+      query:
+        class: fifo
+        width: 16
+        depth: 16
+    input_register:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 4
+      - 4
+      - 16
+      - 16
+      query:
+        class: register
+        width: 16
+    int_to_fp:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 4
+      - 4
+      - 16
+      query:
+        class: int_to_bf16
+    irouter:
+      tag:
+      - onchip
+      - router
+      instance:
+      - 4
+      - 4
+      - 1
+      query:
+        class: noc_router
+        bandwidth: 64
+    isram:
+      tag:
+      - onchip
+      - memory
+      - node_memory
+      instance:
+      - 4
+      - 4
+      - 1
+      query:
+        interface: cacti7
+        class: sram
+        bank: 4
+        width: 256
+        depth: 512
+    mac_register_vector:
+      tag:
+      - onchip
+      - array
+      - vector
+      instance:
+      - 4
+      - 4
+      - 16
+      query:
+        class: register
+        width: 16
+    multiplier:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 4
+      - 4
+      - 16
+      - 16
+      query:
+        class: multiplierbf16
+    multiplier_vector:
+      tag:
+      - onchip
+      - array
+      - vector
+      instance:
+      - 4
+      - 4
+      - 16
+      query:
+        class: multiplierbf16
+    ofifo:
+      tag:
+      - onchip
+      - array
+      - fifo
+      instance:
+      - 4
+      - 4
+      - 16
+      query:
+        class: fifo
+        width: 16
+        depth: 16
+    orouter:
+      tag:
+      - onchip
+      - router
+      instance:
+      - 4
+      - 4
+      - 1
+      query:
+        class: noc_router
+        bandwidth: 64
+    osram:
+      tag:
+      - onchip
+      - memory
+      - node_memory
+      instance:
+      - 4
+      - 4
+      - 1
+      query:
+        interface: cacti7
+        class: sram
+        bank: 4
+        width: 256
+        depth: 512
+    pe_register:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 4
+      - 4
+      - 16
+      - 16
+      query:
+        class: register
+        width: 16
+    pipeline_register:
+      tag:
+      - onchip
+      - array
+      - nonlinear
+      instance:
+      - 4
+      - 4
+      - 16
+      - 22
+      query:
+        class: register
+        width: 16
+    pwl_comparator:
+      tag:
+      - onchip
+      - array
+      - nonlinear
+      instance:
+      - 4
+      - 4
+      - 16
+      - 21
+      query:
+        class: bf_comparator
+    pwl_encoder:
+      tag:
+      - onchip
+      - array
+      - nonlinear
+      instance:
+      - 4
+      - 4
+      - 16
+      query:
+        class: 21_22_encoder
+    pwl_register:
+      tag:
+      - onchip
+      - array
+      - nonlinear
+      instance:
+      - 4
+      - 4
+      - 16
+      - 22
+      query:
+        class: register
+        width: 32
+    register_vector:
+      tag:
+      - onchip
+      - array
+      - vector
+      instance:
+      - 4
+      - 4
+      - 16
+      - 2
+      query:
+        class: register
+        width: 16
+    wadd:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 4
+      - 4
+      - 16
+      - 16
+      query:
+        class: register
+        width: 3
+    wcmp:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 4
+      - 4
+      - 16
+      - 16
+      query:
+        class: register
+        width: 3
+    wcnt:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 4
+      - 4
+      - 16
+      - 16
+      query:
+        class: register
+        width: 3
+    weight_register:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 4
+      - 4
+      - 16
+      - 16
+      query:
+        class: register
+        width: 16
+    wfifo:
+      tag:
+      - onchip
+      - array
+      - fifo
+      instance:
+      - 4
+      - 4
+      - 16
+      query:
+        class: fifo
+        width: 4
+        depth: 16
+    wrouter:
+      tag:
+      - onchip
+      - router
+      instance:
+      - 4
+      - 4
+      - 1
+      query:
+        class: noc_router
+        bandwidth: 64
+    wsram:
+      tag:
+      - onchip
+      - memory
+      - node_memory
+      instance:
+      - 4
+      - 4
+      - 1
+      query:
+        interface: cacti7
+        class: sram
+        bank: 4
+        width: 256
+        depth: 512

@@ -4,7 +4,7 @@ network:
     path: zoo/llm/carat/event/template/hardware/router.event.yaml
 
 hardware:
-  vlp:
+  carat:
     gemm:
       path: zoo/llm/carat/event/template/hardware/gemm.event.yaml
     nonlinear:

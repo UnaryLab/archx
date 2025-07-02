@@ -1,0 +1,20 @@
+architecture:
+  module:
+    accumulator:
+      tag: pe
+      instance: width_array_tree
+      query:
+        class: adderbf16
+
+    accumulator_register:
+      tag: pe
+      instance: width
+      query:
+        class: register
+        width: 16
+
+    adder:
+      tag: accumulator
+      instance: width
+      query:
+        class: adderbf16

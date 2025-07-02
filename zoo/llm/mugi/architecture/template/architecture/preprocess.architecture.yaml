@@ -1,11 +1,5 @@
 architecture:
   module:
-    window_select:
-      tag: nonlinear
-      instance: node
-      query:
-        class: window_select
-
     round:
       tag: nonlinear
       instance: height

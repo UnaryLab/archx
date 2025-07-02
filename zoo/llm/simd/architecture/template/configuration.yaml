@@ -9,7 +9,7 @@ network:
     path: zoo/llm/simd/architecture/template/network_configuration/multi_node.architecture.yaml
 
 tag:
-  node_memory: [onchip, memory]
+  node_memory: [onchip, memory,  node_memory]
   fifo: [onchip, array, fifo]
   array: [onchip, array]
   vector: [onchip, array, vector]

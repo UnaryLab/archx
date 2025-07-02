@@ -5,7 +5,7 @@ architecture:
       instance: height
       query:
         class: comparator
-        width: 3
+        width: 4
 
     magnitude_register:
       tag: tc

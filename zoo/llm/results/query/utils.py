@@ -77,6 +77,19 @@ def compute_throughput(performance_metrics_dict: OrderedDict) -> OrderedDict:
 
     return performance_metrics_dict
 
+def compute_latency(performance_metrics_dict: OrderedDict) -> OrderedDict:
+
+    flops = performance_metrics_dict['flops']
+
+    execution_time = performance_metrics_dict['execution_time']
+
+    latency = execution_time/flops
+
+    performance_metrics_dict['latency'] = latency
+
+
+    return performance_metrics_dict
+
 def compute_throughput_efficiancy(performance_metrics_dict: OrderedDict) -> OrderedDict:
 
     flops = performance_metrics_dict['flops']
@@ -123,6 +136,38 @@ def query_performance_metrics(event_graph, metric_dict, module, workload, event)
         'energy': dynamic_energy,
         'power': leakage_power,
         'cycle_count': cycle_count,
+    })
+
+    return performance_metrics_dict
+
+def query_throughput_energy_metrics_workload(event_graph, metric_dict, module, workload, event) -> OrderedDict:
+
+    execution_time = query_execution_time(event_graph=event_graph, metric_dict=metric_dict, workload=event, event=event)
+    pe_count = aggregate_event_count(event_graph=event_graph, workload=event, event=module)
+    dynamic_energy = query_dynamic_energy(event_graph=event_graph, metric_dict=metric_dict, workload=event, tag='onchip')
+
+    flops = pe_count * 2 / 10**9 # GFLOPS
+
+    performance_metrics_dict = OrderedDict({
+        'flops': flops,
+        'execution_time': execution_time,
+        'energy': dynamic_energy,
+    })
+
+    return performance_metrics_dict
+
+def query_throughput_energy_metrics(event_graph, metric_dict, module, workload, event) -> OrderedDict:
+
+    execution_time = query_execution_time(event_graph=event_graph, metric_dict=metric_dict, workload=event, event=event)
+    pe_count = aggregate_event_count(event_graph=event_graph, workload=event, event=module)
+    dynamic_energy = query_dynamic_energy(event_graph=event_graph, metric_dict=metric_dict, workload=event, tag='onchip')
+
+    flops = pe_count * 2 / 10**9 # GFLOPS
+
+    performance_metrics_dict = OrderedDict({
+        'flops': flops,
+        'execution_time': execution_time,
+        'energy': dynamic_energy,
     })
 
     return performance_metrics_dict

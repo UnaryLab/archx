@@ -10,6 +10,8 @@ def query(input_path, output_path):
     vlp_arch_dim_list = ['128x8', '256x8']
     vlp_throughput_module = 'and_gate'
 
+    mugi_subarch_list = ['vlp', 'lut']
+
     baseline_list = ['systolic', 'simd']
     baseline_arch_dim_list = ['16x16']
     baseline_subarch_list = ['mac', 'figna']
@@ -22,9 +24,9 @@ def query(input_path, output_path):
 
     gemm_breakdown_df = pd.DataFrame()
 
-    for arch in vlp_list + baseline_list:
-       for arch_dim in (vlp_arch_dim_list if arch in vlp_list else baseline_arch_dim_list):
-            for subarch in (baseline_subarch_list if arch in baseline_list else ['']):
+    for arch in vlp_list + baseline_list + ['tensor']:
+       for arch_dim in (vlp_arch_dim_list if arch in vlp_list else baseline_arch_dim_list if arch in baseline_list else ['8x16x16'] if arch in ['tensor'] else ['']):
+            for subarch in (baseline_subarch_list if arch in baseline_list else mugi_subarch_list if arch in ['mugi'] else ['']):
                 for model in model_list:
 
                     module = vlp_throughput_module if arch in vlp_list else baseline_throughput_module
@@ -118,7 +120,7 @@ def figure(input_path: str, output_path: str):
             data_df[key][layer] = {}
             for model in ['Mugi', 'Carat', 'SA', 'SA-F', 'SD', 'SD-F']:
                 model_label = 'mugi' if model == 'Mugi' else 'carat' if model == 'Carat' else 'systolic' if model == 'SA' else 'simd' if model == 'SD' else 'systolic' if model == 'SA-F' else 'simd'
-                subarch_label = np.nan if model == 'Mugi' or model == 'Carat' else 'mac' if model == 'SA' or model == 'SD' else 'figna'
+                subarch_label = 'vlp' if model == 'Mugi' else np.nan if  model == 'Carat' else 'mac' if model == 'SA' or model == 'SD' else 'figna'
                 for size_def in [1, 2]:
                     if size_def == 1:
                         if model == 'Mugi' or model == 'Carat':
@@ -159,7 +161,7 @@ def figure(input_path: str, output_path: str):
     # Define figure dimensions and font sizes
     fig_width_pt = 250  # ACM single-column width in points
     fig_width = fig_width_pt / 72  # Convert to inches
-    fig_height = fig_width * .9 # Adjusted height for readability
+    fig_height = fig_width /1.75 # Adjusted height for readability
 
     font_title = 5.5
     font_label = 5
@@ -239,9 +241,11 @@ def figure(input_path: str, output_path: str):
             ax.spines['bottom'].set_linewidth(0.5)  # Thinner bottom border
             ax.grid(axis='y', linestyle='--', alpha=0.7)
             if i == 0 and j == 0:
-                ax.legend(fontsize=5, ncol=4, loc='lower center', bbox_to_anchor=(1.115, 1.25), frameon=True)
+                ax.legend(fontsize=5, ncol=4, loc='lower center', bbox_to_anchor=(1.115, 1.35), frameon=True)
             if j == 0:
-                ax.set_ylabel('Norm ' + metric, fontsize=font_label)
+                metric_label = 'Throughput' if metric == 'Throughput' else 'Energy Eff' if metric == 'Energy Efficiency' else 'Power Eff'
+                ax.set_ylabel(metric_label, fontsize=font_label)
 
+    plt.savefig(output_path + "gemm_breakdown.png", dpi=1200, bbox_inches="tight")
     plt.savefig(output_path + "gemm_breakdown.pdf", dpi=1200, bbox_inches="tight")
     plt.show()

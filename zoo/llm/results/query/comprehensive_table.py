@@ -5,6 +5,7 @@ import os
 
 def query(input_path, output_path):
     network_list = ['single_node', 'multi_node_4x4', 'multi_node_8x8']
+    tensor_network_list = ['single_node', 'multi_node_2x1', 'multi_node_2x2']
 
     vlp_list = ['mugi', 'carat']
     vlp_arch_dim_list = ['64x8', '128x8', '256x8']
@@ -17,19 +18,22 @@ def query(input_path, output_path):
         'mugi': OrderedDict({'gemm': 'and_gate', 'nonlinear': 'magnitude_register'}),
         'carat': OrderedDict({'gemm': 'and_gate', 'nonlinear': 'accumulator_vector'}),
         'systolic': OrderedDict({'gemm': 'multiplier', 'nonlinear': 'accumulator_vector'}),
-        'simd': OrderedDict({'gemm': 'multiplier', 'nonlinear': 'accumulator_vector'})
+        'simd': OrderedDict({'gemm': 'multiplier', 'nonlinear': 'accumulator_vector'}),
+        'tensor': OrderedDict({'gemm': 'multiplier', 'nonlinear': 'accumulator_vector'}),
     })
 
     model = 'llama_2_70b_GQA'
     max_seq_len = 'max_seq_len_4096'
     batch_size = 'batch_size_8'
 
+    kv_heads = 'kv_heads_8'
+
     comprehensive_table_df = pd.DataFrame()
 
-    for network in network_list:
-        for arch in (vlp_list + baseline_list):
-            for subarch in (baseline_subarch_list if arch in baseline_list else ['']):
-                for arch_dim in (vlp_arch_dim_list if arch in vlp_list else baseline_arch_dim_list):
+    for arch in (vlp_list + baseline_list) + ['tensor']:
+        for network in network_list if arch != 'tensor' else tensor_network_list:
+            for subarch in (baseline_subarch_list if arch in baseline_list else ['vlp'] if arch == 'mugi' else ['']):
+                for arch_dim in (vlp_arch_dim_list if arch in vlp_list else baseline_arch_dim_list if arch in baseline_list else ['8x16x16'] if arch == 'tensor' else ['']):
                     if arch_dim in ['64x64', '128x8'] and network != 'single_node':
                         continue
                     if arch_dim in ['8x8', '64x8'] and network == 'single_node':
@@ -43,7 +47,7 @@ def query(input_path, output_path):
                     nonlinear_module = throughput_module[arch]['nonlinear']
                     
                     termination_path = 'full_termination' if arch == 'mugi' else ''
-                    run_path = os.path.normpath(f'{input_path}{arch}/{network}/{subarch}/{arch_dim}/{model}/{max_seq_len}/{batch_size}/{termination_path}/')
+                    run_path = os.path.normpath(f'{input_path}{arch}/{network}/{subarch}/{arch_dim}/{model}/{max_seq_len}/{batch_size}/kv_heads_8/{termination_path}/')
                     yaml_dict = load_yaml(run_path)
 
                     event_graph = yaml_dict['event_graph']
@@ -98,6 +102,8 @@ def table(input_path: str, output_path: str):
     sa_f_multi_node_list = []
     sd_multi_node_list = []
     sd_f_multi_node_list = []
+    tensor_single_node_list = []
+    tensor_multi_node_list = []
     for index, row in df.iterrows():
         arch_label = row['arch'].capitalize()
         dim_label = row['arch_dim'].split('_')[0]
@@ -110,6 +116,8 @@ def table(input_path: str, output_path: str):
             arch_label = 'SD'
         if arch_label == 'Mugi':
             arch_label = '\\name'
+        if arch_label == 'tensor':
+            arch_label = 'Tensor'
 
         subarch_label = '-F' if subarch_label == 'figna' else ''
 
@@ -143,6 +151,10 @@ def table(input_path: str, output_path: str):
                 sd_f_multi_node_list.append(string)
             else:
                 sd_multi_node_list.append(string)
+        elif arch_label == 'Tensor' and network == 'single_node':
+            tensor_single_node_list.append(string)
+        elif arch_label == 'Tensor' and network != 'single_node':
+            tensor_multi_node_list.append(string)
         
     with open(output_path + 'comprehensive_table.txt', 'w') as f:
         f.write(' & Arch & Throughput & Area & Energy Efficiency & Power Efficiency \\\\\n')
@@ -154,6 +166,8 @@ def table(input_path: str, output_path: str):
             f.write(string + '\n')
         for string in baseline_sa_list:
             f.write(string + '\n')
+        for string in tensor_single_node_list:
+            f.write(string + '\n')
         for string in vlp_multi_node_list:
             f.write(string + '\n')
         for string in sa_multi_node_list:
@@ -163,4 +177,6 @@ def table(input_path: str, output_path: str):
         for string in sd_multi_node_list:
             f.write(string + '\n')
         for string in sd_f_multi_node_list:
+            f.write(string + '\n')
+        for string in tensor_multi_node_list:
             f.write(string + '\n')

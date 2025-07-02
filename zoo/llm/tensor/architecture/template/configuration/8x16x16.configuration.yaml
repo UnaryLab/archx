@@ -1,0 +1,17 @@
+instance:
+  height: [16, 16]
+  width: [8, 16]
+  array: [8, 16, 16]
+  height_double: [8, 2]
+  width_array_tree: [8, 16, 15]
+  node: [1]
+width:
+  isram: 2048
+  wsram: 2048
+  osram: 2048
+  control: 2
+depth:
+  isram: 512
+  wsram: 512
+  osram: 512
+  fifo: 8

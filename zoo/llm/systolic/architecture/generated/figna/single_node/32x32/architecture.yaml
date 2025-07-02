@@ -1,0 +1,295 @@
+architecture:
+  attribute:
+    technology: 32
+    frequency: 400
+    interface: csv_cmos
+  module:
+    accumulator:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 32
+      - 32
+      query:
+        class: adderbf16
+    accumulator_vector:
+      tag:
+      - onchip
+      - array
+      - vector
+      instance:
+      - 32
+      query:
+        class: adderbf16
+    adder:
+      tag:
+      - onchip
+      - array
+      - accumulator
+      instance:
+      - 32
+      query:
+        class: adderbf16
+    ch_aloc:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 32
+      - 32
+      query:
+        class: ch_aloc
+    ch_dealoc:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 32
+      - 32
+      query:
+        class: ch_dealoc
+    dram:
+      tag:
+      - memory
+      instance:
+      - 1
+      query:
+        interface: cacti7
+        class: dram
+        size: 8589934592
+        bandwidth: 128
+    iadd:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 32
+      - 32
+      query:
+        class: register
+        width: 4
+    icmp:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 32
+      - 32
+      query:
+        class: register
+        width: 4
+    icnt:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 32
+      - 32
+      query:
+        class: register
+        width: 4
+    ififo:
+      tag:
+      - onchip
+      - array
+      - fifo
+      instance:
+      - 32
+      query:
+        class: fifo
+        width: 16
+        depth: 32
+    input_register:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 32
+      - 32
+      query:
+        class: register
+        width: 16
+    int_to_fp_figna:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 32
+      - 32
+      query:
+        class: int_to_fp
+    isram:
+      tag:
+      - onchip
+      - memory
+      - node_memory
+      instance:
+      - 1
+      query:
+        interface: cacti7
+        class: sram
+        bank: 4
+        width: 1024
+        depth: 1024
+    mac_register_vector:
+      tag:
+      - onchip
+      - array
+      - vector
+      instance:
+      - 32
+      query:
+        class: register
+        width: 16
+    multiplier:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 32
+      - 32
+      query:
+        class: multiplierbf16
+    multiplier_vector:
+      tag:
+      - onchip
+      - array
+      - vector
+      instance:
+      - 32
+      query:
+        class: multiplierbf16
+    ofifo:
+      tag:
+      - onchip
+      - array
+      - fifo
+      instance:
+      - 32
+      query:
+        class: fifo
+        width: 16
+        depth: 32
+    osram:
+      tag:
+      - onchip
+      - memory
+      - node_memory
+      instance:
+      - 1
+      query:
+        interface: cacti7
+        class: sram
+        bank: 4
+        width: 1024
+        depth: 1024
+    pe_register:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 32
+      - 32
+      query:
+        class: register
+        width: 16
+    prealigner:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 32
+      - 32
+      query:
+        class: prealigner
+    register_vector:
+      tag:
+      - onchip
+      - array
+      - vector
+      instance:
+      - 32
+      - 2
+      query:
+        class: register
+        width: 16
+    wadd:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 32
+      - 32
+      query:
+        class: register
+        width: 4
+    wcmp:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 32
+      - 32
+      query:
+        class: register
+        width: 4
+    wcnt:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 32
+      - 32
+      query:
+        class: register
+        width: 4
+    weight_register:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 32
+      - 32
+      query:
+        class: register
+        width: 16
+    wfifo:
+      tag:
+      - onchip
+      - array
+      - fifo
+      instance:
+      - 32
+      query:
+        class: fifo
+        width: 4
+        depth: 32
+    wsram:
+      tag:
+      - onchip
+      - memory
+      - node_memory
+      instance:
+      - 1
+      query:
+        interface: cacti7
+        class: sram
+        bank: 4
+        width: 1024
+        depth: 1024

@@ -9,6 +9,8 @@ def query(input_path, output_path):
     vlp_list = ['mugi', 'carat']
     vlp_arch_dim_list = ['128x8', '256x8']
 
+    mugi_subarch_list = ['vlp']
+
     baseline_list = ['systolic']
     baseline_arch_dim_list = ['16x16']
     baseline_subarch_list = ['mac', 'pwl', 'taylor']
@@ -18,15 +20,15 @@ def query(input_path, output_path):
     approximate_throughtput_module = 'adder_vector'
 
     model_list = ['llama_2_7b', 'llama_2_13b', 'llama_2_70b']
-    max_seq_len_list = ['max_seq_len_512', 'max_seq_len_2048', 'max_seq_len_4096']
+    max_seq_len_list = ['max_seq_len_128', 'max_seq_len_256', 'max_seq_len_512', 'max_seq_len_1024', 'max_seq_len_2048', 'max_seq_len_4096']
     batch_size = 'batch_size_8'
     network = 'single_node'
 
     nonlinear_breakdown_df = pd.DataFrame()
 
-    for arch in vlp_list + baseline_list:
-       for arch_dim in (vlp_arch_dim_list if arch in vlp_list else baseline_arch_dim_list):
-            for subarch in (baseline_subarch_list if arch in baseline_list else ['']):
+    for arch in vlp_list + baseline_list + ['tensor']:
+       for arch_dim in (vlp_arch_dim_list if arch in vlp_list else baseline_arch_dim_list if arch in baseline_list else ['8x16x16'] if arch in ['tensor'] else ['']):
+            for subarch in (baseline_subarch_list if arch in baseline_list else mugi_subarch_list if arch in ['mugi'] else ['']):
                 if arch == 'simd' and subarch in ['pwl', 'taylor']:
                     continue
                 for max_seq_len in max_seq_len_list:
@@ -105,232 +107,109 @@ def lighten_color(color, amount=0.5):
     return [(1 - amount) * x + amount for x in c]
 
 def figure(input_path: str, output_path: str):
-    data_df = pd.read_csv(input_path + 'nonlinear_breakdown_norm.csv')
-    data_dict = {'XTicks': ['512', '2048', '4096']}
+    """Generate nonlinear breakdown figure directly from CSV data."""
+    try:
+        # Read the normalized CSV data
+        data_df = pd.read_csv(input_path + 'nonlinear_breakdown_norm.csv')
+    except FileNotFoundError:
+        print(f"Error: Could not find CSV file at {input_path}nonlinear_breakdown_norm.csv")
+        return
+    except Exception as e:
+        print(f"Error reading CSV: {e}")
+        return
 
-    for arch in ['Mugi', 'Carat', 'VA']:
-        arch_key = arch
-        for arch_dim in ['16', '128', '256']:
-            if arch == 'VA' and arch_dim != '16':
-                continue
-            if (arch == 'Mugi' or arch == 'Carat') and arch_dim == '16':
-                continue
-
-            arch_label = 'mugi' if arch == 'Mugi' else 'carat' if arch == 'Carat' else 'systolic'
-
-            dim_label = arch_dim + 'x8' if arch in ['Mugi', 'Carat'] else arch_dim + 'x' + arch_dim
-            dim_key = ' (' + arch_dim + ')'
-            for subarch in ['', 'PWL', 'Taylor']:
-                for function in ['softmax', 'silu']:
-
-                    function_key = 'SM ' if function == 'softmax' else 'SiLU '
-
-                    subarch = np.nan if subarch == '' and arch != 'VA' else 'mac' if subarch == '' and arch == 'VA' else subarch
-                    if subarch == 'Taylor' and function != 'softmax':
-                        continue
-                    if arch != 'VA' and (subarch == 'PWL' or subarch == 'Taylor'):
-                        continue
-                    subarch_label = subarch.lower() if subarch is not np.nan else subarch
-                    subarch_key = ' ' + subarch if subarch is not np.nan else ''
-                    subarch_key = '' if subarch_key == ' mac' else subarch_key
-
-                    values = data_df[
-                        (data_df['arch'] == arch_label) &
-                        (data_df['function'] == function) &
-                        (data_df['arch_dim'] == dim_label) &
-                        (pd.isna(data_df['subarch']) if pd.isna(subarch_label) else data_df['subarch'] == subarch_label)
-                    ]
-
-                    key = function_key + arch_key + subarch_key + dim_key
-
-                    data_dict[key] = {
-                        'NormThroughput': values['throughput'].values,
-                        'NormEnergyEfficiency': values['energy_efficiency'].values,
-                        'NormPowerEfficiency': values['power_efficiency'].values
-                    }
-
-    data = {
-        'XTicks': ['512', '2048', '4096'],
-
-        # Mugi 64
-        #'SM Mugi (64)': {
-        #    'NormThroughput':       [49.43110781, 46.33105959, 45.6795269],
-        #    'NormEnergyEfficiency': [34865.88722, 1951.589918, 475.0551014],
-        #    'NormPowerEfficiency':  [705.3430271, 663.4403085, 654.5595454]
-        #},
-        #'SiLU Mugi (64)': {
-        #    'NormThroughput':       [42.1875, 44.296875, 44.6484375],
-        #    'NormEnergyEfficiency': [27855.24928, 7310.389714, 3684.068873],
-        #    'NormPowerEfficiency':  [619.0055396, 649.812419, 654.9455774]
-        #},
-
-        # Mugi 128
-        'SM Mugi (128)': {
-            'NormThroughput':       [109.4615295, 111.5448376, 112.0151202],
-            'NormEnergyEfficiency': [147127.2667, 7138.332043, 1686.472441],
-            'NormPowerEfficiency':  [1344.100227, 1177.107382, 1144.093518]
-        },
-        'SiLU Mugi (128)': {
-            'NormThroughput':       [87.01304833, 87.890625, 88.9453125],
-            'NormEnergyEfficiency': [92412.38141, 24881.23102, 12588.69388],
-            'NormPowerEfficiency':  [1026.804238, 1105.83249, 1118.995011]
-        },
-
-        # Mugi 256
-        'SM Mugi (256)': {
-            'NormThroughput':       [206.2848781, 200.2963601, 197.1853818],
-            'NormEnergyEfficiency': [389385.9496, 23392.62003, 5313.260388],
-            'NormPowerEfficiency':  [1887.612671, 1839.46416, 1752.956044]
-        },
-        'SiLU Mugi (256)': {
-            'NormThroughput':       [160.3125, 175.078125, 177.5390625],
-            'NormEnergyEfficiency': [269747.2475, 73574.28717, 37298.00195],
-            'NormPowerEfficiency':  [1498.59582, 1634.984159, 1657.688975]
-        },
-
-        # Carat 64
-        #'SM Carat (64)': {
-        #    'NormThroughput':       [8, 8, 8],
-        #    'NormEnergyEfficiency': [820.6805356, 52.1061051, 13.0390913],
-        #    'NormPowerEfficiency':  [102.5850669, 102.5850667, 102.5850586]
-        #},
-        #'SiLU Carat (64)': {
-        #    'NormThroughput':       [8, 8, 8],
-        #    'NormEnergyEfficiency': [842.8780316, 210.7195079, 105.359754],
-        #    'NormPowerEfficiency':  [105.359754, 105.359754, 105.359754]
-        #},
-
-        # Carat 128
-        'SM Carat (128)': {
-            'NormThroughput':       [15.99820854, 15.9994962, 15.99974378],
-            'NormEnergyEfficiency': [2504.162156, 159.0181563, 39.79411298],
-            'NormPowerEfficiency':  [156.5276606, 156.5402154, 156.5426107]
-        },
-        'SiLU Carat (128)': {
-            'NormThroughput':       [16, 16, 16],
-            'NormEnergyEfficiency': [2571.503541, 642.8758853, 321.4379426],
-            'NormPowerEfficiency':  [160.7189713, 160.7189713, 160.7189713]
-        },
-
-        # Carat 256
-        'SM Carat (256)': {
-            'NormThroughput':       [31.98925608, 31.99697761, 31.99846281],
-            'NormEnergyEfficiency': [6302.282943, 400.3331523, 100.1890986],
-            'NormPowerEfficiency':  [197.0124884, 197.0598373, 197.068915]
-        },
-        'SiLU Carat (256)': {
-            'NormThroughput':       [32, 32, 32],
-            'NormEnergyEfficiency': [6472.828794, 1618.207199, 809.1035993],
-            'NormPowerEfficiency':  [202.2758998, 202.2758998, 202.2758998]
-        },
-
-        # Vector Array (non-PWL)
-        #'SM VA (8)': {
-        #    'NormThroughput':       [1, 1, 1],
-        #    'NormEnergyEfficiency': [1, 0.063491332, 0.015888144],
-        #    'NormPowerEfficiency':  [1, 0.9999999, 0.99999988]
-        #},
-        #'SiLU VA (8)': {
-        #    'NormThroughput':       [1, 1, 1],
-        #    'NormEnergyEfficiency': [1, 0.25, 0.125],
-        #    'NormPowerEfficiency':  [1, 1, 1]
-        #},
-        'SM VA (16)': {
-            'NormThroughput':       [2, 2, 2],
-            'NormEnergyEfficiency': [3.783924177, 0.240246353, 0.060119524],
-            'NormPowerEfficiency':  [1.891962088, 1.891961647, 1.891961557]
-        },
-        'SiLU VA (16)': {
-            'NormThroughput':       [2, 2, 2],
-            'NormEnergyEfficiency': [3.788803663, 0.947200916, 0.473600458],
-            'NormPowerEfficiency':  [1.894401831, 1.894401831, 1.894401831]
-        },
-
-        # Vector Array PWL
-        #'SM VA (8) PWL': {
-        #    'NormThroughput':       [11.25, 11.25, 11.25],
-        #    'NormEnergyEfficiency': [126.0801257, 8.004986878, 2.00317704],
-        #    'NormPowerEfficiency':  [11.20712229, 11.2071097, 11.20710867]
-        #},
-        #'SiLU VA (8) PWL': {
-        #    'NormThroughput':       [11.25, 11.25, 11.25],
-        #    'NormEnergyEfficiency': [129.5883266, 32.39705797, 16.19852701],
-        #    'NormPowerEfficiency':  [11.51896237, 11.51895395, 11.51895254]
-        #},
-        'SM VA (16) PWL': {
-            'NormThroughput':       [22.5, 22.5, 22.5],
-            'NormEnergyEfficiency': [477.0790058, 30.29031938, 7.579883414],
-            'NormPowerEfficiency':  [21.20351137, 21.20346587, 21.20346215]
-        },
-        'SiLU VA (16) PWL': {
-            'NormThroughput':       [22.5, 22.5, 22.5],
-            'NormEnergyEfficiency': [490.372891, 122.5930516, 61.29651152],
-            'NormPowerEfficiency':  [21.79435071, 21.79432028, 21.79431521]
-        },
-        # 'SM VA (128) PWL': {
-        #     'NormThroughput':       [179.9798461, 179.9943323, 179.9971176],
-        #     'NormEnergyEfficiency': [27088.49926, 1720.131475, 430.4602815],
-        #     'NormPowerEfficiency':  [150.5085144, 150.5179634, 150.5200336]
-        # },
-        # 'SiLU VA (128) PWL': {
-        #     'NormThroughput':       [180, 180, 180],
-        #     'NormEnergyEfficiency': [27863.34358, 6965.766821, 3482.877655],
-        #     'NormPowerEfficiency':  [154.7963532, 154.7948182, 154.7945624]
-        # },
-        # 'SM VA (256) PWL': {
-        #     'NormThroughput':       [359.8791309, 359.9659981, 359.9827066],
-        #     'NormEnergyEfficiency': [86704.4477, 5507.434816, 1378.308712],
-        #     'NormPowerEfficiency':  [240.9265786, 240.9757868, 240.9859012]
-        # },
-        # 'SiLU VA (256) PWL': {
-        #     'NormThroughput':       [360, 360, 360],
-        #     'NormEnergyEfficiency': [89254.33642, 22313.22974, 11156.58534],
-        #     'NormPowerEfficiency':  [247.9287123, 247.9247749, 247.9241187]
-        # },
-
-        # Vector Array Taylor
-        #'SM VA (8) Taylor': {
-        #    'NormThroughput':       [5, 5, 5],
-        #    'NormEnergyEfficiency': [25.00271223, 1.587454856, 0.397246533],
-        #    'NormPowerEfficiency':  [5.000542446, 5.000539939, 5.000539735]
-        #},
-        #'SiLU VA (8) Taylor': {
-        #    'NormThroughput':       [2, 2, 2],
-        #    'NormEnergyEfficiency': [2.002680809, 0.500670202, 0.250335101],
-        #    'NormPowerEfficiency':  [2.002680809, 2.002680808, 2.002680808]
-        #},
-        'SM VA (16) Taylor': {
-            'NormThroughput':       [10, 10, 10],
-            'NormEnergyEfficiency': [94.94724174, 6.028321619, 1.508534093],
-            'NormPowerEfficiency':  [9.494724174, 9.494715051, 9.494714305]
-        },
-        # 'SiLU VA (16) Taylor': {
-        #     'NormThroughput':       [4, 4, 4],
-        #     'NormEnergyEfficiency': [7.622730916, 1.905682727, 0.952841364],
-        #     'NormPowerEfficiency':  [3.811365458, 3.811365455, 3.811365454]
-        # },
-        # 'SM VA (128) Taylor': {
-        #     'NormThroughput':       [79.99104272, 79.99748102, 79.99871892],
-        #     'NormEnergyEfficiency': [5830.742165, 370.2576335, 92.65647137],
-        #     'NormPowerEfficiency':  [72.89243853, 72.89759995, 72.89865177]
-        # },
-        # 'SiLU VA (128) Taylor': {
-        #     'NormThroughput':       [23.27272727, 29.25714286, 30.56716418],
-        #     'NormEnergyEfficiency': [225.3988034, 86.0309229, 46.60732192],
-        #     'NormPowerEfficiency':  [19.37020967, 23.52408048, 24.39602007]
-        # },
-        # 'SM VA (256) Taylor': {
-        #     'NormThroughput':       [159.9462804, 159.984888, 159.992314],
-        #     'NormEnergyEfficiency': [21680.79417, 1377.161605, 344.6528404],
-        #     'NormPowerEfficiency':  [135.5504743, 135.5787, 135.5843345]
-        # },
-        # 'SiLU VA (256) Taylor': {
-        #     'NormThroughput':       [34.13333333, 52.51282051, 57.69014085],
-        #     'NormEnergyEfficiency': [449.2771774, 241.6653924, 142.1904314],
-        #     'NormPowerEfficiency':  [26.32483461, 36.81621212, 39.43562747]
-        # }
+    # Extract unique sequence lengths and sort them
+    seq_lens = sorted(data_df['max_seq_len'].str.replace('max_seq_len_', '').astype(int).unique())
+    x_ticks = [str(seq_len) for seq_len in seq_lens]
+    print(f"Available sequence lengths: {x_ticks}")
+    
+    # Focus on specific sequence lengths for cleaner visualization
+    target_seq_lens = ['128', '256', '512', '1024', '2048', '4096']
+    data_dict = {'XTicks': target_seq_lens}
+    
+    # Architecture mapping
+    arch_mapping = {
+        'mugi': 'Mugi',
+        'carat': 'Carat', 
+        'systolic': 'VA',
+        'tensor': 'Tensor'
     }
-
+    
+    # Create legend entries by extracting data from CSV
+    for _, row in data_df.iterrows():
+        arch = arch_mapping.get(row['arch'], row['arch'])
+        function = row['function']
+        arch_dim = row['arch_dim']
+        subarch = row['subarch'] if pd.notna(row['subarch']) else ''
+        seq_len = row['max_seq_len'].replace('max_seq_len_', '')
+        
+        # Skip entries not in our target sequence lengths
+        if seq_len not in target_seq_lens:
+            continue
+            
+        # Create key for this configuration
+        function_key = 'SM ' if function == 'softmax' else 'SiLU '
+        
+        # Extract dimension info
+        if arch in ['Mugi', 'Carat']:
+            dim_size = arch_dim.split('x')[0]
+        elif arch == 'Tensor':
+            dim_size = '16'  # Use 16 for tensor
+        else:  # VA/systolic
+            dim_size = arch_dim.split('x')[0]
+            
+        dim_key = f' ({dim_size})'
+        
+        # Handle subarch
+        subarch_key = ''
+        if subarch and subarch != 'mac':
+            if subarch == 'vlp':
+                subarch_key = ''  # vlp is default for Mugi
+            elif subarch == 'lut':
+                subarch_key = ' LUT'
+            elif subarch == 'pwl':
+                subarch_key = ' PWL'
+            elif subarch == 'taylor':
+                subarch_key = ' Taylor'
+                
+        # Skip Taylor for SiLU (not commonly used)
+        if subarch == 'taylor' and function == 'silu':
+            continue
+            
+        # Skip PWL/Taylor for non-VA architectures (except Tensor which doesn't use them)
+        if arch not in ['VA', 'Tensor'] and subarch in ['pwl', 'taylor']:
+            continue
+            
+        key = function_key + arch + subarch_key + dim_key
+        
+        # Initialize data structure if not exists
+        if key not in data_dict:
+            data_dict[key] = {
+                'NormThroughput': [0] * len(target_seq_lens),
+                'NormEnergyEfficiency': [0] * len(target_seq_lens),
+                'NormPowerEfficiency': [0] * len(target_seq_lens)
+            }
+            
+        # Find index for this sequence length
+        try:
+            seq_idx = target_seq_lens.index(seq_len)
+            data_dict[key]['NormThroughput'][seq_idx] = row['throughput']
+            data_dict[key]['NormEnergyEfficiency'][seq_idx] = row['energy_efficiency'] 
+            data_dict[key]['NormPowerEfficiency'][seq_idx] = row['power_efficiency']
+        except ValueError:
+            continue  # Skip if sequence length not in our targets
+    
+    # Remove any empty entries
+    data_dict = {k: v for k, v in data_dict.items() if k != 'XTicks' and any(v['NormThroughput'])}
+    
+    # Add XTicks for sequence lengths
+    data_dict['XTicks'] = target_seq_lens
+    
+    print(f"Generated {len(data_dict) - 1} data series:")
+    for key in data_dict:
+        if key != 'XTicks':
+            print(f"  {key}")
+    
     data = data_dict
 
     # -------------------------------
@@ -338,111 +217,195 @@ def figure(input_path: str, output_path: str):
     # -------------------------------
     fig_width_pt = 240  # ACM single-column width in points
     fig_width = fig_width_pt / 72  # inches
-    fig_height = fig_width * 0.7  # Adjusted height for readability
+    fig_height = fig_width / 1.8  # Adjusted height for readability
 
-    font_title = 6.5
-    font_tick = 5
+    font_title = 7
+    font_tick = 6
 
     # -------------------------------
-    # 3) UNIQUE COLOR MAP FOR EACH INPUT SOURCE
+    # 3) COLOR SCHEME
     # -------------------------------
-
     base_colors = {
-        'Mugi': 'forestgreen',
-        'Carat': 'rebeccapurple',
-        'VA': 'dodgerblue',
-        'PWL': 'orange',
-        'Taylor': 'red',
+        'Mugi': "#0B752B",
+        'Carat': "#602696", 
+        'VA': "#0F6EA5",
+        'PWL': "#C7A612",
+        'Taylor': "#C21A1A",
+        'Tensor': "#2A9B8E"  
     }
 
-    # Function to lighten a color
-    # Create specific colors for each model and size, including Carat
+    # Generate colors for each data series
+    colors = {}
+    for key in data.keys():
+        if 'Mugi' in key:
+            if '128' in key:
+                colors[key] = lighten_color(base_colors['Mugi'], 0.4)
+            else:
+                colors[key] = base_colors['Mugi']
+        elif 'Carat' in key:
+            if '128' in key:
+                colors[key] = lighten_color(base_colors['Carat'], 0.4)
+            else:
+                colors[key] = base_colors['Carat']
+        elif 'VA' in key:
+            if 'PWL' in key:
+                if 'SM' in key:
+                    colors[key] = lighten_color(base_colors['PWL'], 0.4)
+                else:
+                    colors[key] = base_colors['PWL']
+            elif 'Taylor' in key:
+                colors[key] = base_colors['Taylor']
+            else:
+                if 'SM' in key:
+                    colors[key] = lighten_color(base_colors['VA'], 0.4)
+                else:
+                    colors[key] = base_colors['VA']
+        elif 'Tensor' in key:
+            if 'SM' in key:
+                colors[key] = lighten_color(base_colors['Tensor'], 0.4)
+            else:
+                colors[key] = base_colors['Tensor']
 
-    softmax_color = {
-        'SM Mugi (128)': base_colors['Mugi'],
-        'SiLU Mugi (128)': lighten_color(base_colors['Mugi'], 0.2),
-        'SM Carat (128)': base_colors['Carat'],
-        'SiLU Carat (128)': lighten_color(base_colors['Carat'], 0.2),
-        'SM VA (16)': base_colors['VA'],
-        'SM VA PWL (16)': base_colors['PWL'],
-        'SM VA Taylor (16)': base_colors['Taylor'],
-        }
 
-    silu_color = {
-        'SM Mugi (256)': lighten_color(base_colors['Mugi'], 0.4),
-        'SiLU Mugi (256)': lighten_color(base_colors['Mugi'], 0.6),
-        'SM Carat (256)': lighten_color(base_colors['Carat'], 0.4),
-        'SiLU Carat (256)': lighten_color(base_colors['Carat'], 0.6),
-        'SiLU VA (16)': lighten_color(base_colors['VA'], 0.4),
-        'SiLU VA PWL (16)': lighten_color(base_colors['PWL'], 0.4),
-        'SiLU VA Taylor (16)': base_colors['Taylor']
-    }
-
-    colors = {**softmax_color, **silu_color}
-
-    class StringObjectHandler:
-        def legend_artist(self, legend, orig_handle, fontsize, handlebox):
-            patch = plt.Rectangle([0, 0], 1, 1, facecolor=orig_handle, edgecolor='none')
-            handlebox.add_artist(patch)
-            return patch
+        else:
+            colors[key] = 'black'  # fallback
 
     # -------------------------------
-    # 4) CREATE SUBPLOTS AND PLOT AS GROUPED BARS
+    # 4) CREATE SUBPLOTS AND PLOT AS BAR CHART
     # -------------------------------
     fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(fig_width, fig_height), sharex=True)
 
     x_labels = data['XTicks']
-    N = len(x_labels)
+    x = np.arange(len(x_labels))
+    
     # Get all categories (skip 'XTicks')
     categories = [key for key in data.keys() if key != 'XTicks']
     num_categories = len(categories)
-    x = np.arange(N)
-    bar_width = 0.9 / num_categories
+    bar_width = 0.93 / num_categories  # Slightly narrower bars for better spacing
 
-    for i, category in enumerate(categories):
-        throughput = data[category]['NormThroughput']
-        energy_eff = data[category]['NormEnergyEfficiency']
-        power_eff  = data[category]['NormPowerEfficiency']
-        color = colors.get(category, 'black')
-
-        ax1.bar(x + i*bar_width, throughput, width=bar_width, color=color, label=category)
-        ax2.bar(x + i*bar_width, energy_eff, width=bar_width, color=color, label=category)
-        ax3.bar(x + i*bar_width, power_eff,  width=bar_width, color=color, label=category)
+    for i, key in enumerate(categories):
+        throughput = data[key]['NormThroughput']
+        energy_eff = data[key]['NormEnergyEfficiency']
+        power_eff = data[key]['NormPowerEfficiency']
+        
+        color = colors.get(key, 'black')
+        
+        # Extract subarch for legend labels
+        legend_label = key
+        
+        # Calculate bar positions
+        bar_positions = x + (i - num_categories/2 + 0.5) * bar_width
+        
+        ax1.bar(bar_positions, throughput, width=bar_width, color=color, label=legend_label, 
+                alpha=0.8, edgecolor='black', linewidth=0.15)
+        ax2.bar(bar_positions, energy_eff, width=bar_width, color=color, label=legend_label,
+                alpha=0.8, edgecolor='black', linewidth=0.15)
+        ax3.bar(bar_positions, power_eff, width=bar_width, color=color, label=legend_label,
+                alpha=0.8, edgecolor='black', linewidth=0.15)
 
     # -------------------------------
-    # 5) FORMAT SUBPLOTS, SET LOG SCALE, AND ADD LEGEND
+    # 6) FORMAT SUBPLOTS AND LEGEND
     # -------------------------------
-    for ax, title, ylabel in zip(
-        [ax1, ax2, ax3],
-        ['Norm Throughput', 'Norm Energy Efficiency', 'Norm Power Efficiency'],
-        ['Norm Thr', 'Norm Energy Eff', 'Norm Pwr Eff']
-    ):
-        ax.set_title(title, fontsize=font_title)
-        # ax.set_ylabel(ylabel, fontsize=font_tick)  # Removed y-axis label
-        ax.set_xticks(x + (num_categories - 1) * bar_width / 2)
+    for ax, title in zip([ax1, ax2, ax3], ['Norm Throughput', 'Norm Energy Efficiency', 'Norm Power Efficiency']):
+        ax.set_title(title, fontsize=font_title, pad=3)  # Make titles closer to figures
+        ax.set_xticks(x)
         ax.set_xticklabels(x_labels, fontsize=font_tick)
         ax.tick_params(axis='y', labelsize=font_tick)
+        # Make x-axis tick marks smaller on all subplots
+        ax.tick_params(axis='x', length=2, width=0.3)
         ax.minorticks_off()
         ax.grid(True, linestyle='--', alpha=0.7, linewidth=0.3)
-        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda val, pos: f'{int(val)}x'))
-        # Manually set y-axis label position
-        # ax.yaxis.set_label_coords(-0.1, 0.5)  # Removed y-axis label positioning
+        
+        # Format y-axis ticks to show integers only
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda val, pos: f'{val:.0f}x'))
+    
+    # Move bottom subplot x-tick labels closer
+    ax3.tick_params(axis='x', pad=1)
 
-    # Add the legend to the figure instead of individual axes
-    handles, labels = ax1.get_legend_handles_labels()  # Get from first axes
-    rows = -(-len(labels) // 4)
-    new_order = [i + j * rows for i in range(rows) for j in range(4) if i + j * rows < len(labels)]
+    # Get handles and labels from first subplot for legend
+    handles, labels = ax1.get_legend_handles_labels()
+    
+    # Custom sorting for legend: Mugi first, then by array size, then Carat, then VA
+    def legend_sort_key(item):
+        label = item[1]  # label is second element in (handle, label) tuple
+        
+        # Extract components
+        if 'Mugi' in label:
+            arch_priority = 0
+        elif 'Carat' in label:
+            arch_priority = 1  
+        elif 'VA' in label:
+            arch_priority = 2
+        elif 'Tensor' in label:
+            arch_priority = 3
+        else:
+            arch_priority = 4
+            
+        # Extract array size for secondary sort
+        import re
+        size_match = re.search(r'\((\d+)\)', label)
+        array_size = int(size_match.group(1)) if size_match else 0
+        
+        # Subarch priority (PWL, Taylor, then base)
+        if 'PWL' in label:
+            subarch_priority = 0
+        elif 'Taylor' in label:
+            subarch_priority = 1
+        else:
+            subarch_priority = 2
+        
+        # Function type (SM vs SiLU) - but for VA PWL, we want SM then SiLU
+        if 'VA' in label and 'PWL' in label:
+            func_priority = 0 if 'SM' in label else 1
+        else:
+            func_priority = 0 if 'SM' in label else 1
+        
+        return (arch_priority, array_size, subarch_priority, func_priority)
+    
+    # Sort handles and labels together
+    sorted_items = sorted(zip(handles, labels), key=legend_sort_key)
+    sorted_handles, sorted_labels = zip(*sorted_items)
+    
+    # Custom reordering to move SM VA Taylor to top of last column
+    # With ncol=4, we want to find SM VA Taylor and move it to position that puts it at top of column 4
+    reordered_handles = list(sorted_handles)
+    reordered_labels = list(sorted_labels)
+    
+    # Find SM VA Taylor entry
+    sm_va_taylor_idx = None
+    for i, label in enumerate(reordered_labels):
+        if 'SM' in label and 'VA' in label and 'Taylor' in label:
+            sm_va_taylor_idx = i
+            break
+    
+    if sm_va_taylor_idx is not None:
+        # Remove SM VA Taylor from its current position
+        sm_va_taylor_handle = reordered_handles.pop(sm_va_taylor_idx)
+        sm_va_taylor_label = reordered_labels.pop(sm_va_taylor_idx)
+        
+        # Calculate position for top of last column (column 4)
+        # With ncol=4, positions 0,4,8,12... are tops of columns 1,2,3,4
+        total_items = len(reordered_labels) + 1  # +1 because we removed one item
+        rows_needed = (total_items + 3) // 4  # Ceiling division
+        target_position = 3 * rows_needed  # Top of column 4 (0-indexed)
+        
+        # Make sure target position doesn't exceed list length
+        target_position = min(target_position, len(reordered_labels))
+        
+        # Insert SM VA Taylor at the target position
+        reordered_handles.insert(target_position, sm_va_taylor_handle)
+        reordered_labels.insert(target_position, sm_va_taylor_label)
+    
+    final_handles = tuple(reordered_handles)
+    final_labels = tuple(reordered_labels)
 
-    # Create the legend for the entire figure
-    fig.legend([handles[i] for i in new_order], 
-            [labels[i] for i in new_order], 
-            ncol=4, 
-            fontsize=4.5, 
-            loc='upper center', 
-            bbox_to_anchor=(0.535, 1.2), 
-            frameon=True, 
-            columnspacing=1.25)
+    # Create legend
+    fig.legend(final_handles, final_labels, ncol=4, fontsize=6, 
+              loc='upper center', bbox_to_anchor=(0.55, 1.31), 
+              frameon=True, columnspacing=.5, handlelength=.75, handletextpad=0.3, handleheight=0.5)
 
+    plt.subplots_adjust(hspace=0.4)  # Increase spacing between subplots
     plt.tight_layout(pad=0.1)
+    plt.savefig(output_path + 'nonlinear_breakdown.png', dpi=1200, bbox_inches='tight')
     plt.savefig(output_path + 'nonlinear_breakdown.pdf', dpi=1200, bbox_inches='tight')
     plt.show()

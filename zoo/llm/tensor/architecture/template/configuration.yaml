@@ -1,0 +1,22 @@
+network:
+  single_node:
+    dimension: 
+      - []
+  multi_node:
+    dimension:
+      - [2, 1]
+      - [2, 2]
+    path: zoo/llm/tensor/architecture/template/network_configuration/multi_node.architecture.yaml
+
+tag:
+  node_memory: [onchip, memory, node_memory]
+  fifo: [onchip, array, fifo]
+  array: [onchip, array]
+  vector: [onchip, array, vector]
+  router: [onchip, router]
+  pe: [onchip, array, pe]
+  accumulator: [onchip, array, accumulator]
+
+array:
+  8x16x16:
+    path: zoo/llm/tensor/architecture/template/configuration/8x16x16.configuration.yaml

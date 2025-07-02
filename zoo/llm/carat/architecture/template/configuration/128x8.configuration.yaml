@@ -2,6 +2,7 @@ instance:
   height: [128]
   width: [8]
   array: [128, 8]
+  height_double: [128, 2]
   array_double: [128, 8, 2]
   broadcast_array: [1, 8]
   broadcast_height: [1]

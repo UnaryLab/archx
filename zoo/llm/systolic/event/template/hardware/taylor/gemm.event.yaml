@@ -12,5 +12,5 @@ event:
     performance: zoo/llm/systolic/performance/gemm.performance.py
 
   vector_gemm:
-    subevent: [multiplier_vector, accumulator_vector, mac_register_vector, register_vector, taylor_register]
+    subevent: [multiplier_vector, accumulator_vector, mac_register_vector, register_vector, taylor_register, adder_vector]
     performance: zoo/llm/systolic/performance/gemm.performance.py

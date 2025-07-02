@@ -40,6 +40,7 @@ def counter_reuse(architecture_dict: OrderedDict, workload_dict: OrderedDict=Non
 def input_reuse_gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)->OrderedDict:
     performance_dict = OrderedDict()
     router_dim = get_prod(architecture_dict['irouter']['instance']) if 'irouter' in architecture_dict else 1
+    cycles = next(iter(workload_dict.values()))['configuration']['cycles']
 
     frequency = architecture_dict['accumulator']['query']['frequency']
 
@@ -48,7 +49,7 @@ def input_reuse_gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict=
     exp_scale_dim = architecture_dict['exp_scale']['instance'][-1]
     wreg_dim = architecture_dict['wreg']['instance'][-1]
 
-    cycle_count = 8 / router_dim
+    cycle_count = cycles / router_dim
     performance_dict['cycle_count'] = OrderedDict({'value': cycle_count, 'unit': 'cycle'})
     performance_dict['runtime'] = OrderedDict({'value': cycle_count / 1000 / frequency, 'unit': 'ms'})
 
@@ -112,20 +113,21 @@ def weight_reuse_gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict
 def array_gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)->OrderedDict:
     performance_dict = OrderedDict()
     router_dim = get_prod(architecture_dict['irouter']['instance']) if 'irouter' in architecture_dict else 1
+    cycles = next(iter(workload_dict.values()))['configuration']['cycles']
 
     frequency = architecture_dict['temporal_register']['query']['frequency']
     
     temporal_register_dim = get_prod(architecture_dict['temporal_register']['instance'][-2:])
     and_gate_dim = get_prod(architecture_dict['and_gate']['instance'][-2:])
-    or_gate_dim = get_prod(architecture_dict['or_gate']['instance'][-2:])
+    or_gate_dim = get_prod(architecture_dict['or_gate']['instance'][-3:-1])
     areg_dim = get_prod(architecture_dict['areg']['instance'][-2:])
-    pe_fifo_dim = architecture_dict['pe_fifo']['instance'][-1]
+    pe_fifo_dim = architecture_dict['pe_fifo']['instance'][-2]
     sign_xor_dim = architecture_dict['sign_xor']['instance'][-1]
     shifterexp = architecture_dict['shifterexp']['instance'][-1]
     adder_dim = architecture_dict['adder']['instance'][-1]
     ofifo_dim = architecture_dict['ofifo']['instance'][-1]
 
-    cycle_count = 8 / router_dim
+    cycle_count = cycles / router_dim
     performance_dict['cycle_count'] = OrderedDict({'value': cycle_count, 'unit': 'cycle'})
     performance_dict['runtime'] = OrderedDict({'value': cycle_count / 1000 / frequency, 'unit': 'ms'})
     
@@ -133,11 +135,11 @@ def array_gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)-
     and_gate_dict = OrderedDict({'count': and_gate_dim})
     or_gate_dict = OrderedDict({'count': or_gate_dim})
     areg_dict = OrderedDict({'count': areg_dim})
-    pe_fifo_dict = OrderedDict({'count': pe_fifo_dim * cycle_count})
-    sign_xor_dict = OrderedDict({'count': sign_xor_dim * cycle_count})
-    shifterexp_dict = OrderedDict({'count': shifterexp * cycle_count})
-    adder_dict = OrderedDict({'count': adder_dim * cycle_count})
-    ofifo_dict = OrderedDict({'count': ofifo_dim * cycle_count})
+    pe_fifo_dict = OrderedDict({'count': pe_fifo_dim * cycles})
+    sign_xor_dict = OrderedDict({'count': sign_xor_dim * cycles})
+    shifterexp_dict = OrderedDict({'count': shifterexp * cycles})
+    adder_dict = OrderedDict({'count': adder_dim * cycles})
+    ofifo_dict = OrderedDict({'count': ofifo_dim * cycles})
 
     performance_dict['subevent'] = OrderedDict({'temporal_register': temporal_register_dict,
                                                  'and_gate': and_gate_dict,
@@ -150,6 +152,27 @@ def array_gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)-
                                                  'ofifo': ofifo_dict})
     return performance_dict
 
+def array_fifo_gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)->OrderedDict:
+    performance_dict = OrderedDict()
+    router_dim = get_prod(architecture_dict['irouter']['instance']) if 'irouter' in architecture_dict else 1
+    cycles = next(iter(workload_dict.values()))['configuration']['cycles']
+
+    frequency = architecture_dict['temporal_register']['query']['frequency']
+    
+    or_gate_dim = get_prod(architecture_dict['or_gate']['instance'][-3:-1])
+    pe_fifo_dim = architecture_dict['pe_fifo']['instance'][-2]
+
+    cycle_count = cycles / router_dim
+    performance_dict['cycle_count'] = OrderedDict({'value': cycle_count, 'unit': 'cycle'})
+    performance_dict['runtime'] = OrderedDict({'value': cycle_count / 1000 / frequency, 'unit': 'ms'})
+    
+    or_gate_dict = OrderedDict({'count': or_gate_dim})
+    pe_fifo_dict = OrderedDict({'count': pe_fifo_dim * cycles})
+
+    performance_dict['subevent'] = OrderedDict({'or_gate': or_gate_dict,
+                                                'pe_fifo': pe_fifo_dict})
+    return performance_dict
+
 def vector_gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)->OrderedDict:
     performance_dict = OrderedDict()
     router_dim = get_prod(architecture_dict['irouter']['instance']) if 'irouter' in architecture_dict else 1
@@ -157,7 +180,6 @@ def vector_gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)
     frequency = architecture_dict['multiplier_vector']['query']['frequency']
     multiplier_vector_dim = architecture_dict['multiplier_vector']['instance'][-1]
     register_vector_dim = architecture_dict['register_vector']['instance'][-1]
-    mac_register_vector_dim = architecture_dict['mac_register_vector']['instance'][-1]
 
     cycle_count = 1 / router_dim
     performance_dict['cycle_count'] = OrderedDict({'value': cycle_count, 'unit': 'cycle'})

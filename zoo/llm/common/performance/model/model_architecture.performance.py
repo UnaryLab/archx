@@ -293,6 +293,7 @@ def proj_q_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=Non
     })
 
     performance_dict = mapping(mapping_dict=mapping_dict, architecture_dict=architecture_dict, workload_dict=workload_config)
+    
     return performance_dict
 
 def proj_k_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
@@ -401,7 +402,6 @@ def proj_v_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=Non
         'k': dim,
         'n': dim * kv_heads / heads,
     })
-
     performance_dict = mapping(mapping_dict=mapping_dict, architecture_dict=architecture_dict, workload_dict=workload_config)
     return performance_dict
 
@@ -559,6 +559,7 @@ def av_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) 
 
 
     performance_dict = mapping(mapping_dict=mapping_dict, architecture_dict=architecture_dict, workload_dict=workload_config)
+
     return performance_dict
 
 def av_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
@@ -596,6 +597,7 @@ def av_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -
             performance_dict = mapping(mapping_dict=mapping_dict, architecture_dict=architecture_dict, workload_dict=workload_config)
         else:
             performance_dict = sum_subevents(performance_dict, mapping(mapping_dict=mapping_dict, architecture_dict=architecture_dict, workload_dict=workload_config))
+  
 
     return performance_dict
 
@@ -822,7 +824,7 @@ def softmax_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=No
             performance_dict = mapping(mapping_dict=mapping_dict, architecture_dict=architecture_dict, workload_dict=workload_config)
         else:
             performance_dict = sum_subevents(performance_dict, mapping(mapping_dict=mapping_dict, architecture_dict=architecture_dict, workload_dict=workload_config))
-
+    
     return performance_dict
 
 def silu_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
@@ -872,6 +874,7 @@ def silu_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)
     })
 
     performance_dict = mapping(mapping_dict=mapping_dict, architecture_dict=architecture_dict, workload_dict=workload_config)
+
     return performance_dict
 
 def output_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:

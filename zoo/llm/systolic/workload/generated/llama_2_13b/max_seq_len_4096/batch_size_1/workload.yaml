@@ -1,0 +1,22 @@
+workload:
+  llama_2_13b:
+    configuration:
+      accumulation_cycles: 1
+      activation_bitwidth: 16
+      approximate_division_cycles: 1
+      architecture: systolic
+      batch_size: 1
+      dim: 5120
+      division_mult_cycles: 14
+      exp_mult_cycles: 30
+      heads: 40
+      hidden_dim: 13824
+      kv_heads: 40
+      layers: 40
+      max_seq_len: 4096
+      noc_stationary: os
+      node_stationary: ws
+      prefill_seq_len: 64
+      pwl_cycles: 4
+      vocab_size: 32000
+      weight_bitwidth: 4

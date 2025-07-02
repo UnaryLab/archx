@@ -1,0 +1,14 @@
+architecture:
+  module:
+    lut_register:
+      tag: nonlinear
+      instance: lut_height
+      query:
+        class: register
+        width: 16
+
+    lut_decoder:
+      tag: nonlinear
+      instance: decoder_height
+      query:
+        class: decoder

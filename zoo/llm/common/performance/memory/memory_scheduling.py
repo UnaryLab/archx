@@ -1,12 +1,15 @@
 from zoo.llm.common.performance.utils import TiledGEMM, TiledMatrix
 import math
+from archx.utils import get_prod
 from collections import OrderedDict
+import inspect
 
 def offchip_gemm_scheduling(batch, m, k, n, architecture_dict: OrderedDict, workload_dict: OrderedDict) -> TiledGEMM:
     """
     Sets tiling for dram <-> sram for single-node and multi-node configurations
     """
     # Retrieve dicts
+    arch = workload_dict['architecture']
     isram_dict = architecture_dict['isram']
     wsram_dict = architecture_dict['wsram']
     osram_dict = architecture_dict['osram']
@@ -68,6 +71,10 @@ def offchip_gemm_scheduling(batch, m, k, n, architecture_dict: OrderedDict, work
         # if tile_k does not fit in isram, reduce tile_k
         while(tile_k * tile_m > isram_elements):
             tile_k /= 2
+
+        while arch == 'tensor' and (tile_k < array_width):
+              tile_k *= 2
+              tile_n /= 2
 
     elif stationary == 'ws':
         # Weight stationary scheduling
@@ -133,7 +140,7 @@ def offchip_gemm_scheduling(batch, m, k, n, architecture_dict: OrderedDict, work
     tiles = TiledGEMM(batch=batch, m=m, k=k, n=n, tile_m=tile_m, tile_k=tile_k, tile_n=tile_n, m_k_bitwidth=input_bitwidth, k_n_bitwidth=weight_bitwidth, m_n_bitwidth=output_bitwidth)
     if not tiles.is_valid:
         raise ValueError('Invalid tiling configuration')
-        
+
     return tiles
 
 def offchip_gemm_events(tiles: TiledGEMM, architecture_dict: OrderedDict, workload_dict: OrderedDict) -> OrderedDict:
@@ -242,8 +249,16 @@ def offchip_gemm_events(tiles: TiledGEMM, architecture_dict: OrderedDict, worklo
 def onchip_gemm_scheduling(m, k, n, tiles: TiledGEMM, architecture_dict: OrderedDict, workload_dict: OrderedDict) -> list[TiledGEMM]:
 
     # Retrieve dicts
-    array_height = architecture_dict['wfifo']['instance'][-1]
-    array_width = architecture_dict['ififo']['instance'][-1]
+    arch = workload_dict['architecture']
+
+    if arch == 'tensor':
+        array_height = architecture_dict['wfifo']['instance'][-2]
+        array_width = architecture_dict['ififo']['instance'][-2]
+        array_depth = architecture_dict['wfifo']['instance'][-1]
+    else:
+        array_height = architecture_dict['wfifo']['instance'][-1]
+        array_width = architecture_dict['ififo']['instance'][-1]
+        array_depth = None
 
     tile_m = min(array_width, m)
     tile_k = min(array_height, k)
@@ -251,14 +266,14 @@ def onchip_gemm_scheduling(m, k, n, tiles: TiledGEMM, architecture_dict: Ordered
 
     # Retrieve Reads/Writes for all possible tiling configurations
     tiling_configurations = []
-    tiling_configurations.append(TiledGEMM(batch=tiles.m_full_k_full_n_full_total_tiles, m=tiles.tile_m, k=tiles.tile_k, n=tiles.tile_n, tile_m=tile_m, tile_k=tile_k, tile_n=tile_n, m_k_bitwidth=tiles.m_k_bitwidth, k_n_bitwidth=tiles.k_n_bitwidth, m_n_bitwidth=tiles.m_n_bitwidth, array_width=array_width, array_height=array_height))                                      # m full k full n full
-    tiling_configurations.append(TiledGEMM(batch=tiles.m_full_k_full_n_partial_total_tiles, m=tiles.tile_m, k=tiles.tile_k, n=tiles.tile_n_partial, tile_m=tile_m, tile_k=tile_k, tile_n=tile_n, m_k_bitwidth=tiles.m_k_bitwidth, k_n_bitwidth=tiles.k_n_bitwidth, m_n_bitwidth=tiles.m_n_bitwidth, array_width=array_width, array_height=array_height))                           # m full k full n partial
-    tiling_configurations.append(TiledGEMM(batch=tiles.m_full_k_partial_n_full_total_tiles, m=tiles.tile_m, k=tiles.tile_k_partial, n=tiles.tile_n, tile_m=tile_m, tile_k=tile_k, tile_n=tile_n, m_k_bitwidth=tiles.m_k_bitwidth, k_n_bitwidth=tiles.k_n_bitwidth, m_n_bitwidth=tiles.m_n_bitwidth, array_width=array_width, array_height=array_height))                           # m full k partial n full
-    tiling_configurations.append(TiledGEMM(batch=tiles.m_full_k_partial_n_partial_total_tiles, m=tiles.tile_m, k=tiles.tile_k_partial, n=tiles.tile_n_partial, tile_m=tile_m, tile_k=tile_k, tile_n=tile_n, m_k_bitwidth=tiles.m_k_bitwidth, k_n_bitwidth=tiles.k_n_bitwidth, m_n_bitwidth=tiles.m_n_bitwidth, array_width=array_width, array_height=array_height))                # m full k partial n partial
-    tiling_configurations.append(TiledGEMM(batch=tiles.m_partial_k_full_n_full_total_tiles, m=tiles.tile_m_partial, k=tiles.tile_k, n=tiles.tile_n, tile_m=tile_m, tile_k=tile_k, tile_n=tile_n, m_k_bitwidth=tiles.m_k_bitwidth, k_n_bitwidth=tiles.k_n_bitwidth, m_n_bitwidth=tiles.m_n_bitwidth, array_width=array_width, array_height=array_height))                           # m partial k full n full
-    tiling_configurations.append(TiledGEMM(batch=tiles.m_partial_k_full_n_partial_total_tiles, m=tiles.tile_m_partial, k=tiles.tile_k, n=tiles.tile_n_partial, tile_m=tile_m, tile_k=tile_k, tile_n=tile_n, m_k_bitwidth=tiles.m_k_bitwidth, k_n_bitwidth=tiles.k_n_bitwidth, m_n_bitwidth=tiles.m_n_bitwidth, array_width=array_width, array_height=array_height))                # m partial k full n partial
-    tiling_configurations.append(TiledGEMM(batch=tiles.m_partial_k_partial_n_full_total_tiles, m=tiles.tile_m_partial, k=tiles.tile_k_partial, n=tiles.tile_n, tile_m=tile_m, tile_k=tile_k, tile_n=tile_n, m_k_bitwidth=tiles.m_k_bitwidth, k_n_bitwidth=tiles.k_n_bitwidth, m_n_bitwidth=tiles.m_n_bitwidth, array_width=array_width, array_height=array_height))                # m partial k partial n full
-    tiling_configurations.append(TiledGEMM(batch=tiles.m_partial_k_partial_n_partial_total_tiles, m=tiles.tile_m_partial, k=tiles.tile_k_partial, n=tiles.tile_n_partial, tile_m=tile_m, tile_k=tile_k, tile_n=tile_n, m_k_bitwidth=tiles.m_k_bitwidth, k_n_bitwidth=tiles.k_n_bitwidth, m_n_bitwidth=tiles.m_n_bitwidth, array_width=array_width, array_height=array_height))     # m partial k partial n partial
+    tiling_configurations.append(TiledGEMM(batch=tiles.m_full_k_full_n_full_total_tiles, m=tiles.tile_m, k=tiles.tile_k, n=tiles.tile_n, tile_m=tile_m, tile_k=tile_k, tile_n=tile_n, m_k_bitwidth=tiles.m_k_bitwidth, k_n_bitwidth=tiles.k_n_bitwidth, m_n_bitwidth=tiles.m_n_bitwidth, array_width=array_width, array_height=array_height, array_depth=array_depth))                                      # m full k full n full
+    tiling_configurations.append(TiledGEMM(batch=tiles.m_full_k_full_n_partial_total_tiles, m=tiles.tile_m, k=tiles.tile_k, n=tiles.tile_n_partial, tile_m=tile_m, tile_k=tile_k, tile_n=tile_n, m_k_bitwidth=tiles.m_k_bitwidth, k_n_bitwidth=tiles.k_n_bitwidth, m_n_bitwidth=tiles.m_n_bitwidth, array_width=array_width, array_height=array_height, array_depth=array_depth))                           # m full k full n partial
+    tiling_configurations.append(TiledGEMM(batch=tiles.m_full_k_partial_n_full_total_tiles, m=tiles.tile_m, k=tiles.tile_k_partial, n=tiles.tile_n, tile_m=tile_m, tile_k=tile_k, tile_n=tile_n, m_k_bitwidth=tiles.m_k_bitwidth, k_n_bitwidth=tiles.k_n_bitwidth, m_n_bitwidth=tiles.m_n_bitwidth, array_width=array_width, array_height=array_height, array_depth=array_depth))                           # m full k partial n full
+    tiling_configurations.append(TiledGEMM(batch=tiles.m_full_k_partial_n_partial_total_tiles, m=tiles.tile_m, k=tiles.tile_k_partial, n=tiles.tile_n_partial, tile_m=tile_m, tile_k=tile_k, tile_n=tile_n, m_k_bitwidth=tiles.m_k_bitwidth, k_n_bitwidth=tiles.k_n_bitwidth, m_n_bitwidth=tiles.m_n_bitwidth, array_width=array_width, array_height=array_height, array_depth=array_depth))                # m full k partial n partial
+    tiling_configurations.append(TiledGEMM(batch=tiles.m_partial_k_full_n_full_total_tiles, m=tiles.tile_m_partial, k=tiles.tile_k, n=tiles.tile_n, tile_m=tile_m, tile_k=tile_k, tile_n=tile_n, m_k_bitwidth=tiles.m_k_bitwidth, k_n_bitwidth=tiles.k_n_bitwidth, m_n_bitwidth=tiles.m_n_bitwidth, array_width=array_width, array_height=array_height, array_depth=array_depth))                           # m partial k full n full
+    tiling_configurations.append(TiledGEMM(batch=tiles.m_partial_k_full_n_partial_total_tiles, m=tiles.tile_m_partial, k=tiles.tile_k, n=tiles.tile_n_partial, tile_m=tile_m, tile_k=tile_k, tile_n=tile_n, m_k_bitwidth=tiles.m_k_bitwidth, k_n_bitwidth=tiles.k_n_bitwidth, m_n_bitwidth=tiles.m_n_bitwidth, array_width=array_width, array_height=array_height, array_depth=array_depth))                # m partial k full n partial
+    tiling_configurations.append(TiledGEMM(batch=tiles.m_partial_k_partial_n_full_total_tiles, m=tiles.tile_m_partial, k=tiles.tile_k_partial, n=tiles.tile_n, tile_m=tile_m, tile_k=tile_k, tile_n=tile_n, m_k_bitwidth=tiles.m_k_bitwidth, k_n_bitwidth=tiles.k_n_bitwidth, m_n_bitwidth=tiles.m_n_bitwidth, array_width=array_width, array_height=array_height, array_depth=array_depth))                # m partial k partial n full
+    tiling_configurations.append(TiledGEMM(batch=tiles.m_partial_k_partial_n_partial_total_tiles, m=tiles.tile_m_partial, k=tiles.tile_k_partial, n=tiles.tile_n_partial, tile_m=tile_m, tile_k=tile_k, tile_n=tile_n, m_k_bitwidth=tiles.m_k_bitwidth, k_n_bitwidth=tiles.k_n_bitwidth, m_n_bitwidth=tiles.m_n_bitwidth, array_width=array_width, array_height=array_height, array_depth=array_depth))     # m partial k partial n partial
     partial_tiles_tiling = []
 
     for tiling in tiling_configurations:
@@ -408,12 +423,17 @@ def offchip_nonlinear_scheduling(batch, m, n, architecture_dict: OrderedDict, wo
     Sets tiling for dram <-> sram for single-node and multi-node configurations
     """
     # Retrieve dicts
+    arch = workload_dict['architecture']
     wsram_dict = architecture_dict['wsram']
     osram_dict = architecture_dict['osram']
     input_bitwidth = workload_dict['activation_bitwidth']
     output_bitwidth = workload_dict['activation_bitwidth']
-    array_width = architecture_dict['ififo']['instance'][-1]
-    array_height = architecture_dict['wfifo']['instance'][-1]
+    if arch != 'tensor':
+        array_width = architecture_dict['ififo']['instance'][-1]
+        array_height = architecture_dict['wfifo']['instance'][-1]
+    else:
+        array_width = get_prod(architecture_dict['wfifo']['instance'][-2:])
+        array_height = get_prod(architecture_dict['ififo']['instance'][-2:])
     architecture = workload_dict['architecture'].lower()
 
     # SRAM configurations
@@ -467,6 +487,8 @@ def offchip_nonlinear_scheduling(batch, m, n, architecture_dict: OrderedDict, wo
     
     tile_m = int(tile_m)
     tile_n = int(tile_n)
+
+    
 
     tiles = TiledMatrix(batch=batch, m=m, n=n, tile_m=tile_m, tile_n=tile_n, m_n_bitwidth=input_bitwidth)
 
@@ -584,8 +606,14 @@ def onchip_nonlinear_events(function: str, onchip_tiling: list[TiledMatrix], arc
 
 def onchip_nonlinear_scheduling(m, n, offchip_tiles: TiledMatrix, architecture_dict: OrderedDict, workload_dict: OrderedDict) -> TiledMatrix:
 
-    wfifo_width = architecture_dict['wfifo']['instance'][-1]
-    ofifo_width = architecture_dict['ofifo']['instance'][-1]
+    arch = workload_dict['architecture']
+    if arch != 'tensor':
+        wfifo_width = architecture_dict['wfifo']['instance'][-1]
+        ofifo_width = architecture_dict['ofifo']['instance'][-1]
+    else:
+        wfifo_width = get_prod(architecture_dict['ififo']['instance'][-2:])
+        ofifo_width = get_prod(architecture_dict['ofifo']['instance'][-2:])
+    
     array_height = ofifo_width
 
     if wfifo_width != ofifo_width:

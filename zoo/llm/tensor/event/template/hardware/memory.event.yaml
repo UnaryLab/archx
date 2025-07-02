@@ -1,0 +1,37 @@
+event:
+  isram_offchip_writes:
+    subevent: [isram]
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  wsram_offchip_writes:
+    subevent: [wsram]
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  osram_offchip_writes:
+    subevent: [osram]
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  osram_offchip_reads:
+    subevent: [osram]
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  isram_onchip_reads:
+    subevent: [isram]
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  wsram_onchip_reads:
+    subevent: [wsram]
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  osram_onchip_writes:
+    subevent: [osram]
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  osram_onchip_reads:
+    subevent: [osram]
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  dram_input_reads:
+    subevent: [dram]
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  dram_weight_reads:
+    subevent: [dram]
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  dram_output_reads:
+    subevent: [dram]
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  dram_output_writes:
+    subevent: [dram]
+    performance: zoo/llm/common/performance/memory/memory.performance.py

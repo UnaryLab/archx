@@ -1,0 +1,460 @@
+architecture:
+  attribute:
+    technology: 32
+    frequency: 400
+    interface: csv_cmos
+  module:
+    adder:
+      tag:
+      - onchip
+      - array
+      - accumulator
+      instance:
+      - 8
+      - 8
+      - 128
+      query:
+        class: adderbf16
+    and_gate:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 8
+      - 8
+      - 128
+      - 8
+      query:
+        class: and_bitwise
+        width: 16
+    comparator:
+      tag:
+      - onchip
+      - array
+      - tc
+      instance:
+      - 8
+      - 8
+      - 128
+      query:
+        class: comparator
+        width: 4
+    counter:
+      tag:
+      - onchip
+      - array
+      - value_reuse
+      instance:
+      - 8
+      - 8
+      - 1
+      query:
+        class: counter
+        width: 3
+    counter_register:
+      tag:
+      - onchip
+      - array
+      - value_reuse
+      instance:
+      - 8
+      - 8
+      - 3
+      query:
+        class: register
+        width: 3
+    dram:
+      tag:
+      - memory
+      instance:
+      - 1
+      query:
+        interface: cacti7
+        class: dram
+        size: 8589934592
+        bandwidth: 128
+    exp_clamp:
+      tag:
+      - onchip
+      - array
+      - nonlinear
+      instance:
+      - 8
+      - 8
+      - 128
+      query:
+        class: clamp
+    exponent_register:
+      tag:
+      - onchip
+      - array
+      - nonlinear
+      instance:
+      - 8
+      - 8
+      - 128
+      query:
+        class: register
+        width: 8
+    ififo:
+      tag:
+      - onchip
+      - array
+      - fifo
+      instance:
+      - 8
+      - 8
+      - 8
+      query:
+        class: fifo
+        width: 16
+        depth: 2
+    imux:
+      tag:
+      - onchip
+      - array
+      - control
+      instance:
+      - 8
+      - 8
+      - 1
+      query:
+        class: multiplexer
+        width: 128
+    irouter:
+      tag:
+      - onchip
+      - router
+      instance:
+      - 8
+      - 8
+      - 1
+      query:
+        class: noc_router
+        bandwidth: 64
+    isram:
+      tag:
+      - onchip
+      - node_memory
+      - memory
+      instance:
+      - 8
+      - 8
+      - 1
+      query:
+        interface: cacti7
+        class: sram
+        bank: 4
+        width: 128
+        depth: 1024
+    lut_decoder:
+      tag:
+      - onchip
+      - array
+      - nonlinear
+      instance:
+      - 8
+      - 8
+      - 16
+      query:
+        class: decoder
+    lut_register:
+      tag:
+      - onchip
+      - array
+      - nonlinear
+      instance:
+      - 8
+      - 8
+      - 16
+      - 2
+      - 8
+      - 12
+      query:
+        class: register
+        width: 16
+    magnitude_register:
+      tag:
+      - onchip
+      - array
+      - tc
+      instance:
+      - 8
+      - 8
+      - 128
+      query:
+        class: register
+        width: 3
+    max_tree:
+      tag:
+      - onchip
+      - array
+      - nonlinear
+      instance:
+      - 8
+      - 8
+      - 127
+      query:
+        class: max
+    max_tree_register:
+      tag:
+      - onchip
+      - array
+      - nonlinear
+      instance:
+      - 8
+      - 8
+      - 3
+      query:
+        class: register
+        width: 8
+    multiplier:
+      tag:
+      - onchip
+      - array
+      - value_reuse
+      instance:
+      - 8
+      - 8
+      - 8
+      query:
+        class: multiplierbf16
+    multiplier_register:
+      tag:
+      - onchip
+      - array
+      - value_reuse
+      instance:
+      - 8
+      - 8
+      - 3
+      - 8
+      query:
+        class: register
+        width: 16
+    multiplier_vector:
+      tag:
+      - onchip
+      - array
+      - vector
+      instance:
+      - 8
+      - 8
+      - 16
+      query:
+        class: multiplierbf16
+    ofifo:
+      tag:
+      - onchip
+      - array
+      - fifo
+      instance:
+      - 8
+      - 8
+      - 128
+      query:
+        class: fifo
+        width: 16
+        depth: 2
+    or_gate:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 8
+      - 8
+      - 128
+      - 8
+      - 2
+      query:
+        class: or_bitwise
+        width: 16
+    orouter:
+      tag:
+      - onchip
+      - router
+      instance:
+      - 8
+      - 8
+      - 1
+      query:
+        class: noc_router
+        bandwidth: 64
+    osram:
+      tag:
+      - onchip
+      - node_memory
+      - memory
+      instance:
+      - 8
+      - 8
+      - 1
+      query:
+        interface: cacti7
+        class: sram
+        bank: 4
+        width: 256
+        depth: 512
+    pe_fifo:
+      tag:
+      - onchip
+      - array
+      - fifo
+      instance:
+      - 8
+      - 8
+      - 128
+      query:
+        class: fifo
+        width: 16
+        depth: 8
+    post_comp:
+      tag:
+      - onchip
+      - array
+      - nonlinear
+      instance:
+      - 8
+      - 8
+      - 128
+      query:
+        class: bf_post
+    register_vector:
+      tag:
+      - onchip
+      - array
+      - vector
+      instance:
+      - 8
+      - 8
+      - 16
+      query:
+        class: register
+        width: 16
+    round:
+      tag:
+      - onchip
+      - array
+      - nonlinear
+      instance:
+      - 8
+      - 8
+      - 128
+      query:
+        class: round
+    sign_fifo:
+      tag:
+      - onchip
+      - array
+      - fifo
+      instance:
+      - 8
+      - 8
+      - 128
+      query:
+        class: fifo
+        width: 4
+        depth: 2
+    sign_mantissa_register:
+      tag:
+      - onchip
+      - array
+      - nonlinear
+      instance:
+      - 8
+      - 8
+      - 128
+      query:
+        class: register
+        width: 4
+    sign_register:
+      tag:
+      - onchip
+      - array
+      - tc
+      instance:
+      - 8
+      - 8
+      - 128
+      query:
+        class: register
+        width: 1
+    sign_xor:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 8
+      - 8
+      - 128
+      query:
+        class: xor_bitwise
+        width: 1
+    temporal_register:
+      tag:
+      - onchip
+      - array
+      - pe
+      instance:
+      - 8
+      - 8
+      - 128
+      - 8
+      query:
+        class: register
+        width: 1
+    wfifo:
+      tag:
+      - onchip
+      - array
+      - fifo
+      instance:
+      - 8
+      - 8
+      - 128
+      query:
+        class: fifo
+        width: 4
+        depth: 8
+    wmux:
+      tag:
+      - onchip
+      - array
+      - control
+      instance:
+      - 8
+      - 8
+      - 1
+      query:
+        class: multiplexer
+        width: 512
+        num_inputs: 2
+    wrouter:
+      tag:
+      - onchip
+      - router
+      instance:
+      - 8
+      - 8
+      - 1
+      query:
+        class: noc_router
+        bandwidth: 64
+    wsram:
+      tag:
+      - onchip
+      - node_memory
+      - memory
+      instance:
+      - 8
+      - 8
+      - 1
+      query:
+        interface: cacti7
+        class: sram
+        bank: 4
+        width: 128
+        depth: 1024

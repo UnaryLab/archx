@@ -1,0 +1,739 @@
+event:
+  array_gemm:
+    subevent:
+    - multiplier
+    - pe_register
+    - accumulator
+    - accumulator_register
+    - adder
+    - ofifo
+    performance: zoo/llm/tensor/performance/gemm.performance.py
+  attention:
+    subevent:
+    - qkt
+    - av
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  av:
+    subevent:
+    - av_prefill
+    - av_decode
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  av_decode:
+    subevent:
+    - input_gemm
+    - weight_gemm
+    - array_gemm
+    - vector_gemm
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    - irouter_mapping
+    - wrouter_mapping
+    - orouter_mapping
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  av_prefill:
+    subevent:
+    - input_gemm
+    - weight_gemm
+    - array_gemm
+    - vector_gemm
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    - irouter_mapping
+    - wrouter_mapping
+    - orouter_mapping
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  dram_input_reads:
+    subevent:
+    - dram
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  dram_output_reads:
+    subevent:
+    - dram
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  dram_output_writes:
+    subevent:
+    - dram
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  dram_weight_reads:
+    subevent:
+    - dram
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  ffn:
+    subevent:
+    - proj_up
+    - proj_down
+    - proj_gate
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  gemm:
+    subevent:
+    - projection
+    - attention
+    - ffn
+    - output
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  gemm_nonlinear:
+    subevent:
+    - int_to_fp
+    - ififo
+    - wfifo
+    - input_register
+    - weight_register
+    - multiplier
+    - pe_register
+    - accumulator
+    - accumulator_register
+    - adder
+    - ofifo
+    performance: zoo/llm/tensor/performance/nonlinear.performance.py
+  input_gemm:
+    subevent:
+    - ififo
+    - input_register
+    performance: zoo/llm/tensor/performance/gemm.performance.py
+  irouter_mapping:
+    subevent:
+    - irouter
+    performance: zoo/llm/common/performance/router/router.performance.py
+  isram_offchip_writes:
+    subevent:
+    - isram
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  isram_onchip_reads:
+    subevent:
+    - isram
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  llama_2_13b:
+    subevent:
+    - gemm
+    - nonlinear
+    performance: zoo/llm/common/performance/model/llama.performance.py
+  llama_2_70b:
+    subevent:
+    - gemm
+    - nonlinear
+    performance: zoo/llm/common/performance/model/llama.performance.py
+  llama_2_70b_GQA:
+    subevent:
+    - gemm
+    - nonlinear
+    performance: zoo/llm/common/performance/model/llama.performance.py
+  llama_2_7b:
+    subevent:
+    - gemm
+    - nonlinear
+    performance: zoo/llm/common/performance/model/llama.performance.py
+  nonlinear:
+    subevent:
+    - softmax
+    - silu
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  orouter_mapping:
+    subevent:
+    - orouter
+    performance: zoo/llm/common/performance/router/router.performance.py
+  osram_offchip_reads:
+    subevent:
+    - osram
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  osram_offchip_writes:
+    subevent:
+    - osram
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  osram_onchip_reads:
+    subevent:
+    - osram
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  osram_onchip_writes:
+    subevent:
+    - osram
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  output:
+    subevent:
+    - output_prefill
+    - output_decode
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  output_decode:
+    subevent:
+    - input_gemm
+    - weight_gemm
+    - array_gemm
+    - vector_gemm
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    - irouter_mapping
+    - wrouter_mapping
+    - orouter_mapping
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  output_prefill:
+    subevent:
+    - input_gemm
+    - weight_gemm
+    - array_gemm
+    - vector_gemm
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    - irouter_mapping
+    - wrouter_mapping
+    - orouter_mapping
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_a:
+    subevent:
+    - proj_a_prefill
+    - proj_a_decode
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_a_decode:
+    subevent:
+    - input_gemm
+    - weight_gemm
+    - array_gemm
+    - vector_gemm
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    - irouter_mapping
+    - wrouter_mapping
+    - orouter_mapping
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_a_prefill:
+    subevent:
+    - input_gemm
+    - weight_gemm
+    - array_gemm
+    - vector_gemm
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    - irouter_mapping
+    - wrouter_mapping
+    - orouter_mapping
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_down:
+    subevent:
+    - proj_down_prefill
+    - proj_down_decode
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_down_decode:
+    subevent:
+    - input_gemm
+    - weight_gemm
+    - array_gemm
+    - vector_gemm
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    - irouter_mapping
+    - wrouter_mapping
+    - orouter_mapping
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_down_prefill:
+    subevent:
+    - input_gemm
+    - weight_gemm
+    - array_gemm
+    - vector_gemm
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    - irouter_mapping
+    - wrouter_mapping
+    - orouter_mapping
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_gate:
+    subevent:
+    - proj_gate_prefill
+    - proj_gate_decode
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_gate_decode:
+    subevent:
+    - input_gemm
+    - weight_gemm
+    - array_gemm
+    - vector_gemm
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    - irouter_mapping
+    - wrouter_mapping
+    - orouter_mapping
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_gate_prefill:
+    subevent:
+    - input_gemm
+    - weight_gemm
+    - array_gemm
+    - vector_gemm
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    - irouter_mapping
+    - wrouter_mapping
+    - orouter_mapping
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_k:
+    subevent:
+    - proj_k_prefill
+    - proj_k_decode
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_k_decode:
+    subevent:
+    - input_gemm
+    - weight_gemm
+    - array_gemm
+    - vector_gemm
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    - irouter_mapping
+    - wrouter_mapping
+    - orouter_mapping
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_k_prefill:
+    subevent:
+    - input_gemm
+    - weight_gemm
+    - array_gemm
+    - vector_gemm
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    - irouter_mapping
+    - wrouter_mapping
+    - orouter_mapping
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_q:
+    subevent:
+    - proj_q_prefill
+    - proj_q_decode
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_q_decode:
+    subevent:
+    - input_gemm
+    - weight_gemm
+    - array_gemm
+    - vector_gemm
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    - irouter_mapping
+    - wrouter_mapping
+    - orouter_mapping
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_q_prefill:
+    subevent:
+    - input_gemm
+    - weight_gemm
+    - array_gemm
+    - vector_gemm
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    - irouter_mapping
+    - wrouter_mapping
+    - orouter_mapping
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_up:
+    subevent:
+    - proj_up_prefill
+    - proj_up_decode
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_up_decode:
+    subevent:
+    - input_gemm
+    - weight_gemm
+    - array_gemm
+    - vector_gemm
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    - irouter_mapping
+    - wrouter_mapping
+    - orouter_mapping
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_up_prefill:
+    subevent:
+    - input_gemm
+    - weight_gemm
+    - array_gemm
+    - vector_gemm
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    - irouter_mapping
+    - wrouter_mapping
+    - orouter_mapping
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_v:
+    subevent:
+    - proj_v_prefill
+    - proj_v_decode
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_v_decode:
+    subevent:
+    - input_gemm
+    - weight_gemm
+    - array_gemm
+    - vector_gemm
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    - irouter_mapping
+    - wrouter_mapping
+    - orouter_mapping
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_v_prefill:
+    subevent:
+    - input_gemm
+    - weight_gemm
+    - array_gemm
+    - vector_gemm
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    - irouter_mapping
+    - wrouter_mapping
+    - orouter_mapping
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  projection:
+    subevent:
+    - proj_q
+    - proj_k
+    - proj_v
+    - proj_a
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  qkt:
+    subevent:
+    - qkt_prefill
+    - qkt_decode
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  qkt_decode:
+    subevent:
+    - input_gemm
+    - weight_gemm
+    - array_gemm
+    - vector_gemm
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    - irouter_mapping
+    - wrouter_mapping
+    - orouter_mapping
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  qkt_prefill:
+    subevent:
+    - input_gemm
+    - weight_gemm
+    - array_gemm
+    - vector_gemm
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    - irouter_mapping
+    - wrouter_mapping
+    - orouter_mapping
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  silu:
+    subevent:
+    - silu_prefill
+    - silu_decode
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  silu_decode:
+    subevent:
+    - gemm_nonlinear
+    - vector_nonlinear
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    - irouter_mapping
+    - wrouter_mapping
+    - orouter_mapping
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  silu_prefill:
+    subevent:
+    - gemm_nonlinear
+    - vector_nonlinear
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    - irouter_mapping
+    - wrouter_mapping
+    - orouter_mapping
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  softmax:
+    subevent:
+    - softmax_prefill
+    - softmax_decode
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  softmax_decode:
+    subevent:
+    - gemm_nonlinear
+    - vector_nonlinear
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    - irouter_mapping
+    - wrouter_mapping
+    - orouter_mapping
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  softmax_prefill:
+    subevent:
+    - gemm_nonlinear
+    - vector_nonlinear
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    - irouter_mapping
+    - wrouter_mapping
+    - orouter_mapping
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  vector_gemm:
+    subevent:
+    - multiplier_vector
+    - accumulator_vector
+    - mac_register_vector
+    - register_vector
+    performance: zoo/llm/tensor/performance/gemm.performance.py
+  vector_nonlinear:
+    subevent:
+    - multiplier_vector
+    - accumulator_vector
+    - mac_register_vector
+    - register_vector
+    performance: zoo/llm/tensor/performance/nonlinear.performance.py
+  weight_gemm:
+    subevent:
+    - wfifo
+    - int_to_fp
+    - weight_register
+    performance: zoo/llm/tensor/performance/gemm.performance.py
+  wrouter_mapping:
+    subevent:
+    - wrouter
+    performance: zoo/llm/common/performance/router/router.performance.py
+  wsram_offchip_writes:
+    subevent:
+    - wsram
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  wsram_onchip_reads:
+    subevent:
+    - wsram
+    performance: zoo/llm/common/performance/memory/memory.performance.py

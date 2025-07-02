@@ -152,7 +152,11 @@ def generate_workload(base_path: str):
         for architecture_key, architecture_value in architecture_dict.items():
             if architecture_key == 'workload':
                 architecture_key = ''
-            config_combinations = [dict(zip(config_dict.keys(), combination)) for combination in itertools.product(*config_dict.values())]
+            filtered_config_dict = copy.deepcopy(config_dict)
+            shared_keys = set(workload_value['configuration'].keys()) & set(filtered_config_dict.keys())
+            for shared_key in shared_keys:
+                del filtered_config_dict[shared_key]
+            config_combinations = [dict(zip(filtered_config_dict.keys(), combination)) for combination in itertools.product(*filtered_config_dict.values())]
             for combination in config_combinations:
                 generated_workload_dict = OrderedDict({'workload': {workload_key: {'configuration': {}}}})
                 generated_workload_dict['workload'][workload_key]['configuration'].update(workload_value['configuration'])
@@ -162,7 +166,7 @@ def generate_workload(base_path: str):
 
                 workload_config_path = ''
                 for key, value in combination.items():
-                    if len(config_dict[key]) > 1:
+                    if len(filtered_config_dict[key]) > 1:
                         workload_config_path += '/' + key + '_' + str(value)
 
                 workload_path = os.path.normpath(f'{generated_path}{workload_key}/{architecture_key}/{workload_config_path}/workload.yaml')

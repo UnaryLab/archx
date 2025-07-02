@@ -1,0 +1,864 @@
+event:
+  array_fifo_gemm:
+    subevent:
+    - or_gate
+    - pe_fifo
+    performance: zoo/llm/mugi/performance/gemm.performance.py
+  array_fifo_nonlinear:
+    subevent:
+    - or_gate
+    - pe_fifo
+    performance: zoo/llm/mugi/performance/nonlinear.performance.py
+  array_gemm:
+    subevent:
+    - temporal_register
+    - and_gate
+    - or_gate
+    - sign_xor
+    - adder
+    - ofifo
+    performance: zoo/llm/mugi/performance/gemm.performance.py
+  array_nonlinear:
+    subevent:
+    - temporal_register
+    - and_gate
+    - or_gate
+    performance: zoo/llm/mugi/performance/nonlinear.performance.py
+  attention:
+    subevent:
+    - qkt
+    - av
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  av:
+    subevent:
+    - av_prefill
+    - av_decode
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  av_decode:
+    subevent:
+    - instruction
+    - input_gemm
+    - input_reuse_gemm
+    - counter_reuse
+    - weight_gemm
+    - weight_reuse_gemm
+    - array_gemm
+    - array_fifo_gemm
+    - nonlinear_gemm
+    - vector
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  av_prefill:
+    subevent:
+    - instruction
+    - input_gemm
+    - input_reuse_gemm
+    - counter_reuse
+    - weight_gemm
+    - weight_reuse_gemm
+    - array_gemm
+    - array_fifo_gemm
+    - nonlinear_gemm
+    - vector
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  counter_reuse:
+    subevent:
+    - counter
+    - counter_register
+    performance: zoo/llm/mugi/performance/common.performance.py
+  dram_input_reads:
+    subevent:
+    - dram
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  dram_output_reads:
+    subevent:
+    - dram
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  dram_output_writes:
+    subevent:
+    - dram
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  dram_weight_reads:
+    subevent:
+    - dram
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  ffn:
+    subevent:
+    - proj_up
+    - proj_down
+    - proj_gate
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  gemm:
+    subevent:
+    - projection
+    - attention
+    - ffn
+    - output
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  gemm_nonlinear:
+    subevent:
+    - multiplier
+    - multiplier_register
+    - sign_xor
+    - sign_fifo
+    performance: zoo/llm/mugi/performance/nonlinear.performance.py
+  input_gemm:
+    subevent:
+    - ififo
+    performance: zoo/llm/mugi/performance/gemm.performance.py
+  input_nonlinear:
+    subevent:
+    - ififo
+    performance: zoo/llm/mugi/performance/nonlinear.performance.py
+  input_reuse_gemm:
+    subevent:
+    - multiplier
+    - multiplier_register
+    performance: zoo/llm/mugi/performance/gemm.performance.py
+  instruction:
+    subevent:
+    - imux
+    - wmux
+    performance: zoo/llm/mugi/performance/common.performance.py
+  isram_offchip_writes:
+    subevent:
+    - isram
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  isram_onchip_reads:
+    subevent:
+    - isram
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  llama_2_13b:
+    subevent:
+    - gemm
+    - nonlinear
+    performance: zoo/llm/common/performance/model/llama.performance.py
+  llama_2_70b:
+    subevent:
+    - gemm
+    - nonlinear
+    performance: zoo/llm/common/performance/model/llama.performance.py
+  llama_2_70b_GQA:
+    subevent:
+    - gemm
+    - nonlinear
+    performance: zoo/llm/common/performance/model/llama.performance.py
+  llama_2_7b:
+    subevent:
+    - gemm
+    - nonlinear
+    performance: zoo/llm/common/performance/model/llama.performance.py
+  nonlinear:
+    subevent:
+    - softmax
+    - silu
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  nonlinear_gemm:
+    subevent:
+    - round
+    - sign_mantissa_register
+    - exponent_register
+    - exp_clamp
+    - window_select
+    - post_comp
+    - max_tree
+    - max_tree_register
+    performance: zoo/llm/mugi/performance/gemm.performance.py
+  osram_offchip_reads:
+    subevent:
+    - osram
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  osram_offchip_writes:
+    subevent:
+    - osram
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  osram_onchip_reads:
+    subevent:
+    - osram
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  osram_onchip_writes:
+    subevent:
+    - osram
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  output:
+    subevent:
+    - output_prefill
+    - output_decode
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  output_decode:
+    subevent:
+    - instruction
+    - input_gemm
+    - input_reuse_gemm
+    - counter_reuse
+    - weight_gemm
+    - weight_reuse_gemm
+    - array_gemm
+    - array_fifo_gemm
+    - nonlinear_gemm
+    - vector
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  output_prefill:
+    subevent:
+    - instruction
+    - input_gemm
+    - input_reuse_gemm
+    - counter_reuse
+    - weight_gemm
+    - weight_reuse_gemm
+    - array_gemm
+    - array_fifo_gemm
+    - nonlinear_gemm
+    - vector
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_a:
+    subevent:
+    - proj_a_prefill
+    - proj_a_decode
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_a_decode:
+    subevent:
+    - instruction
+    - input_gemm
+    - input_reuse_gemm
+    - counter_reuse
+    - weight_gemm
+    - weight_reuse_gemm
+    - array_gemm
+    - array_fifo_gemm
+    - nonlinear_gemm
+    - vector
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_a_prefill:
+    subevent:
+    - instruction
+    - input_gemm
+    - input_reuse_gemm
+    - counter_reuse
+    - weight_gemm
+    - weight_reuse_gemm
+    - array_gemm
+    - array_fifo_gemm
+    - nonlinear_gemm
+    - vector
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_down:
+    subevent:
+    - proj_down_prefill
+    - proj_down_decode
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_down_decode:
+    subevent:
+    - instruction
+    - input_gemm
+    - input_reuse_gemm
+    - counter_reuse
+    - weight_gemm
+    - weight_reuse_gemm
+    - array_gemm
+    - array_fifo_gemm
+    - nonlinear_gemm
+    - vector
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_down_prefill:
+    subevent:
+    - instruction
+    - input_gemm
+    - input_reuse_gemm
+    - counter_reuse
+    - weight_gemm
+    - weight_reuse_gemm
+    - array_gemm
+    - array_fifo_gemm
+    - nonlinear_gemm
+    - vector
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_gate:
+    subevent:
+    - proj_gate_prefill
+    - proj_gate_decode
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_gate_decode:
+    subevent:
+    - instruction
+    - input_gemm
+    - input_reuse_gemm
+    - counter_reuse
+    - weight_gemm
+    - weight_reuse_gemm
+    - array_gemm
+    - array_fifo_gemm
+    - nonlinear_gemm
+    - vector
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_gate_prefill:
+    subevent:
+    - instruction
+    - input_gemm
+    - input_reuse_gemm
+    - counter_reuse
+    - weight_gemm
+    - weight_reuse_gemm
+    - array_gemm
+    - array_fifo_gemm
+    - nonlinear_gemm
+    - vector
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_k:
+    subevent:
+    - proj_k_prefill
+    - proj_k_decode
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_k_decode:
+    subevent:
+    - instruction
+    - input_gemm
+    - input_reuse_gemm
+    - counter_reuse
+    - weight_gemm
+    - weight_reuse_gemm
+    - array_gemm
+    - array_fifo_gemm
+    - nonlinear_gemm
+    - vector
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_k_prefill:
+    subevent:
+    - instruction
+    - input_gemm
+    - input_reuse_gemm
+    - counter_reuse
+    - weight_gemm
+    - weight_reuse_gemm
+    - array_gemm
+    - array_fifo_gemm
+    - nonlinear_gemm
+    - vector
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_q:
+    subevent:
+    - proj_q_prefill
+    - proj_q_decode
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_q_decode:
+    subevent:
+    - instruction
+    - input_gemm
+    - input_reuse_gemm
+    - counter_reuse
+    - weight_gemm
+    - weight_reuse_gemm
+    - array_gemm
+    - array_fifo_gemm
+    - nonlinear_gemm
+    - vector
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_q_prefill:
+    subevent:
+    - instruction
+    - input_gemm
+    - input_reuse_gemm
+    - counter_reuse
+    - weight_gemm
+    - weight_reuse_gemm
+    - array_gemm
+    - array_fifo_gemm
+    - nonlinear_gemm
+    - vector
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_up:
+    subevent:
+    - proj_up_prefill
+    - proj_up_decode
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_up_decode:
+    subevent:
+    - instruction
+    - input_gemm
+    - input_reuse_gemm
+    - counter_reuse
+    - weight_gemm
+    - weight_reuse_gemm
+    - array_gemm
+    - array_fifo_gemm
+    - nonlinear_gemm
+    - vector
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_up_prefill:
+    subevent:
+    - instruction
+    - input_gemm
+    - input_reuse_gemm
+    - counter_reuse
+    - weight_gemm
+    - weight_reuse_gemm
+    - array_gemm
+    - array_fifo_gemm
+    - nonlinear_gemm
+    - vector
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_v:
+    subevent:
+    - proj_v_prefill
+    - proj_v_decode
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_v_decode:
+    subevent:
+    - instruction
+    - input_gemm
+    - input_reuse_gemm
+    - counter_reuse
+    - weight_gemm
+    - weight_reuse_gemm
+    - array_gemm
+    - array_fifo_gemm
+    - nonlinear_gemm
+    - vector
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_v_prefill:
+    subevent:
+    - instruction
+    - input_gemm
+    - input_reuse_gemm
+    - counter_reuse
+    - weight_gemm
+    - weight_reuse_gemm
+    - array_gemm
+    - array_fifo_gemm
+    - nonlinear_gemm
+    - vector
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  projection:
+    subevent:
+    - proj_q
+    - proj_k
+    - proj_v
+    - proj_a
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  qkt:
+    subevent:
+    - qkt_prefill
+    - qkt_decode
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  qkt_decode:
+    subevent:
+    - instruction
+    - input_gemm
+    - input_reuse_gemm
+    - counter_reuse
+    - weight_gemm
+    - weight_reuse_gemm
+    - array_gemm
+    - array_fifo_gemm
+    - nonlinear_gemm
+    - vector
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  qkt_prefill:
+    subevent:
+    - instruction
+    - input_gemm
+    - input_reuse_gemm
+    - counter_reuse
+    - weight_gemm
+    - weight_reuse_gemm
+    - array_gemm
+    - array_fifo_gemm
+    - nonlinear_gemm
+    - vector
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  silu:
+    subevent:
+    - silu_prefill
+    - silu_decode
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  silu_decode:
+    subevent:
+    - instruction
+    - input_nonlinear
+    - counter_reuse
+    - weight_nonlinear
+    - weight_reuse_nonlinear
+    - array_nonlinear
+    - array_fifo_nonlinear
+    - summation
+    - gemm_nonlinear
+    - vector
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  silu_prefill:
+    subevent:
+    - instruction
+    - input_nonlinear
+    - counter_reuse
+    - weight_nonlinear
+    - weight_reuse_nonlinear
+    - array_nonlinear
+    - array_fifo_nonlinear
+    - summation
+    - gemm_nonlinear
+    - vector
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  softmax:
+    subevent:
+    - softmax_prefill
+    - softmax_decode
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  softmax_decode:
+    subevent:
+    - instruction
+    - input_nonlinear
+    - counter_reuse
+    - weight_nonlinear
+    - weight_reuse_nonlinear
+    - array_nonlinear
+    - array_fifo_nonlinear
+    - summation
+    - gemm_nonlinear
+    - vector
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  softmax_prefill:
+    subevent:
+    - instruction
+    - input_nonlinear
+    - counter_reuse
+    - weight_nonlinear
+    - weight_reuse_nonlinear
+    - array_nonlinear
+    - array_fifo_nonlinear
+    - summation
+    - gemm_nonlinear
+    - vector
+    - isram_offchip_writes
+    - wsram_offchip_writes
+    - osram_offchip_writes
+    - osram_offchip_reads
+    - isram_onchip_reads
+    - wsram_onchip_reads
+    - osram_onchip_writes
+    - osram_onchip_reads
+    - dram_input_reads
+    - dram_weight_reads
+    - dram_output_reads
+    - dram_output_writes
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  summation:
+    subevent:
+    - adder
+    performance: zoo/llm/mugi/performance/nonlinear.performance.py
+  vector:
+    subevent:
+    - multiplier_vector
+    - register_vector
+    performance: zoo/llm/mugi/performance/common.performance.py
+  weight_gemm:
+    subevent:
+    - wfifo
+    - magnitude_register
+    - sign_register
+    - sign_fifo
+    performance: zoo/llm/mugi/performance/gemm.performance.py
+  weight_nonlinear:
+    subevent:
+    - round
+    - sign_mantissa_register
+    - exponent_register
+    - exp_clamp
+    - window_select
+    - wfifo
+    - max_tree
+    - max_tree_register
+    - magnitude_register
+    - sign_register
+    - post_comp
+    - ofifo
+    performance: zoo/llm/mugi/performance/nonlinear.performance.py
+  weight_reuse_gemm:
+    subevent:
+    - comparator
+    performance: zoo/llm/mugi/performance/gemm.performance.py
+  weight_reuse_nonlinear:
+    subevent:
+    - comparator
+    performance: zoo/llm/mugi/performance/nonlinear.performance.py
+  wsram_offchip_writes:
+    subevent:
+    - wsram
+    performance: zoo/llm/common/performance/memory/memory.performance.py
+  wsram_onchip_reads:
+    subevent:
+    - wsram
+    performance: zoo/llm/common/performance/memory/memory.performance.py

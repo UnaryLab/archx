@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import os
 
-def breakdown(df, array_colors, labels, output_path, value_unit):
+def breakdown(df, array_colors, labels, output_path, value_unit, legend=True):
     fig_width_pt = 240  # ACM single-column width in points
     fig_width = fig_width_pt / 72  # Convert to inches
     fig_height = fig_width * 0.65  # Given height
@@ -12,6 +12,9 @@ def breakdown(df, array_colors, labels, output_path, value_unit):
     n_columns = len(df)
     n_unique_columns = (df['arch'].nunique())
     n_rows = n_columns // n_unique_columns
+
+    n_rows = 2
+    n_unique_columns = 5
 
     fig, axes = plt.subplots(nrows=n_rows, ncols=n_unique_columns, figsize=(fig_width, fig_height),
                              gridspec_kw={"wspace": -0.3, "hspace": 0.2, 'left': -0.65, 'right': 0.65})
@@ -28,7 +31,7 @@ def breakdown(df, array_colors, labels, output_path, value_unit):
 
         arch = arch.capitalize()
         arch = 'SA' if arch == 'Systolic' else 'SD' if arch == 'Simd' else arch
-        subarch = '' if subarch == 'mac' else '-F' if subarch == 'figna' else ''
+        subarch = '' if subarch == 'mac' else '-F' if subarch == 'figna' else '-L' if subarch == 'lut' else ''
         arch_dim = '(' + arch_dim.split('x')[0] + ')'
 
         ax = axes[ax_row, ax_column]
@@ -44,9 +47,10 @@ def breakdown(df, array_colors, labels, output_path, value_unit):
         ax.set_title(f"{arch}{subarch} {arch_dim}\n({total:.2f} {value_unit})", fontsize=5, pad=-2)
         ax.axis('off')
 
-    plt.legend(
-        labels, loc='lower center', ncol=7, fontsize=5, bbox_to_anchor=(-1.45, -0.2)
-    )
+    if (legend == True):
+        plt.legend(
+            labels, loc='lower center', ncol=7, fontsize=5, bbox_to_anchor=(-1.45, -0.2)
+        )
     plt.savefig(output_path, dpi=1200, bbox_inches='tight')
     plt.close()
 
@@ -56,15 +60,17 @@ def figure(input_path: str, output_path: str):
     power_df = pd.read_csv(input_path + 'array_power_breakdown.csv')
 
     labels = ['Fifo', 'PE', 'TC', 'Value Reuse', 'Acc', 'Nonlinear', 'Vector']
-    array_colors = ['#D5AAFF', '#A8D5BA', '#FFDDC1', '#85E3FF', '#f09494', '#FFC3A0', "#a7f672"]
+    array_colors = ['#D5AAFF', '#A8D5BA', "#EBE596", '#85E3FF', '#f09494', '#FFC3A0', "#a7f672"]
 
-    breakdown(df=area_df, array_colors=array_colors, labels=labels, output_path=output_path + 'area_breakdown.pdf', value_unit='mm²')
+    breakdown(df=area_df, array_colors=array_colors, labels=labels, output_path=output_path + 'area_breakdown.pdf', value_unit='mm²', legend=False)
     breakdown(df=power_df, array_colors=array_colors, labels=labels, output_path=output_path + 'power_breakdown.pdf', value_unit='mW')
 
 def query(input_path, output_path):
 
     vlp_list = ['mugi', 'carat']
     vlp_arch_dim_list = ['128x8', '256x8']
+
+    mugi_subarch_list = ['vlp', 'lut']
 
     baseline_list = ['systolic', 'simd']
     baseline_arch_dim_list = ['8x8', '16x16']
@@ -81,15 +87,18 @@ def query(input_path, output_path):
     power_df = pd.DataFrame(columns=df_labels)
 
     for arch in vlp_list + baseline_list:
-        for arch_dim in (vlp_arch_dim_list if arch in vlp_list else baseline_arch_dim_list):
-            for subarch in (baseline_subarch_list if arch in baseline_list else ['']):
-
+        for subarch in (baseline_subarch_list if arch in baseline_list else mugi_subarch_list if arch in ['mugi'] else ['']):
+            for arch_dim in (vlp_arch_dim_list if arch in vlp_list else baseline_arch_dim_list if arch in baseline_list else ['8x16x16'] if arch == 'tensor' else ['']):
+            
                 termination_path = 'full_termination' if arch == 'mugi' else ''
                 run_path = os.path.normpath(f'{input_path}{arch}/{network}/{subarch}/{arch_dim}/{model}/{max_seq_len}/{batch_size}/{termination_path}/')
                 yaml_dict = load_yaml(run_path)
 
                 event_graph = yaml_dict['event_graph']
                 metric_dict = yaml_dict['metric_dict']
+
+                if arch == 'mugi' and subarch == 'vlp' and arch_dim == '128x8':
+                    fifo_area = query_area(event_graph=event_graph, metric_dict=metric_dict, workload=model, module='pe_fifo') 
 
                 area_row = {
                     'arch': arch,

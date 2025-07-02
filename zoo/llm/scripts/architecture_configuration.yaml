@@ -1,1 +1,1 @@
-architecture: [mugi, carat, simd, systolic]
+architecture: [tensor]

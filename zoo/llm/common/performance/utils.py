@@ -23,8 +23,8 @@ def sum_subevents(performance_dict_1: OrderedDict, performance_dict_2) -> Ordere
             if not isinstance(value, dict):
                 sum_performance_dict['subevent'][subevent][metric] = performance_dict_1['subevent'][subevent][metric] + performance_dict_2['subevent'][subevent][metric]
             else:
-                performance_dict_1_count_average = performance_dict_1['subevent'][subevent]['count'] / sum_performance_dict['subevent'][subevent]['count']
-                performance_dict_2_count_average = performance_dict_2['subevent'][subevent]['count'] / sum_performance_dict['subevent'][subevent]['count']
+                performance_dict_1_count_average = 0 if sum_performance_dict['subevent'][subevent]['count'] == 0 else performance_dict_1['subevent'][subevent]['count'] / sum_performance_dict['subevent'][subevent]['count']
+                performance_dict_2_count_average = 0 if sum_performance_dict['subevent'][subevent]['count'] == 0 else performance_dict_2['subevent'][subevent]['count'] / sum_performance_dict['subevent'][subevent]['count']
                 sum_performance_dict['subevent'][subevent][metric] = OrderedDict()
                 for submetric, subvalue in value.items():
                     sum_performance_dict['subevent'][subevent][metric][submetric] = (performance_dict_1['subevent'][subevent][metric][submetric] * performance_dict_1_count_average) + (performance_dict_2['subevent'][subevent][metric][submetric] * performance_dict_2_count_average)
@@ -37,7 +37,7 @@ class TiledGEMM:
     Handles partial tiling, and computes memory sizes for matrices and tiles.
     This class simulates dimensions of matrices, tiles, and combination of dimensions, not a populated instantiated tile.
     """
-    def __init__(self, batch, m, k, n, tile_m, tile_k, tile_n, m_k_bitwidth, k_n_bitwidth, m_n_bitwidth, array_width=None, array_height=None):
+    def __init__(self, batch, m, k, n, tile_m, tile_k, tile_n, m_k_bitwidth, k_n_bitwidth, m_n_bitwidth, array_width=None, array_height=None, array_depth=None):
 
         if 0 in (m, k, n, tile_m, tile_k, tile_n):
             self.is_valid = False
@@ -56,6 +56,7 @@ class TiledGEMM:
         self.m_k_bitwidth = m_k_bitwidth
         self.k_n_bitwidth = k_n_bitwidth
         self.m_n_bitwidth = m_n_bitwidth
+        self.k_util = self.tile_k / array_depth if array_depth else 1
         self.m_util = self.tile_m / array_width if array_width else 1
         self.n_util = self.tile_n / array_height if array_height else 1
         

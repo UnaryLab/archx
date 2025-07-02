@@ -6,9 +6,14 @@ network:
 hardware:
   vlp:
     gemm:
-      path: zoo/llm/mugi/event/template/hardware/gemm.event.yaml
+      path: zoo/llm/mugi/event/template/hardware/vlp/gemm.event.yaml
     nonlinear:
-      path: zoo/llm/mugi/event/template/hardware/nonlinear.event.yaml
+      path: zoo/llm/mugi/event/template/hardware/vlp/nonlinear.event.yaml
+  lut:
+    gemm:
+      path: zoo/llm/mugi/event/template/hardware/lut/gemm.event.yaml
+    nonlinear:
+      path: zoo/llm/mugi/event/template/hardware/lut/nonlinear.event.yaml
 
 default:
   software:
