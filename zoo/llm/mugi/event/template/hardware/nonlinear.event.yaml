@@ -1,0 +1,37 @@
+event:
+  instruction:
+    subevent: [imux, wmux]
+    performance: zoo/llm/mugi/performance/common.performance.py
+
+  input_nonlinear:
+    subevent: [ififo]
+    performance: zoo/llm/mugi/performance/nonlinear.performance.py
+
+  counter_reuse:
+    subevent: [counter, counter_register]
+    performance: zoo/llm/mugi/performance/common.performance.py
+
+  weight_nonlinear:
+    subevent: [round, sign_mantissa_register, exponent_register, exp_clamp, window_select, wfifo, min_tree, min_tree_register,
+               max_tree, max_tree_register, magnitude_register, sign_register, post_comp, ofifo]
+    performance: zoo/llm/mugi/performance/nonlinear.performance.py
+
+  weight_reuse_nonlinear:
+    subevent: [comparator]
+    performance: zoo/llm/mugi/performance/nonlinear.performance.py
+
+  array_nonlinear:
+    subevent: [temporal_register, and_gate, or_gate, pe_fifo]
+    performance: zoo/llm/mugi/performance/nonlinear.performance.py
+
+  summation:
+    subevent: [adder]
+    performance: zoo/llm/mugi/performance/nonlinear.performance.py
+
+  gemm_nonlinear:
+    subevent: [multiplier, multiplier_register, sign_xor, sign_fifo]
+    performance: zoo/llm/mugi/performance/nonlinear.performance.py
+
+  vector:
+    subevent: [multiplier_vector, register_vector]
+    performance: zoo/llm/mugi/performance/common.performance.py

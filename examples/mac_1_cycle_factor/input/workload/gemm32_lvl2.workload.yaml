@@ -1,0 +1,6 @@
+workload: # parent nodes
+  gemm32:
+    configuration:
+      m: 32
+      k: 32
+      n: 32

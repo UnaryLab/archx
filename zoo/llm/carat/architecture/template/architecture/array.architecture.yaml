@@ -1,0 +1,71 @@
+architecture:
+  module:
+    counter:
+      tag: value_reuse
+      instance: node
+      query:
+        class: counter
+        width: 3
+
+    creg:
+      tag: value_reuse
+      instance: creg
+      query:
+        class: register
+        width: 3
+        
+    accumulator:
+      tag: value_reuse
+      instance: width
+      query:
+        class: adderbf16
+
+    accumulator_register:
+      tag: value_reuse
+      instance: broadcast_array
+      query:
+        class: register
+        width: 16
+
+    wreg:
+      tag: value_reuse
+      instance: width
+      query:
+        class: register
+        width: 16
+
+    sign_fifo:
+      tag: fifo
+      instance: height
+      query:
+        class: fifo
+        width: 12
+        depth: 2
+
+    pe_fifo:
+      tag: fifo
+      instance: height
+      query:
+        class: fifo
+        width: 16
+        depth: 8
+
+    adder:
+      tag: accumulator
+      instance: height
+      query:
+        class: adderbf16
+
+    exp_scale: 
+      tag: accumulator
+      instance: width
+      query:
+        class: adder
+        width: 8
+
+    shifterexp:
+      tag: accumulator
+      instance: height
+      query:
+        class: adder
+        width: 8

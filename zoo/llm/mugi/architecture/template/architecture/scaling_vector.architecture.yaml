@@ -1,0 +1,14 @@
+architecture:
+  module:
+    multiplier_vector:
+      tag: vector
+      instance: vector
+      query:
+        class: multiplierbf16
+
+    register_vector:
+      tag: vector
+      instance: vector
+      query:
+        class: register
+        width: 16

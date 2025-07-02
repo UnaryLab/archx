@@ -1,0 +1,33 @@
+architecture:
+  attribute:
+    technology: 32
+    frequency: 400
+    interface: csv_cmos
+
+  module:
+    memory:
+      path: zoo/llm/mugi/architecture/template/architecture/memory.architecture.yaml
+
+    fifo:
+      path: zoo/llm/mugi/architecture/template/architecture/fifo.architecture.yaml
+
+    tc:
+      path: zoo/llm/mugi/architecture/template/architecture/tc.architecture.yaml
+
+    pe:
+      path: zoo/llm/mugi/architecture/template/architecture/pe.architecture.yaml
+
+    array:
+      path: zoo/llm/mugi/architecture/template/architecture/array.architecture.yaml
+
+    control:
+      path: zoo/llm/mugi/architecture/template/architecture/control.architecture.yaml
+
+    preprocess:
+      path: zoo/llm/mugi/architecture/template/architecture/preprocess.architecture.yaml
+
+    postprocess:
+      path: zoo/llm/mugi/architecture/template/architecture/postprocess.architecture.yaml
+
+    scaling_vector:
+      path: zoo/llm/mugi/architecture/template/architecture/scaling_vector.architecture.yaml

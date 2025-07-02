@@ -1,0 +1,16 @@
+event:
+  input_gemm:
+    subevent: [ififo, input_register]
+    performance: zoo/llm/systolic/performance/gemm.performance.py
+  
+  weight_gemm:
+    subevent: [wfifo, weight_register, int_to_fp]
+    performance: zoo/llm/systolic/performance/gemm.performance.py
+
+  array_gemm:
+    subevent: [icnt, icmp, iadd, wcnt, wcmp, wadd, multiplier, pe_register, accumulator, adder, ofifo]
+    performance: zoo/llm/systolic/performance/gemm.performance.py
+
+  vector_gemm:
+    subevent: [multiplier_vector, accumulator_vector, mac_register_vector, register_vector]
+    performance: zoo/llm/systolic/performance/gemm.performance.py

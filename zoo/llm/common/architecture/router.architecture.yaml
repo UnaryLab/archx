@@ -1,0 +1,20 @@
+architecture:
+  module:
+    irouter:
+      tag: [onchip, router]
+      instance: node
+      query:
+        class: noc_router
+        bandwidth: 64 #64MB
+    wrouter:
+      tag: [onchip, router]
+      instance: node
+      query:
+        class: noc_router
+        bandwidth: 64 #64MB
+    orouter:
+      tag: [onchip, router]
+      instance: node
+      query:
+        class: noc_router
+        bandwidth: 64 #64MB

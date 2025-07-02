@@ -1,0 +1,29 @@
+workload:
+  llama_2_7b:
+    configuration:
+      dim: 4096
+      layers: 32
+      heads: 32
+      kv_heads: 32
+      hidden_dim: 11008
+  llama_2_13b:
+    configuration:
+      dim: 5120
+      layers: 40
+      heads: 40
+      kv_heads: 40
+      hidden_dim: 13824
+  llama_2_70b:
+    configuration:
+      dim: 8192
+      layers: 80
+      heads: 64
+      kv_heads: 64
+      hidden_dim: 28672
+  llama_2_70b_GQA:
+    configuration:
+      dim: 8192
+      layers: 80
+      heads: 64
+      kv_heads: 8
+      hidden_dim: 28672

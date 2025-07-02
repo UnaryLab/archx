@@ -1,0 +1,25 @@
+architecture:
+  module:
+    ch_aloc:
+      tag: pe
+      instance: array
+      query:
+        class: ch_aloc
+
+    ch_dealoc:
+      tag: pe
+      instance: array
+      query:
+        class: ch_dealoc
+
+    int_to_fp_figna:
+      tag: pe
+      instance: array
+      query:
+        class: int_to_fp
+
+    prealigner:
+      tag: pe
+      instance: array
+      query:
+        class: prealigner

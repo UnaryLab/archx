@@ -1,0 +1,4 @@
+architecture:
+  module:
+    router:
+      path: zoo/llm/systolic/architecture/template/architecture/router.architecture.yaml

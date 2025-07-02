@@ -1,0 +1,22 @@
+network:
+  single_node:
+  multi_node:
+    path: zoo/llm/simd/event/template/hardware/router.event.yaml
+
+hardware:
+  mac:
+    gemm:
+      path: zoo/llm/simd/event/template/hardware/mac/gemm.event.yaml
+    nonlinear:
+      path: zoo/llm/simd/event/template/hardware/mac/nonlinear.event.yaml
+  figna:
+    gemm:
+      path: zoo/llm/simd/event/template/hardware/figna/gemm.event.yaml
+    nonlinear:
+      path: zoo/llm/simd/event/template/hardware/figna/nonlinear.event.yaml
+
+default:
+  software:
+    path: zoo/llm/simd/event/template/software.event.yaml
+  memory:
+    path: zoo/llm/simd/event/template/hardware/memory.event.yaml

@@ -1,0 +1,15 @@
+metric:
+  area:
+    unit: mm^2
+    aggregation: module
+  leakage_power:
+    unit: mW
+    aggregation: module
+  dynamic_energy:
+    unit: nJ
+  cycle_count:
+    unit: cycles
+    aggregation: specified
+  runtime:
+    unit: ms
+    aggregation: specified

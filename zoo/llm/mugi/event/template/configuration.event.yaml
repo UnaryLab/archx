@@ -1,0 +1,17 @@
+network:
+  single_node:
+  multi_node:
+    path: zoo/llm/mugi/event/template/hardware/router.event.yaml
+
+hardware:
+  vlp:
+    gemm:
+      path: zoo/llm/mugi/event/template/hardware/gemm.event.yaml
+    nonlinear:
+      path: zoo/llm/mugi/event/template/hardware/nonlinear.event.yaml
+
+default:
+  software:
+    path: zoo/llm/mugi/event/template/software.event.yaml
+  memory:
+    path: zoo/llm/mugi/event/template/hardware/memory.event.yaml

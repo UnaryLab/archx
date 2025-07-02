@@ -1,0 +1,56 @@
+architecture:
+  module:
+    counter:
+      tag: value_reuse
+      instance: node
+      query:
+        class: counter
+        width: 3
+
+    counter_register:
+      tag: value_reuse
+      instance: broadcast_height
+      query:
+        class: register
+        width: 3
+
+    min_tree:
+      tag: value_reuse
+      instance: height_tree
+      query:
+        class: min
+
+    min_tree_register:
+      tag: value_reuse
+      instance: height_pipeline_tree
+      query:
+        class: register
+        width: 3
+        
+    max_tree:
+      tag: nonlinear
+      instance: height_tree
+      query:
+        class: max
+
+    max_tree_register:
+      tag: nonlinear
+      instance: height_pipeline_tree
+      query:
+        class: register
+        width: 8
+
+    imux:
+      tag: control
+      instance: node
+      query: 
+        class: multiplexer
+        width: 128
+
+    wmux:
+      tag: control
+      instance: node
+      query:
+        class: multiplexer
+        width: height_bitwidth
+        num_inputs: 2

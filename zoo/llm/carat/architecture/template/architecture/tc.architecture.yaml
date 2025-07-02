@@ -1,0 +1,29 @@
+architecture:
+  module:
+    comparator:
+      tag: tc
+      instance: height
+      query:
+        class: comparator
+        width: 3
+
+    ireg:
+      tag: tc
+      instance: height
+      query:
+        class: register
+        width: 12
+
+    z_flag:
+      tag: tc
+      instance: height
+      query:
+        class: or_bitwise
+        width: 7
+    
+    nan_flag:
+      tag: tc
+      instance: height
+      query:
+        class: and_bitwise
+        width: 7

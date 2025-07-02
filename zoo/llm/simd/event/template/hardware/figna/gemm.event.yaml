@@ -1,0 +1,16 @@
+event:
+  input_gemm:
+    subevent: [ififo, input_register]
+    performance: zoo/llm/simd/performance/gemm.performance.py
+  
+  weight_gemm:
+    subevent: [wfifo, weight_register]
+    performance: zoo/llm/simd/performance/gemm.performance.py
+
+  array_gemm:
+    subevent: [ch_aloc, ch_dealoc, int_to_fp_figna, prealigner, multiplier, pe_register, accumulator, accumulator_register, adder, ofifo]
+    performance: zoo/llm/simd/performance/gemm.performance.py
+
+  vector_gemm:
+    subevent: [multiplier_vector, accumulator_vector, mac_register_vector, register_vector]
+    performance: zoo/llm/simd/performance/gemm.performance.py

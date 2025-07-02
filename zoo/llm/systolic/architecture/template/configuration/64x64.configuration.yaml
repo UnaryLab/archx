@@ -1,0 +1,19 @@
+instance:
+  height: [64]
+  width: [64]
+  array: [64, 64]
+  node: [1]
+  height_double: [64, 2]
+  pwl_comparator: [64, 21]
+  pwl_register: [64, 22]
+  taylor: [9]
+width:
+  isram: 1024
+  wsram: 1024
+  osram: 1024
+  control: 5
+depth:
+  isram: 1024
+  wsram: 1024
+  osram: 1024
+  fifo: 64

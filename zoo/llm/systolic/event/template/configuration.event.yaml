@@ -1,0 +1,44 @@
+network:
+  single_node:
+  multi_node:
+    path: zoo/llm/systolic/event/template/hardware/router.event.yaml
+
+hardware:
+  mac:
+    gemm:
+      path: zoo/llm/systolic/event/template/hardware/mac/gemm.event.yaml
+    silu:
+      path: zoo/llm/systolic/event/template/hardware/mac/silu.event.yaml
+    softmax:
+      path: zoo/llm/systolic/event/template/hardware/mac/softmax.event.yaml
+
+  figna:
+    gemm:
+      path: zoo/llm/systolic/event/template/hardware/figna/gemm.event.yaml
+    silu:
+      path: zoo/llm/systolic/event/template/hardware/figna/silu.event.yaml
+    softmax:
+      path: zoo/llm/systolic/event/template/hardware/figna/softmax.event.yaml
+
+  pwl:
+    gemm:
+      path: zoo/llm/systolic/event/template/hardware/pwl/gemm.event.yaml
+    silu:
+      path: zoo/llm/systolic/event/template/hardware/pwl/silu.event.yaml
+    softmax:
+      path: zoo/llm/systolic/event/template/hardware/pwl/softmax.event.yaml
+
+  taylor:
+    gemm:
+      path: zoo/llm/systolic/event/template/hardware/taylor/gemm.event.yaml
+    silu:
+      path: zoo/llm/systolic/event/template/hardware/taylor/silu.event.yaml
+    softmax:
+      path: zoo/llm/systolic/event/template/hardware/taylor/softmax.event.yaml
+  
+
+default:
+  software:
+    path: zoo/llm/systolic/event/template/software.event.yaml
+  memory:
+    path: zoo/llm/systolic/event/template/hardware/memory.event.yaml

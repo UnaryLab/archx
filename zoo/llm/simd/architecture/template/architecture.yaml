@@ -1,0 +1,21 @@
+architecture:
+  attribute:
+    technology: 32
+    frequency: 400
+    interface: csv_cmos
+
+  module:
+    fifo:
+      path: zoo/llm/simd/architecture/template/architecture/fifo.architecture.yaml
+
+    pe:
+      path: zoo/llm/simd/architecture/template/architecture/pe.architecture.yaml
+
+    array:
+      path: zoo/llm/simd/architecture/template/architecture/array.architecture.yaml
+
+    vector:
+      path: zoo/llm/simd/architecture/template/architecture/vector.architecture.yaml
+
+    memory:
+      path: zoo/llm/simd/architecture/template/architecture/memory.architecture.yaml

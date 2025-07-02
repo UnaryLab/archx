@@ -1,0 +1,8 @@
+event:
+  gemm_nonlinear:
+    subevent: [ch_aloc, ch_dealoc, int_to_fp_figna, prealigner, ififo, wfifo, input_register, weight_register, multiplier, pe_register, accumulator, accumulator_register, adder, ofifo]
+    performance: zoo/llm/simd/performance/nonlinear.performance.py
+
+  vector_nonlinear:
+    subevent: [multiplier_vector, accumulator_vector, mac_register_vector, register_vector]
+    performance: zoo/llm/simd/performance/nonlinear.performance.py

@@ -1,0 +1,36 @@
+architecture:
+  module:
+    multiplier:
+      tag: value_reuse
+      instance: width
+      query:
+        class: multiplierbf16
+
+    multiplier_register:
+      tag: value_reuse
+      instance: broadcast_array
+      query:
+        class: register
+        width: 16
+
+    sign_fifo:
+      tag: fifo
+      instance: height
+      query:
+        class: fifo
+        width: 1
+        depth: 2
+
+    pe_fifo:
+      tag: fifo
+      instance: height
+      query:
+        class: fifo
+        width: 16
+        depth: 8
+
+    adder:
+      tag: accumulator
+      instance: height
+      query:
+        class: adderbf16

@@ -1,0 +1,20 @@
+architecture:
+  module:
+    irouter:
+      tag: router
+      instance: node
+      query:
+        class: noc_router
+        bandwidth: 64 #64MB
+    wrouter:
+      tag: router
+      instance: node
+      query:
+        class: noc_router
+        bandwidth: 64 #64MB
+    orouter:
+      tag: router
+      instance: node
+      query:
+        class: noc_router
+        bandwidth: 64 #64MB

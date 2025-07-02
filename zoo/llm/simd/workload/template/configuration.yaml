@@ -1,0 +1,13 @@
+configuration:
+  prefill_seq_len: [64]
+  vocab_size: [32000]
+  activation_bitwidth: [16]
+  weight_bitwidth: [4]
+  noc_stationary: [os] # ws, is] noc stationary accumulation is not supported
+  node_stationary: [ws] #is] # is not needed
+  max_seq_len: [512, 2048, 4096] #[128, 256, 512, 1024, 2048, 4096]
+  batch_size: [1, 2, 4, 8, 16, 32]
+  exp_mult_cycles: [30]
+  division_mult_cycles: [14]
+  accumulation_cycles: [1]
+  architecture: ['simd']

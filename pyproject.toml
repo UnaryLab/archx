@@ -1,0 +1,42 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+version = "2025.07.01"
+name = "archx"
+authors = [
+  { name="Di Wu", email="di.wu@ucf.com" },
+  { name="Daniel Price", email="daniel.price@ucf.edu" },
+  { name="Tyler Goldsmith", email="tyler.goldsmith@ucf.edu" }
+]
+description = "A framework to explore the design space of hardware architecture."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python"
+]
+
+dependencies = [
+    # NOTE: graph-tool and cmake must be installed via conda
+    "pyyaml",
+    "yamlordereddictloader",
+    "pyfiglet",
+    "loguru"
+]
+
+# Map script name to the main entry point (syndrilla/main.py -> main())
+[project.scripts]
+archx = "archx.main:main"
+
+[project.urls]
+Homepage = "https://github.com/UnaryLab/archx"
+Issues = "https://github.com/UnaryLab/archx/issues"
+
+# Tell hatch where the source is
+[tool.hatch.build]
+sources = ["src"]
+
+[tool.hatch.metadata]
+allow-direct-references = true

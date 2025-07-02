@@ -1,0 +1,42 @@
+architecture:
+  full_termination:
+    proj_avg_early_termination_cycles: 8
+    ffn_avg_early_termination_cycles: 8
+    k_avg_early_termination_cycles: 8
+    v_avg_early_termination_cycles: 8
+  early_termination_32x8:
+    proj_avg_early_termination_cycles: 5.62
+    ffn_avg_early_termination_cycles: 5.62
+    k_avg_early_termination_cycles: 6.6344
+    v_avg_early_termination_cycles: 7.194
+  early_termination_64x8:
+    proj_avg_early_termination_cycles: 6.28
+    ffn_avg_early_termination_cycles: 6.28
+    k_avg_early_termination_cycles: 6.9924
+    v_avg_early_termination_cycles: 7.576
+  early_termination_128x8:
+    proj_avg_early_termination_cycles: 7.04
+    ffn_avg_early_termination_cycles: 7.04
+    k_avg_early_termination_cycles: 7.266
+    v_avg_early_termination_cycles: 7.8207
+  early_termination_256x8:
+    proj_avg_early_termination_cycles: 7.6
+    ffn_avg_early_termination_cycles: 7.6
+    k_avg_early_termination_cycles: 7.4733
+    v_avg_early_termination_cycles: 7.8207
+configuration:
+  prefill_seq_len: [64]
+  vocab_size: [32000]
+  activation_bitwidth: [16]
+  weight_bitwidth: [4]
+  noc_stationary: [os] # ws, is] noc stationary accumulation is not supported
+  node_stationary: [os] #is] # is not needed
+  max_seq_len: [512, 2048, 4096] #[128, 256, 512, 1024, 2048, 4096]
+  batch_size: [1, 2, 4, 8, 16, 32]
+  nonlinear_avg_early_termination_cycles: [8]
+  default_avg_early_termination_cycles: [8]
+  lut_height: [8]
+  lut_width: [12]
+  window_width: [8]
+  cycles: [8]
+  architecture: ['mugi']

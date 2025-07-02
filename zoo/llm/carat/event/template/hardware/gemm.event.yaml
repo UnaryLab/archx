@@ -1,0 +1,28 @@
+event:
+  input_gemm:
+    subevent: [ififo]
+    performance: zoo/llm/carat/performance/gemm.performance.py
+
+  input_reuse_gemm:
+    subevent: [accumulator, accumulator_register, exp_scale, wreg]
+    performance: zoo/llm/carat/performance/gemm.performance.py
+
+  counter_reuse:
+    subevent: [counter, creg]
+    performance: zoo/llm/carat/performance/gemm.performance.py
+
+  weight_gemm:
+    subevent: [wfifo]
+    performance: zoo/llm/carat/performance/gemm.performance.py
+
+  weight_reuse_gemm:
+    subevent: [comparator, ireg, z_flag, nan_flag, sign_fifo]
+    performance: zoo/llm/carat/performance/gemm.performance.py
+
+  array_gemm:
+    subevent: [temporal_register, and_gate, or_gate, areg, pe_fifo, sign_xor, shifterexp, adder, ofifo]
+    performance: zoo/llm/carat/performance/gemm.performance.py
+
+  vector_gemm:
+    subevent: [multiplier_vector, accumulator_vector, register_vector, mac_register_vector]
+    performance: zoo/llm/carat/performance/gemm.performance.py

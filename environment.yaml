@@ -1,0 +1,14 @@
+# environment.yaml
+name: archx
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python>=3.9
+  - graph-tool
+  - cmake
+  - pyyaml
+  - yamlordereddictloader
+  - pyfiglet
+  - loguru
+  - pip

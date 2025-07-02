@@ -1,0 +1,8 @@
+workload: # parent nodes
+  gemm16:
+    configuration:
+      m: 16
+      k: 16
+      n: 16
+  gemm32:
+    path: examples/mac_1_cycle_factor/input/workload/gemm32_lvl1.workload.yaml

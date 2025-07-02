@@ -1,0 +1,12 @@
+event:
+  irouter_mapping:
+    subevent: [irouter]
+    performance: zoo/llm/common/performance/router/router.performance.py
+
+  wrouter_mapping:
+    subevent: [wrouter]
+    performance: zoo/llm/common/performance/router/router.performance.py
+    
+  orouter_mapping:
+    subevent: [orouter]
+    performance: zoo/llm/common/performance/router/router.performance.py

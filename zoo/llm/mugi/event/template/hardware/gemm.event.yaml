@@ -1,0 +1,36 @@
+event:
+  instruction:
+    subevent: [imux, wmux]
+    performance: zoo/llm/mugi/performance/common.performance.py
+
+  input_gemm:
+    subevent: [ififo]
+    performance: zoo/llm/mugi/performance/gemm.performance.py
+
+  input_reuse_gemm:
+    subevent: [multiplier, multiplier_register]
+    performance: zoo/llm/mugi/performance/gemm.performance.py
+
+  counter_reuse:
+    subevent: [counter, counter_register]
+    performance: zoo/llm/mugi/performance/common.performance.py
+
+  weight_gemm:
+    subevent: [wfifo, min_tree, min_tree_register, magnitude_register, sign_register, sign_fifo]
+    performance: zoo/llm/mugi/performance/gemm.performance.py
+
+  weight_reuse_gemm:
+    subevent: [comparator]
+    performance: zoo/llm/mugi/performance/gemm.performance.py
+
+  array_gemm:
+    subevent: [temporal_register, and_gate, or_gate, pe_fifo, sign_xor, adder, ofifo]
+    performance: zoo/llm/mugi/performance/gemm.performance.py
+
+  nonlinear_gemm:
+    subevent: [round, sign_mantissa_register, exponent_register, exp_clamp, window_select, post_comp, max_tree, max_tree_register]
+    performance: zoo/llm/mugi/performance/gemm.performance.py
+
+  vector:
+    subevent: [multiplier_vector, register_vector]
+    performance: zoo/llm/mugi/performance/common.performance.py

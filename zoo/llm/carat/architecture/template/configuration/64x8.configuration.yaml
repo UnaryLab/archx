@@ -1,0 +1,18 @@
+instance:
+  height: [64]
+  width: [8]
+  array: [64, 8]
+  array_double: [64, 8, 2]
+  broadcast_array: [1, 8]
+  broadcast_height: [1]
+  creg: [8, 8]
+  node: [1]
+width:
+  isram: 128
+  wsram: 128
+  osram: 128
+depth:
+  isram: 1024
+  wsram: 1024
+  osram: 1024
+  fifo: 2

@@ -1,0 +1,35 @@
+network:
+  single_node:
+    dimension: 
+      - []
+  multi_node:
+    dimension:
+      - [4, 4]
+      - [8, 8]
+    path: zoo/llm/mugi/architecture/template/network_configuration/multi_node.architecture.yaml
+
+tag:
+  node_memory: [onchip, memory]
+  fifo: [onchip, array, fifo]
+  array: [onchip, array]
+  control: [onchip, array, control]
+  nonlinear: [onchip, array, nonlinear]
+  vector: [onchip, array, vector]
+  router: [onchip, router]
+  accumulator: [onchip, array, accumulator]
+  value_reuse: [onchip, array, value_reuse]
+  tc: [onchip, array, tc]
+  pe: [onchip, array, pe]
+
+array:
+  32x8:
+    path: zoo/llm/mugi/architecture/template/configuration/32x8.configuration.yaml
+    
+  64x8:
+    path: zoo/llm/mugi/architecture/template/configuration/64x8.configuration.yaml
+
+  128x8:
+    path: zoo/llm/mugi/architecture/template/configuration/128x8.configuration.yaml
+
+  256x8:
+    path: zoo/llm/mugi/architecture/template/configuration/256x8.configuration.yaml

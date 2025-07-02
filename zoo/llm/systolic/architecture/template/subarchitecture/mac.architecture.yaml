@@ -1,0 +1,7 @@
+architecture:
+  module:
+    int_to_fp:
+      tag: pe
+      instance: height
+      query:
+        class: int_to_bf16

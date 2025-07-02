@@ -1,0 +1,17 @@
+network:
+  single_node:
+  multi_node:
+    path: zoo/llm/carat/event/template/hardware/router.event.yaml
+
+hardware:
+  vlp:
+    gemm:
+      path: zoo/llm/carat/event/template/hardware/gemm.event.yaml
+    nonlinear:
+      path: zoo/llm/carat/event/template/hardware/nonlinear.event.yaml
+
+default:
+  software:
+    path: zoo/llm/carat/event/template/software.event.yaml
+  memory:
+    path: zoo/llm/carat/event/template/hardware/memory.event.yaml

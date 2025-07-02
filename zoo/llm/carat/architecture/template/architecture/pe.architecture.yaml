@@ -1,0 +1,36 @@
+architecture:
+  module:
+    temporal_register:
+      tag: pe
+      instance: array
+      query:
+        class: register
+        width: 1
+
+    and_gate:
+      tag: pe
+      instance: array
+      query:
+        class: and_bitwise
+        width: 16
+
+    areg:
+      tag: pe
+      instance: array
+      query:
+        class: register
+        width: 1.5
+
+    or_gate:
+      tag: pe
+      instance: array_double
+      query:
+        class: or_bitwise
+        width: 16
+
+    sign_xor:
+      tag: pe
+      instance: height
+      query:
+        class: xnor_bitwise
+        width: 1

@@ -1,0 +1,40 @@
+architecture:
+  module:
+    dram:
+      tag: [memory]
+      instance: [1]
+      query:
+        interface: cacti7
+        class: dram
+        size: 8589934592 #1GB
+        bandwidth: 128 #128GB
+
+    isram:
+      tag: node_memory
+      instance: node
+      query:
+        interface: cacti7
+        class: sram
+        bank: 4
+        width: isram
+        depth: isram
+
+    wsram:
+      tag: node_memory
+      instance: node
+      query:
+        interface: cacti7
+        class: sram
+        bank: 4
+        width: wsram
+        depth: wsram
+
+    osram:
+      tag: node_memory
+      instance: node
+      query:
+        interface: cacti7
+        class: sram
+        bank: 4
+        width: osram
+        depth: osram

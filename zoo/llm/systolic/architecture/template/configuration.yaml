@@ -1,0 +1,42 @@
+network:
+  single_node:
+    dimension: 
+      - []
+  multi_node:
+    dimension:
+      - [4, 4]
+      - [8, 8]
+    path: zoo/llm/systolic/architecture/template/network_configuration/multi_node.architecture.yaml
+
+tag:
+  node_memory: [onchip, memory]
+  fifo: [onchip, array, fifo]
+  array: [onchip, array]
+  vector: [onchip, array, vector]
+  router: [onchip, router]
+  accumulator: [onchip, array, accumulator]
+  nonlinear: [onchip, array, nonlinear]
+  pe: [onchip, array, pe]
+
+array:
+  8x8:
+    path: zoo/llm/systolic/architecture/template/configuration/8x8.configuration.yaml
+    
+  16x16:
+    path: zoo/llm/systolic/architecture/template/configuration/16x16.configuration.yaml
+
+  32x32:
+    path: zoo/llm/systolic/architecture/template/configuration/32x32.configuration.yaml
+
+  64x64:
+    path: zoo/llm/systolic/architecture/template/configuration/64x64.configuration.yaml
+
+subarchitecture:
+  mac:
+    path: zoo/llm/systolic/architecture/template/subarchitecture/mac.architecture.yaml
+  figna:
+    path: zoo/llm/systolic/architecture/template/subarchitecture/figna.architecture.yaml
+  pwl:
+    path: zoo/llm/systolic/architecture/template/subarchitecture/pwl.architecture.yaml
+  taylor:
+    path: zoo/llm/systolic/architecture/template/subarchitecture/taylor.architecture.yaml

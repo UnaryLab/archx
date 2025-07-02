@@ -1,0 +1,20 @@
+architecture:
+  module:
+    taylor_register:
+      tag: nonlinear
+      instance: taylor
+      query:
+        class: register
+        width: 16
+
+    adder_vector:
+      tag: nonlinear
+      instance: height
+      query:
+        class: adderbf16
+
+    int_to_fp:
+      tag: pe
+      instance: height
+      query:
+        class: int_to_bf16

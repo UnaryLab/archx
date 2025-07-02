@@ -1,0 +1,1 @@
+-r=tests/test_run_batch -a=examples/mac_1_cycle/input/architecture/example.architecture.yaml -e=examples/mac_1_cycle/input/event/example.event.yaml -m=examples/mac_1_cycle/input/metric/example.metric.yaml -w=examples/mac_1_cycle/input/workload/example.workload.yaml -c=tests/test_run_batch/checkpoint.gt

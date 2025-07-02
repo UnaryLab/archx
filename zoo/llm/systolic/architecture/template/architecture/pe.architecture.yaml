@@ -1,0 +1,76 @@
+architecture:
+  module:
+    input_register:
+      tag: pe
+      instance: array
+      query:
+        class: register
+        width: 16
+    
+    weight_register:
+      tag: pe
+      instance: array
+      query:
+        class: register
+        width: 16
+
+    multiplier:
+      tag: pe
+      instance: array
+      query:
+        class: multiplierbf16
+
+    accumulator:
+      tag: pe
+      instance: array
+      query:
+        class: adderbf16
+
+    pe_register:
+      tag: pe
+      instance: array
+      query:
+        class: register
+        width: 16
+
+    icnt:
+      tag: pe
+      instance: array
+      query:
+        class: register
+        width: control
+
+    icmp:
+      tag: pe
+      instance: array
+      query:
+        class: register
+        width: control
+
+    iadd:
+      tag: pe
+      instance: array
+      query:
+        class: register
+        width: control
+
+    wcnt:
+      tag: pe
+      instance: array
+      query:
+        class: register
+        width: control
+
+    wcmp:
+      tag: pe
+      instance: array
+      query:
+        class: register
+        width: control
+        
+    wadd:
+      tag: pe
+      instance: array
+      query:
+        class: register
+        width: control

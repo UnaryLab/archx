@@ -1,0 +1,4 @@
+architecture:
+  module:
+    router:
+      path: zoo/llm/simd/architecture/template/architecture/router.architecture.yaml

@@ -1,0 +1,16 @@
+event:
+  gemm16:
+    subevent: [mac_array, sram_rd, sram_wr]
+    performance: examples/mac_2_cycle/input/performance/example.performance.py
+  gemm32:
+    subevent: [mac_array, sram_rd, sram_wr]
+    performance: examples/mac_2_cycle/input/performance/example.performance.py
+  mac_array:
+    subevent: [multiplier, adder]
+    performance: examples/mac_2_cycle/input/performance/example.performance.py
+  sram_rd:
+    subevent: [sram]
+    performance: examples/mac_2_cycle/input/performance/example.performance.py
+  sram_wr:
+    subevent: [sram]
+    performance: examples/mac_2_cycle/input/performance/example.performance.py

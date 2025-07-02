@@ -1,0 +1,39 @@
+architecture:
+  module:
+    pwl_comparator:
+      tag: nonlinear
+      instance: pwl_comparator
+      query:
+        class: bf_comparator
+
+    pwl_encoder:
+      tag: nonlinear
+      instance: height
+      query:
+        class: 21_22_encoder
+
+    pwl_register:
+      tag: nonlinear
+      instance: pwl_register
+      query:
+        class: register
+        width: 32
+    
+    pipeline_register:
+      tag: nonlinear
+      instance: pwl_register
+      query:
+        class: register
+        width: 16
+
+    adder_vector:
+      tag: nonlinear
+      instance: height
+      query:
+        class: adderbf16
+
+    int_to_fp:
+      tag: pe
+      instance: height
+      query:
+        class: int_to_bf16

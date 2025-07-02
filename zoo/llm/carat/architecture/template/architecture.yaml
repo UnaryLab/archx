@@ -1,0 +1,24 @@
+architecture:
+  attribute:
+    technology: 32
+    frequency: 400
+    interface: csv_cmos
+
+  module:
+    memory:
+      path: zoo/llm/carat/architecture/template/architecture/memory.architecture.yaml
+
+    fifo:
+      path: zoo/llm/carat/architecture/template/architecture/fifo.architecture.yaml
+
+    tc:
+      path: zoo/llm/carat/architecture/template/architecture/tc.architecture.yaml
+
+    pe:
+      path: zoo/llm/carat/architecture/template/architecture/pe.architecture.yaml
+
+    array:
+      path: zoo/llm/carat/architecture/template/architecture/array.architecture.yaml
+
+    vector:
+      path: zoo/llm/carat/architecture/template/architecture/vector.architecture.yaml

@@ -1,0 +1,27 @@
+architecture:
+  module:
+    multiplier_vector:
+      tag: vector
+      instance: height
+      query:
+        class: multiplierbf16
+
+    accumulator_vector:
+      tag: vector
+      instance: height
+      query:
+        class: adderbf16
+
+    register_vector:
+      tag: vector
+      instance: height
+      query:
+        class: register
+        width: 16
+
+    mac_register_vector:
+      tag: vector
+      instance: height
+      query:
+        class: register
+        width: 16

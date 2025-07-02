@@ -1,0 +1,8 @@
+event:
+  gemm_nonlinear:
+    subevent: [ififo, wfifo, input_register, weight_register, int_to_fp, icnt, icmp, iadd, wcnt, wcmp, wadd, multiplier, pe_register, accumulator, adder, ofifo]
+    performance: zoo/llm/systolic/performance/nonlinear.performance.py
+
+  silu_nonlinear:
+    subevent: [multiplier_vector, accumulator_vector, mac_register_vector, register_vector, taylor_register, adder_vector]
+    performance: zoo/llm/systolic/performance/nonlinear.performance.py

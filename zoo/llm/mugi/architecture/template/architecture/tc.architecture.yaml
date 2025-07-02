@@ -1,0 +1,22 @@
+architecture:
+  module:
+    comparator:
+      tag: tc
+      instance: height
+      query:
+        class: comparator
+        width: 3
+
+    magnitude_register:
+      tag: tc
+      instance: height
+      query:
+        class: register
+        width: 3
+
+    sign_register:
+      tag: tc
+      instance: height
+      query:
+        class: register
+        width: 1

@@ -1,0 +1,144 @@
+event:
+  llama_2_7b:
+    subevent: [gemm, nonlinear]
+    performance: zoo/llm/common/performance/model/llama.performance.py
+  llama_2_13b:
+    subevent: [gemm, nonlinear]
+    performance: zoo/llm/common/performance/model/llama.performance.py
+  llama_2_70b:
+    subevent: [gemm, nonlinear]
+    performance: zoo/llm/common/performance/model/llama.performance.py
+  llama_2_70b_GQA:
+    subevent: [gemm, nonlinear]
+    performance: zoo/llm/common/performance/model/llama.performance.py
+
+  # define llama_2 functions
+  gemm:
+    subevent: [projection, attention, ffn, output]
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  nonlinear:
+    subevent: [softmax, silu]
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+
+  # define sublayers
+  projection:
+    subevent: [proj_q, proj_k, proj_v, proj_a]
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  attention:
+    subevent: [qkt, av]
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  ffn:
+    subevent: [proj_up, proj_down, proj_gate]
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  output:
+    subevent: [output_prefill, output_decode]
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  
+  # define each sublayer
+  proj_q:
+    subevent: [proj_q_prefill, proj_q_decode]
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_k:
+    subevent: [proj_k_prefill, proj_k_decode]
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_v:
+    subevent: [proj_v_prefill, proj_v_decode]
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_a:
+    subevent: [proj_a_prefill, proj_a_decode]
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  qkt:
+    subevent: [qkt_prefill, qkt_decode]
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  av:
+    subevent: [av_prefill, av_decode]
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_up:
+    subevent: [proj_up_prefill, proj_up_decode]
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_down:
+    subevent: [proj_down_prefill, proj_down_decode]
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_gate:
+    subevent: [proj_gate_prefill, proj_gate_decode]
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  softmax:
+    subevent: [softmax_prefill, softmax_decode]
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  silu:
+    subevent: [silu_prefill, silu_decode]
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+
+  # lowest software level
+  proj_q_prefill:
+    subevent: gemm
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_k_prefill:
+    subevent: gemm
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_v_prefill:
+    subevent: gemm
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_a_prefill:
+    subevent: gemm
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_q_decode:
+    subevent: gemm
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_k_decode:
+    subevent: gemm
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_v_decode:
+    subevent: gemm
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_a_decode:
+    subevent: gemm
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  qkt_prefill:
+    subevent: gemm
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  av_prefill:
+    subevent: gemm
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  qkt_decode: 
+    subevent: gemm
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  av_decode:
+    subevent: gemm
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_up_prefill:
+    subevent: gemm
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_down_prefill:
+    subevent: gemm
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_gate_prefill:
+    subevent: gemm
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_up_decode:
+    subevent: gemm
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_down_decode:
+    subevent: gemm
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  proj_gate_decode:
+    subevent: gemm
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  softmax_prefill:
+    subevent: nonlinear
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  silu_prefill:
+    subevent: nonlinear
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  softmax_decode:
+    subevent: nonlinear
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  silu_decode:
+    subevent: nonlinear
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  output_prefill:
+    subevent: gemm
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py
+  output_decode:
+    subevent: gemm
+    performance: zoo/llm/common/performance/model/model_architecture.performance.py

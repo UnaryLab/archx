@@ -1,0 +1,33 @@
+architecture:
+  module:
+    window_select:
+      tag: nonlinear
+      instance: node
+      query:
+        class: window_select
+
+    round:
+      tag: nonlinear
+      instance: height
+      query:
+        class: round
+
+    sign_mantissa_register:
+      tag: nonlinear
+      instance: height
+      query:
+        class: register
+        width: 4
+
+    exponent_register:
+      tag: nonlinear
+      instance: height
+      query:
+        class: register
+        width: 8
+
+    exp_clamp:
+      tag: nonlinear
+      instance: height
+      query:
+        class: clamp

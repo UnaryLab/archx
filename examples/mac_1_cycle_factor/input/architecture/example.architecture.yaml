@@ -1,0 +1,23 @@
+#Architecture defines some of the physical parameters of the hardware such as bitwidth, technology, clock frequenct, etc
+
+# Define some of the physical characteristics for all 
+architecture: # architecture is a flattened description of all components
+  attribute: # attributes are part of query, and added to query if query does not define thems
+    technology: 32 # in nm
+    frequency: 400 # in MHz
+    interface: csv_cmos
+    
+  module: # Tag to access the specific hardware
+
+    mac_array:
+      # can load from another file
+      path: examples/mac_1_cycle_factor/input/architecture/mac_array.architecture.yaml
+    
+    sram:
+      tag: [memory, onchip]
+      query: 
+        interface: cacti7
+        class: sram
+        bank: 32
+        width: 64 # in bits
+        depth: 1024

@@ -1,0 +1,7 @@
+architecture:
+  module:
+    post_comp:
+      tag: nonlinear
+      instance: height
+      query:
+        class: bf_post

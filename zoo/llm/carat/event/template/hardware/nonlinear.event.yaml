@@ -1,0 +1,9 @@
+event:
+  gemm_nonlinear:
+    subevent: [ififo, accumulator, accumulator_register, exp_scale, wreg, counter, wfifo, comparator, ireg, z_flag,
+               nan_flag, sign_fifo, temporal_register, and_gate, or_gate, areg, creg, pe_fifo, sign_xor, shifterexp, adder, ofifo]
+    performance: zoo/llm/carat/performance/nonlinear.performance.py
+
+  vector_nonlinear:
+    subevent: [multiplier_vector, accumulator_vector, register_vector, mac_register_vector]
+    performance: zoo/llm/carat/performance/nonlinear.performance.py
