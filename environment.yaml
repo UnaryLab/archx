@@ -12,3 +12,6 @@ dependencies:
   - pyfiglet
   - loguru
   - pip
+  - pandas
+  - numpy
+  - matplotlib
