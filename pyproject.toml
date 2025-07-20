@@ -26,7 +26,7 @@ dependencies = [
     "loguru"
 ]
 
-# Map script name to the main entry point (syndrilla/main.py -> main())
+# Map script name to the main entry point (archx/main.py -> main())
 [project.scripts]
 archx = "archx.main:main"
 
