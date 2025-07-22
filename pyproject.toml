@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 version = "2025.07.01"
 name = "archx"
 authors = [
-  { name="Di Wu", email="di.wu@ucf.com" },
+  { name="Di Wu", email="di.wu@ucf.edu" },
   { name="Daniel Price", email="daniel.price@ucf.edu" },
   { name="Tyler Goldsmith", email="tyler.goldsmith@ucf.edu" }
 ]
