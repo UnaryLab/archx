@@ -1,0 +1,46 @@
+accumulator:
+  WIDTH: 32
+adder:
+  WIDTH: 32
+adderbf16:
+and_bitwise:
+  WIDTH: 1
+comparator:
+  WIDTH: 32
+comparator_eq:
+  WIDTH: 32
+crossbar:
+  WIDTH: 16
+  NUM_OUTPUTS: 64
+  NUM_INPUTS: 64
+deserializer:
+  WIDTH: 8
+  DEPTH: 4
+fifo:
+  WIDTH: 32
+  DEPTH: 16
+multiplexer:
+  WIDTH: 32
+  NUM_INPUTS: 8
+multiplier:
+  WIDTH: 16
+or_bitwise:
+  WIDTH: 1
+register:
+  WIDTH: 16
+register_file:
+  WIDTH: 16
+  DEPTH: 8
+serializer:
+  WIDTH: 8
+  DEPTH: 4
+shifter:
+  WIDTH: 8
+  STAGE: 3 # stage can be independent of width
+sobolrng:
+  WIDTH: 16
+xnor_bitwise:
+  WIDTH: 1
+xor_bitwise:
+  WIDTH: 1
+  

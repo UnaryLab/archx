@@ -6,7 +6,7 @@ from loguru import logger
 from archx.utils import get_path, interpolate_oneD_linear, interpolate_oneD_quadratic
 
 
-skip_list = ['technology', 'frequency', 'interpolation', 'dynamic', 'leakage', 'area']
+skip_list = ['technology', 'frequency', 'interpolation', 'dynamic_uw', 'leakage_uw', 'area_mm2']
 interpolation_list = ['linear', 'quadratic']
 
 
@@ -31,9 +31,9 @@ def query(name: str, interface: str, query: OrderedDict, input_dir=None, output_
             # no technology scaling
             if row['technology'] == str(query_technology):
                 technology_flag = True
-                dynamic_power_mW = float(row['dynamic']) # in mW
-                leakage_power_mW = float(row['leakage']) # in mW
-                area_mm2 = float(row['area']) # in mm^2
+                dynamic_power_mW = float(row['dynamic_uw']) # in mW
+                leakage_power_mW = float(row['leakage_uw']) # in mW
+                area_mm2 = float(row['area_mm2']) # in mm^2
 
                 # frequency scaling (dynamic power)
                 dynamic_power_mW *= (query_frequency / float(row['frequency'])) # in mW
