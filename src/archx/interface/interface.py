@@ -34,13 +34,13 @@ def query_interface(module: str, query: OrderedDict, input_dir=None, output_dir=
 
 def register_interface(name: str, interface_dir: str) -> None:
     assert name != key_interface, logger.error(f'Invalid interface name: <{name}>.')
-    archx.dir = get_path(interface_dir)
+    src_dir = get_path(interface_dir)
     dst_dir = os.path.join(os.path.dirname(__file__), name)
     if os.path.isdir(dst_dir):
         logger.warning(f'Interface <{name}> exists at <{dst_dir}>.')
     else:
-        shutil.copytree(archx.dir, dst_dir)
-        logger.success(f'Register interface <{name}> from <{archx.dir}> to <{dst_dir}>.')
+        shutil.copytree(src_dir, dst_dir)
+        logger.success(f'Register interface <{name}> from <{src_dir}> to <{dst_dir}>.')
 
 
 def unregister_interface(name: str) -> None:
@@ -55,13 +55,13 @@ def unregister_interface(name: str) -> None:
 
 def copy_interface(name: str, interface_dir: str) -> None:
     assert name != key_interface, logger.error(f'Invalid interface name: <{name}>.')
-    archx.dir = os.path.join(os.path.dirname(__file__), name)
+    src_dir = os.path.join(os.path.dirname(__file__), name)
     dst_dir = os.path.join(os.getcwd(), interface_dir)
-    if os.path.isdir(archx.dir) and not os.path.isdir(dst_dir):
-        shutil.copytree(archx.dir, dst_dir)
-        logger.success(f'Copy interface: <{name}> from <{archx.dir}> to: <{dst_dir}>.')
-    elif not os.path.isdir(archx.dir):
-        logger.warning(f'Interface <{name}> does not exist at <{archx.dir}>.')
-    elif os.path.isdir(archx.dir):
+    if os.path.isdir(src_dir) and not os.path.isdir(dst_dir):
+        shutil.copytree(src_dir, dst_dir)
+        logger.success(f'Copy interface: <{name}> from <{src_dir}> to: <{dst_dir}>.')
+    elif not os.path.isdir(src_dir):
+        logger.warning(f'Interface <{name}> does not exist at <{src_dir}>.')
+    elif os.path.isdir(src_dir):
         logger.warning(f'Interface <{name}> exists at <{dst_dir}>.')
 

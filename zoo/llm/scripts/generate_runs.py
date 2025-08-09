@@ -74,9 +74,8 @@ def main():
                                         runs_path = os.path.normpath('./' + base_path + 'runs/' + arch_path + network_dim_path + subarch_path + array_path + model_path + workload_config_path + runs_termination_path)
                                         workload_path = os.path.normpath('./' + base_path + arch_path + 'workload/generated/' + model_path + workload_termination_path + workload_config_path + 'workload.yaml')
                                         checkpoint_path = os.path.normpath(runs_path + '/checkpoint.gt/')
-                                        save_arg = 'true'
 
-                                        file.write('-a ' + architecture_path + ' -e ' + event_path + ' -m ' + metric_path + ' -r ' + runs_path +  ' -w ' + workload_path  + ' -c ' + checkpoint_path + ' -s ' + save_arg + '\n')
+                                        file.write('-a ' + architecture_path + ' -e ' + event_path + ' -m ' + metric_path + ' -r ' + runs_path +  ' -w ' + workload_path  + ' -c ' + checkpoint_path + ' -s ' + '\n')
     
 if '__main__' == __name__:
     main()
