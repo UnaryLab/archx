@@ -43,9 +43,9 @@ def extract(technology, frequency):
                 elems = strip_list(elems)
                 if len(elems) > 0:
                     if str(elems[0]) == 'postRouteOpt':
-                        area = float(elems[1]) / 10**6 # mm^2
-                        leakage = float(elems[5]) # uW
-                        dynamic = float(elems[6]) # uW
+                        area = float(elems[4]) / 10**6 # mm^2
+                        leakage = float(elems[6]) # uW
+                        dynamic = float(elems[7]) # uW
 
         assert dynamic != 0, logger.error(f'dynamic power={dynamic} for {module} is 0')
         assert leakage != 0, logger.error(f'leakage power={leakage} for {module} is 0')
