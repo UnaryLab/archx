@@ -59,11 +59,20 @@ def query_area(event_graph, metric_dict, workload=None, tag=None, module=None) -
 
     return area
 
+def query_operational_carbon(tag, event_graph, metric_dict, workload, event, CI) -> OrderedDict:
+    execution_time = query_execution_time(event_graph=event_graph, metric_dict=metric_dict, workload=workload, event=event)
+    dynamic_energy = query_dynamic_energy(event_graph=event_graph, metric_dict=metric_dict, workload=workload, tag=tag)
+    leakage_power = query_leakage_power(event_graph=event_graph, metric_dict=metric_dict, workload=workload, tag=tag)
+    power = (leakage_power + (dynamic_energy / execution_time)) * 10**3 # W -> mW
+
+    op_carbon = CI * (power / 1000000) * (execution_time / 3600) # mW -> KW, s -> H
+
+    return op_carbon
+
 def query_tag_power(tag, event_graph, metric_dict, workload, event) -> OrderedDict:
     execution_time = query_execution_time(event_graph=event_graph, metric_dict=metric_dict, workload=workload, event=event)
     dynamic_energy = query_dynamic_energy(event_graph=event_graph, metric_dict=metric_dict, workload=workload, tag=tag)
     leakage_power = query_leakage_power(event_graph=event_graph, metric_dict=metric_dict, workload=workload, tag=tag)
-    
     power = (leakage_power + (dynamic_energy / execution_time)) * 10**3 # W -> mW
 
     return power
