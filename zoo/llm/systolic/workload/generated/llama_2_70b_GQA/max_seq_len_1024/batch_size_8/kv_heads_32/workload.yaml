@@ -15,6 +15,9 @@ workload:
       layers: 80
       max_seq_len: 1024
       noc_stationary: os
+      noc_tile_k: 256
+      noc_tile_m: 256
+      noc_tile_n: 256
       node_stationary: ws
       prefill_seq_len: 64
       pwl_cycles: 4

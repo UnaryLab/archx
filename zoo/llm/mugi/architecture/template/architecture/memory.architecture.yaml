@@ -1,7 +1,7 @@
 architecture:
   module:
     dram:
-      tag: [memory]
+      tag: [memory, dram]
       instance: [1]
       query:
         interface: cacti7

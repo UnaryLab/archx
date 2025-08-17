@@ -9,133 +9,137 @@ def offchip_gemm_scheduling(batch, m, k, n, architecture_dict: OrderedDict, work
     Sets tiling for dram <-> sram for single-node and multi-node configurations
     """
     # Retrieve dicts
-    arch = workload_dict['architecture']
-    isram_dict = architecture_dict['isram']
-    wsram_dict = architecture_dict['wsram']
-    osram_dict = architecture_dict['osram']
+    tile_m = workload_dict['noc_tile_m']
+    tile_k = workload_dict['noc_tile_k']
+    tile_n = workload_dict['noc_tile_n']
+
+    # arch = workload_dict['architecture']
+    # isram_dict = architecture_dict['isram']
+    # wsram_dict = architecture_dict['wsram']
+    # osram_dict = architecture_dict['osram']
     input_bitwidth = workload_dict['activation_bitwidth']
     weight_bitwidth = workload_dict['weight_bitwidth']
     output_bitwidth = workload_dict['activation_bitwidth']
-    stationary = workload_dict['noc_stationary']
-    array_width = architecture_dict['ififo']['instance'][-1]
-    array_height = architecture_dict['wfifo']['instance'][-1]
+    # stationary = workload_dict['noc_stationary']
+    # array_width = architecture_dict['ififo']['instance'][-1]
+    # array_height = architecture_dict['wfifo']['instance'][-1]
 
-    # SRAM configurations
-    # divide banks by to buffer
-    isram_bank = isram_dict['query']['bank'] / 2
-    wsram_bank = wsram_dict['query']['bank'] / 2
-    osram_bank = osram_dict['query']['bank'] / 2
+    # # SRAM configurations
+    # # divide banks by to buffer
+    # isram_bank = isram_dict['query']['bank'] / 2
+    # wsram_bank = wsram_dict['query']['bank'] / 2
+    # osram_bank = osram_dict['query']['bank'] / 2
 
-    isram_width = isram_dict['query']['width']
-    wsram_width = wsram_dict['query']['width']
-    osram_width = osram_dict['query']['width']
+    # isram_width = isram_dict['query']['width']
+    # wsram_width = wsram_dict['query']['width']
+    # osram_width = osram_dict['query']['width']
 
-    isram_depth = isram_dict['query']['depth']
-    wsram_depth = wsram_dict['query']['depth']
-    osram_depth = osram_dict['query']['depth']
+    # isram_depth = isram_dict['query']['depth']
+    # wsram_depth = wsram_dict['query']['depth']
+    # osram_depth = osram_dict['query']['depth']
 
-    isram_size = isram_bank * isram_width * isram_depth
-    wsram_size = wsram_bank * wsram_width * wsram_depth
-    osram_size = osram_bank * osram_width * osram_depth
+    # isram_size = isram_bank * isram_width * isram_depth
+    # wsram_size = wsram_bank * wsram_width * wsram_depth
+    # osram_size = osram_bank * osram_width * osram_depth
 
-    isram_elements = isram_size / input_bitwidth
-    wsram_elements = wsram_size / weight_bitwidth
-    osram_elements = osram_size / output_bitwidth
+    # isram_elements = isram_size / input_bitwidth
+    # wsram_elements = wsram_size / weight_bitwidth
+    # osram_elements = osram_size / output_bitwidth
 
-    # number of nodes
-    nodes = isram_dict['instance'][0] * isram_dict['instance'][1] if 'irouter' in architecture_dict else 1
+    # # number of nodes
+    # nodes = isram_dict['instance'][0] * isram_dict['instance'][1] if 'irouter' in architecture_dict else 1
 
-    if stationary == 'os':
-        # Output stationary scheduling
-        # initialize m tile size to m (in llms, very oftem batch size or smaller)
-        # initialize n tile size to maximum size that fully utalizes noc
-        tile_m = min(m, array_width)
-        tile_n = ((n * batch) / nodes)
+    # if stationary == 'os':
+    #     # Output stationary scheduling
+    #     # initialize m tile size to m (in llms, very oftem batch size or smaller)
+    #     # initialize n tile size to maximum size that fully utalizes noc
+    #     tile_m = min(m, array_width)
+    #     tile_n = ((n * batch) / nodes)
 
-        # if tile_n does not fit in osram, reduce tile_n
-        while(tile_n * tile_m > osram_elements):
-            tile_n /= 2
+    #     # if tile_n does not fit in osram, reduce tile_n
+    #     while(tile_n * tile_m > osram_elements):
+    #         tile_n /= 2
 
-        # if small tile n, and is smaller than array, increase tile_n
-        while((tile_n * tile_m * 2 < osram_elements) and (tile_n < array_height)):
-            tile_n *= 2
+    #     # if small tile n, and is smaller than array, increase tile_n
+    #     while((tile_n * tile_m * 2 < osram_elements) and (tile_n < array_height)):
+    #         tile_n *= 2
 
-        # if small tile n, and can increase m, increase tile_m
-        # multiply by 2 to check if you can increase tile_m
-        while((tile_m * tile_n * 2 < osram_elements) and (tile_m < m)):
-            tile_m *= 2
+    #     # if small tile n, and can increase m, increase tile_m
+    #     # multiply by 2 to check if you can increase tile_m
+    #     while((tile_m * tile_n * 2 < osram_elements) and (tile_m < m)):
+    #         tile_m *= 2
 
-        # initialize k tile size to maximum size that fully utalizes wsram
-        tile_k = wsram_elements / tile_n
+    #     # initialize k tile size to maximum size that fully utalizes wsram
+    #     tile_k = wsram_elements / tile_n
 
-        # if tile_k does not fit in isram, reduce tile_k
-        while(tile_k * tile_m > isram_elements):
-            tile_k /= 2
+    #     # if tile_k does not fit in isram, reduce tile_k
+    #     while(tile_k * tile_m > isram_elements):
+    #         tile_k /= 2
 
-        while arch == 'tensor' and (tile_k < array_width):
-              tile_k *= 2
-              tile_n /= 2
+    #     while arch == 'tensor' and (tile_k < array_width):
+    #           tile_k *= 2
+    #           tile_n /= 2
 
-    elif stationary == 'ws':
-        # Weight stationary scheduling
-        # initialize m tile size to m (in llms, very oftem batch size or smaller)
-        # initialize k tile size to maximum size that fully utalizes noc
-        tile_m = min(m, array_width)
-        tile_k = ((k * batch) / nodes)
+    # elif stationary == 'ws':
+    #     # Weight stationary scheduling
+    #     # initialize m tile size to m (in llms, very oftem batch size or smaller)
+    #     # initialize k tile size to maximum size that fully utalizes noc
+    #     tile_m = min(m, array_width)
+    #     tile_k = ((k * batch) / nodes)
 
-        # if tile_k does not fit in isram, reduce tile_k
-        while(tile_k * tile_m > isram_elements):
-            tile_k /= 2
+    #     # if tile_k does not fit in isram, reduce tile_k
+    #     while(tile_k * tile_m > isram_elements):
+    #         tile_k /= 2
 
-        # initialize n tile size to maximum size that fully utalizes wsram
-        tile_n = wsram_elements / tile_k
+    #     # initialize n tile size to maximum size that fully utalizes wsram
+    #     tile_n = wsram_elements / tile_k
 
-        # if tile_n does not fit in osram or wsram, reduce tile_n
-        while(tile_n > osram_elements / tile_m):
-            tile_n /= 2
+    #     # if tile_n does not fit in osram or wsram, reduce tile_n
+    #     while(tile_n > osram_elements / tile_m):
+    #         tile_n /= 2
 
-        # if small tile k, and can increase m, increase tile_m
-        # multiply by 2 to check if you can increase tile_m
-        while((tile_m * tile_k * 2 < isram_elements) and (tile_m < m)):
-            tile_m *= 2
+    #     # if small tile k, and can increase m, increase tile_m
+    #     # multiply by 2 to check if you can increase tile_m
+    #     while((tile_m * tile_k * 2 < isram_elements) and (tile_m < m)):
+    #         tile_m *= 2
 
-    elif stationary == 'is':
-        # Input stationary scheduling
-        # initialize k tile size to m(quantized dim, smaller data size)
-        # initialize m tile size to maximum size that fully utalizes noc
-        tile_k = min(k, array_height)
-        tile_m = ((m * batch) / nodes)
+    # elif stationary == 'is':
+    #     # Input stationary scheduling
+    #     # initialize k tile size to m(quantized dim, smaller data size)
+    #     # initialize m tile size to maximum size that fully utalizes noc
+    #     tile_k = min(k, array_height)
+    #     tile_m = ((m * batch) / nodes)
 
-        # if tile_m does not fit in isram, reduce tile_m
-        while(tile_m * tile_k > isram_elements):
-            tile_m /= 2
+    #     # if tile_m does not fit in isram, reduce tile_m
+    #     while(tile_m * tile_k > isram_elements):
+    #         tile_m /= 2
 
-        # initialize n tile size to maximum size that fully utalizes osram
-        tile_n = osram_elements / tile_m
+    #     # initialize n tile size to maximum size that fully utalizes osram
+    #     tile_n = osram_elements / tile_m
         
-        # if tile_n does not fit in wsram, reduce tile_n
-        while(tile_n * tile_k > wsram_elements):
-            tile_n /= 2
+    #     # if tile_n does not fit in wsram, reduce tile_n
+    #     while(tile_n * tile_k > wsram_elements):
+    #         tile_n /= 2
 
-        # if small tile k, and can increase k, increase tile_k
-        # multiply by 2 to check if you can increase tile_k
-        while((tile_k * tile_m * 2 < isram_elements) and (tile_k < k)):
-            tile_k *= 2
+    #     # if small tile k, and can increase k, increase tile_k
+    #     # multiply by 2 to check if you can increase tile_k
+    #     while((tile_k * tile_m * 2 < isram_elements) and (tile_k < k)):
+    #         tile_k *= 2
 
-    if tile_m * tile_k > isram_elements:
-        raise ValueError('Tile size exceeds isram size')
-    if tile_k * tile_n > wsram_elements:
-        raise ValueError('Tile size exceeds wsram size')
-    if tile_m * tile_n > osram_elements:
-        raise ValueError('Tile size exceeds osram size')
+    # if tile_m * tile_k > isram_elements:
+    #     raise ValueError('Tile size exceeds isram size')
+    # if tile_k * tile_n > wsram_elements:
+    #     raise ValueError('Tile size exceeds wsram size')
+    # if tile_m * tile_n > osram_elements:
+    #     raise ValueError('Tile size exceeds osram size')
 
-    tile_m = 2 ** math.ceil(math.log2(tile_m))
-    tile_k = 2 ** math.ceil(math.log2(tile_k))
-    tile_n = 2 ** math.ceil(math.log2(tile_n))
+    # tile_m = 2 ** math.ceil(math.log2(tile_m))
+    # tile_k = 2 ** math.ceil(math.log2(tile_k))
+    # tile_n = 2 ** math.ceil(math.log2(tile_n))
 
-    tile_m = int(tile_m)
-    tile_k = int(tile_k)
-    tile_n = int(tile_n)
+    # tile_m = int(tile_m)
+    # tile_k = int(tile_k)
+    # tile_n = int(tile_n)
 
     tiles = TiledGEMM(batch=batch, m=m, k=k, n=n, tile_m=tile_m, tile_k=tile_k, tile_n=tile_n, m_k_bitwidth=input_bitwidth, k_n_bitwidth=weight_bitwidth, m_n_bitwidth=output_bitwidth)
     if not tiles.is_valid:
@@ -148,6 +152,10 @@ def offchip_gemm_events(tiles: TiledGEMM, architecture_dict: OrderedDict, worklo
     Estimates dram and sram reads and writes to from offchip memory to onchip memory for GEMM operations
     """
     # Retrieve dicts
+
+    # assume 64 bit wide
+    dram_width = 64
+
     stationary = workload_dict['noc_stationary']
     isram_width = architecture_dict['isram']['query']['width']
     wsram_width = architecture_dict['wsram']['query']['width']
@@ -160,62 +168,62 @@ def offchip_gemm_events(tiles: TiledGEMM, architecture_dict: OrderedDict, worklo
         # weight = batch x k_tiles x n_tiles x m_tiles x ceil(tile_bits / wsram_width)
         # output = batch x m_tiles x n_tiles x ceil(tile_bits / osram_width) -> (no k dim, as it's output stationary. Output stationary maps noc to outputs, so no need to map to k)
         # More detailed breakdown, allows for instances where the tile size is smaller than sram width, which increases events compared to using total_bits/width.
-        m_full_k_full_events = tiles.m_full_k_full_total_tiles * tiles.n_tiles * math.ceil(tiles.m_full_k_full_tile_bits / isram_width)
-        m_full_k_partial_events = tiles.m_full_k_partial_total_tiles * tiles.n_tiles * math.ceil(tiles.m_full_k_partial_tile_bits / isram_width)
-        m_partial_k_full_events = tiles.m_partial_k_full_total_tiles * tiles.n_tiles * math.ceil(tiles.m_partial_k_full_tile_bits / isram_width)
-        m_partial_k_partial_events = tiles.m_partial_k_partial_total_tiles * tiles.n_tiles * math.ceil(tiles.m_partial_k_partial_tile_bits / isram_width)
+        m_full_k_full_events = tiles.m_full_k_full_total_tiles * tiles.n_tiles * math.ceil(tiles.m_full_k_full_tile_bits / dram_width)
+        m_full_k_partial_events = tiles.m_full_k_partial_total_tiles * tiles.n_tiles * math.ceil(tiles.m_full_k_partial_tile_bits / dram_width)
+        m_partial_k_full_events = tiles.m_partial_k_full_total_tiles * tiles.n_tiles * math.ceil(tiles.m_partial_k_full_tile_bits / dram_width)
+        m_partial_k_partial_events = tiles.m_partial_k_partial_total_tiles * tiles.n_tiles * math.ceil(tiles.m_partial_k_partial_tile_bits / dram_width)
 
         # K x N Weight matrix dram <-> wsram events (dram reads, wsram writes)
-        k_full_n_full_events = tiles.k_full_n_full_total_tiles * tiles.m_tiles * math.ceil(tiles.k_full_n_full_tile_bits / wsram_width)
-        k_full_n_partial_events = tiles.k_full_n_partial_total_tiles * tiles.m_tiles * math.ceil(tiles.k_full_n_partial_tile_bits / wsram_width)
-        k_partial_n_full_events = tiles.k_partial_n_full_total_tiles * tiles.m_tiles * math.ceil(tiles.k_partial_n_full_tile_bits / wsram_width)
-        k_partial_n_partial_events = tiles.k_partial_n_partial_total_tiles * tiles.m_tiles * math.ceil(tiles.k_partial_n_partial_tile_bits / wsram_width)
+        k_full_n_full_events = tiles.k_full_n_full_total_tiles * tiles.m_tiles * math.ceil(tiles.k_full_n_full_tile_bits / dram_width)
+        k_full_n_partial_events = tiles.k_full_n_partial_total_tiles * tiles.m_tiles * math.ceil(tiles.k_full_n_partial_tile_bits / dram_width)
+        k_partial_n_full_events = tiles.k_partial_n_full_total_tiles * tiles.m_tiles * math.ceil(tiles.k_partial_n_full_tile_bits / dram_width)
+        k_partial_n_partial_events = tiles.k_partial_n_partial_total_tiles * tiles.m_tiles * math.ceil(tiles.k_partial_n_partial_tile_bits / dram_width)
 
         # M x N Output matrix osram <-> dram events (osram reads)
-        m_full_n_full_events = tiles.m_full_n_full_total_tiles * math.ceil(tiles.m_full_n_full_tile_bits / osram_width)
-        m_full_n_partial_events = tiles.m_full_n_partial_total_tiles * math.ceil(tiles.m_full_n_partial_tile_bits / osram_width)
-        m_partial_n_full_events = tiles.m_partial_n_full_total_tiles * math.ceil(tiles.m_partial_n_full_tile_bits / osram_width)
-        m_partial_n_partial_events = tiles.m_partial_n_partial_total_tiles * math.ceil(tiles.m_partial_n_partial_tile_bits / osram_width)
+        m_full_n_full_events = tiles.m_full_n_full_total_tiles * math.ceil(tiles.m_full_n_full_tile_bits / dram_width)
+        m_full_n_partial_events = tiles.m_full_n_partial_total_tiles * math.ceil(tiles.m_full_n_partial_tile_bits / dram_width)
+        m_partial_n_full_events = tiles.m_partial_n_full_total_tiles * math.ceil(tiles.m_partial_n_full_tile_bits / dram_width)
+        m_partial_n_partial_events = tiles.m_partial_n_partial_total_tiles * math.ceil(tiles.m_partial_n_partial_tile_bits / dram_width)
 
     elif stationary == 'is':
         # input stationary scheduling
         # M x K Input matrix dram <-> isram events (dram reads, isram writes)
-        m_full_k_full_events = tiles.m_full_k_full_total_tiles * math.ceil(tiles.m_full_k_full_tile_bits / isram_width)
-        m_full_k_partial_events = tiles.m_full_k_partial_total_tiles * math.ceil(tiles.m_full_k_partial_tile_bits / isram_width)
-        m_partial_k_full_events = tiles.m_partial_k_full_total_tiles * math.ceil(tiles.m_partial_k_full_tile_bits / isram_width)
-        m_partial_k_partial_events = tiles.m_partial_k_partial_total_tiles * math.ceil(tiles.m_partial_k_partial_tile_bits / isram_width)
+        m_full_k_full_events = tiles.m_full_k_full_total_tiles * math.ceil(tiles.m_full_k_full_tile_bits / dram_width)
+        m_full_k_partial_events = tiles.m_full_k_partial_total_tiles * math.ceil(tiles.m_full_k_partial_tile_bits / dram_width)
+        m_partial_k_full_events = tiles.m_partial_k_full_total_tiles * math.ceil(tiles.m_partial_k_full_tile_bits / dram_width)
+        m_partial_k_partial_events = tiles.m_partial_k_partial_total_tiles * math.ceil(tiles.m_partial_k_partial_tile_bits / dram_width)
 
         # K x N Weight matrix dram <-> wsram events (dram reads, wsram writes)
-        k_full_n_full_events = tiles.k_full_n_full_total_tiles * tiles.m_tiles * math.ceil(tiles.k_full_n_full_tile_bits / wsram_width)
-        k_full_n_partial_events = tiles.k_full_n_partial_total_tiles * tiles.m_tiles * math.ceil(tiles.k_full_n_partial_tile_bits / wsram_width)
-        k_partial_n_full_events = tiles.k_partial_n_full_total_tiles * tiles.m_tiles * math.ceil(tiles.k_partial_n_full_tile_bits / wsram_width)
-        k_partial_n_partial_events = tiles.k_partial_n_partial_total_tiles * tiles.m_tiles * math.ceil(tiles.k_partial_n_partial_tile_bits / wsram_width)
+        k_full_n_full_events = tiles.k_full_n_full_total_tiles * tiles.m_tiles * math.ceil(tiles.k_full_n_full_tile_bits / dram_width)
+        k_full_n_partial_events = tiles.k_full_n_partial_total_tiles * tiles.m_tiles * math.ceil(tiles.k_full_n_partial_tile_bits / dram_width)
+        k_partial_n_full_events = tiles.k_partial_n_full_total_tiles * tiles.m_tiles * math.ceil(tiles.k_partial_n_full_tile_bits / dram_width)
+        k_partial_n_partial_events = tiles.k_partial_n_partial_total_tiles * tiles.m_tiles * math.ceil(tiles.k_partial_n_partial_tile_bits / dram_width)
 
         # M x N Output matrix osram <-> dram events (osram reads)
-        m_full_n_full_events = tiles.m_full_n_full_total_tiles * tiles.k_tiles * math.ceil(tiles.m_full_n_full_tile_bits / osram_width)
-        m_full_n_partial_events = tiles.m_full_n_partial_total_tiles * tiles.k_tiles * math.ceil(tiles.m_full_n_partial_tile_bits / osram_width)
-        m_partial_n_full_events = tiles.m_partial_n_full_total_tiles * tiles.k_tiles * math.ceil(tiles.m_partial_n_full_tile_bits / osram_width)
-        m_partial_n_partial_events = tiles.m_partial_n_partial_total_tiles * tiles.k_tiles * math.ceil(tiles.m_partial_n_partial_tile_bits / osram_width)
+        m_full_n_full_events = tiles.m_full_n_full_total_tiles * tiles.k_tiles * math.ceil(tiles.m_full_n_full_tile_bits / dram_width)
+        m_full_n_partial_events = tiles.m_full_n_partial_total_tiles * tiles.k_tiles * math.ceil(tiles.m_full_n_partial_tile_bits / dram_width)
+        m_partial_n_full_events = tiles.m_partial_n_full_total_tiles * tiles.k_tiles * math.ceil(tiles.m_partial_n_full_tile_bits / dram_width)
+        m_partial_n_partial_events = tiles.m_partial_n_partial_total_tiles * tiles.k_tiles * math.ceil(tiles.m_partial_n_partial_tile_bits / dram_width)
 
     elif stationary == 'ws':
         # weight stationary scheduling
         # M x K Input matrix dram <-> isram events (dram reads, isram writes)
-        m_full_k_full_events = tiles.m_full_k_full_total_tiles * tiles.n_tiles * math.ceil(tiles.m_full_k_full_tile_bits / isram_width)
-        m_full_k_partial_events = tiles.m_full_k_partial_total_tiles * tiles.n_tiles * math.ceil(tiles.m_full_k_partial_tile_bits / isram_width)
-        m_partial_k_full_events = tiles.m_partial_k_full_total_tiles * tiles.n_tiles * math.ceil(tiles.m_partial_k_full_tile_bits / isram_width)
-        m_partial_k_partial_events = tiles.m_partial_k_partial_total_tiles * tiles.n_tiles * math.ceil(tiles.m_partial_k_partial_tile_bits / isram_width)
+        m_full_k_full_events = tiles.m_full_k_full_total_tiles * tiles.n_tiles * math.ceil(tiles.m_full_k_full_tile_bits / dram_width)
+        m_full_k_partial_events = tiles.m_full_k_partial_total_tiles * tiles.n_tiles * math.ceil(tiles.m_full_k_partial_tile_bits / dram_width)
+        m_partial_k_full_events = tiles.m_partial_k_full_total_tiles * tiles.n_tiles * math.ceil(tiles.m_partial_k_full_tile_bits / dram_width)
+        m_partial_k_partial_events = tiles.m_partial_k_partial_total_tiles * tiles.n_tiles * math.ceil(tiles.m_partial_k_partial_tile_bits / dram_width)
 
         # K x N Weight matrix dram <-> wsram events (dram reads, wsram writes)
-        k_full_n_full_events = tiles.k_full_n_full_total_tiles * math.ceil(tiles.k_full_n_full_tile_bits / wsram_width)
-        k_full_n_partial_events = tiles.k_full_n_partial_total_tiles * math.ceil(tiles.k_full_n_partial_tile_bits / wsram_width)
-        k_partial_n_full_events = tiles.k_partial_n_full_total_tiles * math.ceil(tiles.k_partial_n_full_tile_bits / wsram_width)
-        k_partial_n_partial_events = tiles.k_partial_n_partial_total_tiles * math.ceil(tiles.k_partial_n_partial_tile_bits / wsram_width)
+        k_full_n_full_events = tiles.k_full_n_full_total_tiles * math.ceil(tiles.k_full_n_full_tile_bits / dram_width)
+        k_full_n_partial_events = tiles.k_full_n_partial_total_tiles * math.ceil(tiles.k_full_n_partial_tile_bits / dram_width)
+        k_partial_n_full_events = tiles.k_partial_n_full_total_tiles * math.ceil(tiles.k_partial_n_full_tile_bits / dram_width)
+        k_partial_n_partial_events = tiles.k_partial_n_partial_total_tiles * math.ceil(tiles.k_partial_n_partial_tile_bits / dram_width)
 
         # M x N Output matrix osram <-> dram events (osram reads)
-        m_full_n_full_events = tiles.m_full_n_full_total_tiles * tiles.k_tiles * math.ceil(tiles.m_full_n_full_tile_bits / osram_width)
-        m_full_n_partial_events = tiles.m_full_n_partial_total_tiles * tiles.k_tiles * math.ceil(tiles.m_full_n_partial_tile_bits / osram_width)
-        m_partial_n_full_events = tiles.m_partial_n_full_total_tiles * tiles.k_tiles * math.ceil(tiles.m_partial_n_full_tile_bits / osram_width)
-        m_partial_n_partial_events = tiles.m_partial_n_partial_total_tiles * tiles.k_tiles * math.ceil(tiles.m_partial_n_partial_tile_bits / osram_width)
+        m_full_n_full_events = tiles.m_full_n_full_total_tiles * tiles.k_tiles * math.ceil(tiles.m_full_n_full_tile_bits / dram_width)
+        m_full_n_partial_events = tiles.m_full_n_partial_total_tiles * tiles.k_tiles * math.ceil(tiles.m_full_n_partial_tile_bits / dram_width)
+        m_partial_n_full_events = tiles.m_partial_n_full_total_tiles * tiles.k_tiles * math.ceil(tiles.m_partial_n_full_tile_bits / dram_width)
+        m_partial_n_partial_events = tiles.m_partial_n_partial_total_tiles * tiles.k_tiles * math.ceil(tiles.m_partial_n_partial_tile_bits / dram_width)
 
     # Total dram <-> sram events
     m_k_events = m_full_k_full_events + m_full_k_partial_events + m_partial_k_full_events + m_partial_k_partial_events

@@ -41,3 +41,6 @@ configuration:
   window_width: [8]
   cycles: [8]
   architecture: ['mugi']
+  noc_tile_m: [256]
+  noc_tile_k: [256]
+  noc_tile_n: [256]

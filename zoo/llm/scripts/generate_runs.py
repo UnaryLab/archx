@@ -40,7 +40,10 @@ def main():
                                             workload_config_path += '/' + key + '_' + str(value)
                                     workload_config_path += '/'
 
-                                    for termination in ['full_termination', 'early_termination']:
+                                    # removed early termination
+                                    termination_list = ['full_termination']
+                                    # termination_list = ['full_termination', 'early_termination']
+                                    for termination in termination_list:
                                         if arch != 'mugi' and termination == 'early_termination':
                                             continue
                                         elif arch == 'mugi' and termination == 'full_termination':

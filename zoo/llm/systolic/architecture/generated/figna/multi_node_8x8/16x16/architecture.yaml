@@ -65,6 +65,7 @@ architecture:
     dram:
       tag:
       - memory
+      - dram
       instance:
       - 1
       query:

@@ -14,3 +14,6 @@ configuration:
   pwl_cycles: [4]
   approximate_division_cycles: [1]
   architecture: ['systolic']
+  noc_tile_m: [256]
+  noc_tile_k: [256]
+  noc_tile_n: [256]

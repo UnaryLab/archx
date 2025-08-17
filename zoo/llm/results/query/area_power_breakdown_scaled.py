@@ -96,7 +96,7 @@ def query(input_path, output_path):
     kv_heads = 8
 
     #tag_list = ['fifo', 'pe', 'tc', 'value_reuse', 'accumulator', 'nonlinear', 'vector', 'memory', 'node_memory']
-    tag_list = ['array', 'node_memory', 'router']
+    tag_list = ['array', 'node_memory', 'router', 'dram']
     df_labels = ['arch', 'subarch', 'arch_dim', 'total'] + tag_list
     area_df = pd.DataFrame(columns=df_labels)
     power_df = pd.DataFrame(columns=df_labels)

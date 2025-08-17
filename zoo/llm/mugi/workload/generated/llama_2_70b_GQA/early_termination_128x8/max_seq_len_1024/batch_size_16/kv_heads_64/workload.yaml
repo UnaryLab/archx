@@ -17,6 +17,9 @@ workload:
       lut_width: 12
       max_seq_len: 1024
       noc_stationary: os
+      noc_tile_k: 256
+      noc_tile_m: 256
+      noc_tile_n: 256
       node_stationary: os
       nonlinear_avg_early_termination_cycles: 8
       prefill_seq_len: 64

@@ -45,8 +45,6 @@ def gemm_tile_events(tiles: TiledGEMM, architecture_dict: OrderedDict, workload_
     stationary = workload_dict['node_stationary']
     et_cycles = workload_dict.get('early_termination_cycles')
     cycles = workload_dict.get('cycles')
-    
-    k_dim = architecture_dict['multiplier']['instance'][-2]
 
     performance_dict = OrderedDict()
     performance_dict['subevent'] = OrderedDict()

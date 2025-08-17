@@ -15,6 +15,9 @@ workload:
       layers: 80
       max_seq_len: 128
       noc_stationary: os
+      noc_tile_k: 256
+      noc_tile_m: 256
+      noc_tile_n: 256
       node_stationary: os
       prefill_seq_len: 64
       vocab_size: 32000
