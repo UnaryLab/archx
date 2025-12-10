@@ -1,0 +1,12 @@
+event:
+  tnn:
+    performance: agraph_casestudy/tnn_cg/performance/performance.py
+    subevent:
+    - edge2pulse
+    - pulse2edge
+    - WTA
+    - top_reg
+    - neuron
+    - stdp
+    - fsm_synapse
+    - fsm_simple

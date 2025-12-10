@@ -1,0 +1,75 @@
+architecture:
+  attribute:
+    frequency: 50
+    interface: csv_sc
+    technology: 10
+  module:
+    input_splitter:
+      instance:
+      - 64
+      - 64
+      - 32
+      query:
+        class: sc_splitter
+      tag:
+      - array
+      - comp
+      - pe
+      - input_splitter
+    mac:
+      instance:
+      - 64
+      - 64
+      - 32
+      query:
+        class: sc_mac
+      tag:
+      - array
+      - pe
+      - comp
+      - mac
+    mac_splitter:
+      instance:
+      - 64
+      - 64
+      - 32
+      query:
+        class: sc_splitter
+      tag:
+      - array
+      - comp
+      - pe
+      - mac_splitter
+    nrdo:
+      instance:
+      - 1
+      - 1
+      - 32
+      query:
+        class: sc_nrdo
+      tag:
+      - array
+      - pe
+      - nrdo
+    ptl:
+      instance:
+      - 64
+      - 64
+      - 32
+      query:
+        class: sc_ptl
+      tag:
+      - array
+      - overhead
+    weight_splitter:
+      instance:
+      - 64
+      - 64
+      - 32
+      query:
+        class: sc_splitter
+      tag:
+      - array
+      - comp
+      - pe
+      - weight_splitter

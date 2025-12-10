@@ -1,0 +1,8 @@
+workload:
+  fir:
+    configuration:
+      a_w: 256
+      bitwidth: 16
+      bitwidth2: 16
+      mappings: 1
+      width: 256

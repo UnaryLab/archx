@@ -1,0 +1,10 @@
+event:
+  butterfly:
+    performance: agraph_casestudy/fft_fine_grain/performance/performance.py
+    subevent:
+    - regA
+    - regB
+    - multiplier
+    - adderA
+    - adderB
+    - not_gate

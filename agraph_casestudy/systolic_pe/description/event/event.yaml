@@ -1,0 +1,16 @@
+event:
+  gemm:
+    performance: agraph_casestudy/systolic_pe/performance/performance.py
+    subevent:
+    - multiplier
+    - adder
+    - act_en_reg
+    - mult_en_reg
+    - acc_en_reg
+    - sum_en_reg
+    - act_reg
+    - sum_reg
+    - act_mux
+    - weight_mux
+    - add_mux
+    - sum_mux

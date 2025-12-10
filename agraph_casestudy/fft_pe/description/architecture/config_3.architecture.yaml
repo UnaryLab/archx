@@ -1,0 +1,59 @@
+architecture:
+  attribute:
+    frequency: 400
+    interface: csv_cmos
+    technology: 45
+  module:
+    adderA:
+      instance:
+      - 1
+      query:
+        class: adder
+        width: 32
+      tag:
+      - adder
+      - array
+    adderB:
+      instance:
+      - 1
+      query:
+        class: adder
+        width: 32
+      tag:
+      - adder
+      - array
+    multiplier:
+      instance:
+      - 1
+      query:
+        class: multiplier
+        width: 32
+      tag:
+      - multiplier
+      - array
+    not_gate:
+      instance:
+      - 1
+      query:
+        class: not_gate
+      tag:
+      - not_gate
+      - array
+    regA:
+      instance:
+      - 1
+      query:
+        class: register
+        width: 32
+      tag:
+      - register
+      - array
+    regB:
+      instance:
+      - 1
+      query:
+        class: register
+        width: 32
+      tag:
+      - register
+      - array

@@ -1,0 +1,10 @@
+event:
+  fir:
+    performance: agraph_casestudy/fir_sc_256/performance/performance.py
+    subevent:
+    - mult
+    - acc
+    - shift_reg
+    - pnm
+    - b2rc
+    - control

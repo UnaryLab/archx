@@ -1,0 +1,149 @@
+architecture:
+  attribute:
+    frequency: 100
+    interface: csv_cmos
+    technology: 7
+  module:
+    WTA:
+      instance:
+      - 2
+      query:
+        class: less_equal
+      tag:
+      - column
+      - wta
+    adder:
+      instance:
+      - 2
+      - 247
+      query:
+        class: tnn_adder
+        width: 1
+      tag:
+      - column
+    adder_output:
+      instance:
+      - 2
+      query:
+        class: tnn_adder
+        width: 5
+      tag:
+      - column
+    edge2pulse:
+      instance:
+      - 1
+      query:
+        class: edge2pulse
+      tag:
+      - column
+    fsm_reg_1:
+      instance:
+      - 152
+      - 2
+      query:
+        class: tnn_reg_3
+        width: 1
+      tag:
+      - column
+    fsm_reg_2:
+      instance:
+      - 152
+      - 2
+      query:
+        class: tnn_reg_3
+        width: 3
+      tag:
+      - column
+    incdec:
+      instance:
+      - 152
+      - 2
+      query:
+        class: incdec
+      tag:
+      - stdp
+      - column
+    muxout_reg:
+      instance:
+      - 2
+      query:
+        class: tnn_reg_3
+        width: 5
+      tag:
+      - column
+    pac_and:
+      instance:
+      - 2
+      - 1
+      query:
+        class: tnn_and_gate
+        width: 1
+      tag:
+      - column
+    pulse2edge:
+      instance:
+      - 155
+      query:
+        class: pulse2edge
+      tag:
+      - column
+    spike_gen:
+      instance:
+      - 2
+      query:
+        class: fsm_simple
+      tag:
+      - weight
+      - column
+    stabilize_func:
+      instance:
+      - 152
+      - 2
+      query:
+        class: flogic
+      tag:
+      - stdp
+      - column
+    stdp_case_gen:
+      instance:
+      - 152
+      - 2
+      query:
+        class: stdp_case_gen
+      tag:
+      - stdp
+      - column
+    syn_readout:
+      instance:
+      - 152
+      - 2
+      query:
+        class: fsm_output
+      tag:
+      - weight
+      - column
+    syn_weight_update:
+      instance:
+      - 152
+      - 2
+      query:
+        class: fsm_weight_update
+      tag:
+      - weight
+      - column
+    top_reg:
+      instance:
+      - 1
+      query:
+        class: tnn_reg_3
+        width: 1
+      tag:
+      - column
+    wta_and:
+      instance:
+      - 2
+      query:
+        class: tnn_and_gate
+        width: 1
+      tag:
+      - column

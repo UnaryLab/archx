@@ -1,0 +1,162 @@
+architecture:
+  attribute:
+    frequency: 400
+    interface: csv_cmos
+    technology: 45
+  module:
+    acc_en_reg:
+      instance:
+      - 1
+      query:
+        class: register
+        width: 1
+      tag:
+      - pe
+      - control
+      - array
+    act_en_reg:
+      instance:
+      - 1
+      query:
+        class: register
+        width: 1
+      tag:
+      - pe
+      - control
+      - array
+    act_mux:
+      instance:
+      - 1
+      query:
+        class: and_gate
+        width: 4
+      tag:
+      - pe
+      - array
+    act_reg:
+      instance:
+      - 1
+      query:
+        class: register
+        width: 4
+      tag:
+      - pe
+      - data
+      - array
+    add_mux:
+      instance:
+      - 1
+      query:
+        class: and_gate
+        width: 4
+      tag:
+      - pe
+      - array
+    adder:
+      instance:
+      - 1
+      query:
+        class: adder
+        width: 4
+      tag:
+      - pe
+      - mac
+      - array
+    mult_en_reg:
+      instance:
+      - 1
+      query:
+        class: register
+        width: 1
+      tag:
+      - pe
+      - control
+      - array
+    multiplier:
+      instance:
+      - 1
+      query:
+        class: multiplier
+        width: 4
+      tag:
+      - pe
+      - mac
+      - array
+    sum_en_reg:
+      instance:
+      - 1
+      query:
+        class: register
+        width: 1
+      tag:
+      - pe
+      - control
+      - array
+    sum_mux:
+      instance:
+      - 1
+      query:
+        class: and_gate
+        width: 4
+      tag:
+      - pe
+      - array
+    sum_reg:
+      instance:
+      - 1
+      query:
+        class: register
+        width: 4
+      tag:
+      - pe
+      - data
+      - array
+    weight_en_reg:
+      instance:
+      - 1
+      query:
+        class: register
+        width: 1
+      tag:
+      - pe
+      - control
+      - array
+    weight_mux:
+      instance:
+      - 1
+      query:
+        class: and_gate
+        width: 4
+      tag:
+      - pe
+      - array
+    weight_path_en_reg:
+      instance:
+      - 1
+      query:
+        class: register
+        width: 1
+      tag:
+      - pe
+      - control
+      - array
+    weight_path_reg:
+      instance:
+      - 1
+      query:
+        class: register
+        width: 4
+      tag:
+      - pe
+      - data
+      - array
+    weight_reg:
+      instance:
+      - 1
+      query:
+        class: register
+        width: 4
+      tag:
+      - pe
+      - data
+      - array

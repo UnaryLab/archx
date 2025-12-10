@@ -1,0 +1,59 @@
+architecture:
+  attribute:
+    frequency: 50
+    interface: csv_sc
+    technology: 10
+  module:
+    acc:
+      instance:
+      - 256
+      query:
+        class: sc_balancer
+      tag:
+      - tap
+      - mac
+    b2rc:
+      instance:
+      - 256
+      query:
+        class: sc_b2rc
+        width: 16
+      tag:
+      - tap
+    control:
+      instance:
+      - 1
+      query:
+        class: sc_fir_control
+      tag:
+      - tap
+    mult:
+      instance:
+      - 256
+      query:
+        class: sc_mult_fir
+      tag:
+      - tap
+      - mac
+    pnm:
+      instance:
+      - 256
+      query:
+        class: sc_pnm
+        width: 10
+      tag:
+      - tap
+    shift_reg:
+      instance:
+      - 256
+      query:
+        class: sc_shift_reg
+      tag:
+      - tap
+    test:
+      instance:
+      - 4
+      query:
+        class: test
+      tag:
+      - test

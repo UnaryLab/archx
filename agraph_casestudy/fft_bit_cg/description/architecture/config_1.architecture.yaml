@@ -1,0 +1,23 @@
+architecture:
+  attribute:
+    frequency: 400
+    interface: csv_cmos
+    technology: 45
+  module:
+    pe:
+      instance:
+      - 8
+      - 4
+      query:
+        class: pe_16
+        width: 8
+      tag:
+      - pe
+      - array
+    test:
+      instance:
+      - 2
+      query:
+        class: test
+      tag:
+      - test

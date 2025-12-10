@@ -12,6 +12,7 @@ quadratic_interpolation_keywords = ['multiplier']
 tech_map = {
     'NanGate45': '45',
     'ASAP7': '7',
+    'TNN7': '7',
     }
 
 
@@ -71,7 +72,7 @@ def extract(technology, frequency):
     
 
 if __name__ == '__main__':
-    technology = 'NanGate45'
-    frequency = 400
+    technology = 'TNN7'
+    frequency = 100
     extract(technology, frequency)
 

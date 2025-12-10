@@ -1,0 +1,86 @@
+architecture:
+  attribute:
+    frequency: 400
+    interface: csv_cmos
+    technology: 45
+  module:
+    ififo:
+      instance:
+      - 4
+      query:
+        class: fifo
+        depth: 4
+        width: 16
+      tag:
+      - fifo
+      - array
+    isram:
+      instance:
+      - 1
+      query:
+        bank: 4
+        class: sram
+        depth: 32
+        interface: cacti7
+        width: 32
+      tag:
+      - memory
+    ofifo:
+      instance:
+      - 4
+      query:
+        class: fifo
+        depth: 4
+        width: 16
+      tag:
+      - fifo
+      - array
+    osram:
+      instance:
+      - 1
+      query:
+        bank: 4
+        class: sram
+        depth: 32
+        interface: cacti7
+        width: 32
+      tag:
+      - memory
+    output_adder:
+      instance:
+      - 4
+      query:
+        class: adder_bfloat16
+      tag:
+      - output_adder
+      - array
+    pe:
+      instance:
+      - 4
+      - 4
+      query:
+        class: systolic_pe
+      tag:
+      - pe
+      - array
+    wfifo:
+      instance:
+      - 4
+      query:
+        class: fifo
+        depth: 4
+        width: 16
+      tag:
+      - fifo
+      - array
+    wsram:
+      instance:
+      - 1
+      query:
+        bank: 4
+        class: sram
+        depth: 32
+        interface: cacti7
+        width: 32
+      tag:
+      - memory

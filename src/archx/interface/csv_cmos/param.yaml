@@ -1,46 +1,58 @@
-accumulator:
-  WIDTH: 32
-adder:
-  WIDTH: 32
-adderbf16:
-and_bitwise:
-  WIDTH: 1
-comparator:
-  WIDTH: 32
-comparator_eq:
-  WIDTH: 32
-crossbar:
-  WIDTH: 16
-  NUM_OUTPUTS: 64
-  NUM_INPUTS: 64
-deserializer:
-  WIDTH: 8
-  DEPTH: 4
-fifo:
-  WIDTH: 32
-  DEPTH: 16
-multiplexer:
-  WIDTH: 32
-  NUM_INPUTS: 8
-multiplier:
-  WIDTH: 16
-or_bitwise:
-  WIDTH: 1
-register:
-  WIDTH: 16
-register_file:
-  WIDTH: 16
-  DEPTH: 8
-serializer:
-  WIDTH: 8
-  DEPTH: 4
-shifter:
-  WIDTH: 8
-  STAGE: 3 # stage can be independent of width
-sobolrng:
-  WIDTH: 16
-xnor_bitwise:
-  WIDTH: 1
-xor_bitwise:
-  WIDTH: 1
-  
+# fft_pe:
+# systolic_pe:
+# adder:
+#   width: 32
+# multiplier:
+#   width: 32
+# pe_32:
+#   width: 32
+# pe_16:
+#   width: 16
+# pe_8:
+#   width: 8
+# pe_4:
+#   width: 4
+tnn_adder:
+  width: 4
+tnn_and_gate:
+  width: 1
+tnn_and_gate_5:
+  width: 5
+tnn_reg:
+  width: 1
+edge2pulse:
+flogic:
+fsm_output:
+fsm_simple:
+fsm_weight_update:
+incdec:
+less_equal:
+pulse2edge:
+stdp_case_gen:
+tnn_reg_3:
+  width: 3
+wta:
+stdp:
+neuron_body:
+  width: 16
+fsm_synapse:
+pac:
+  width: 96
+mult_4:
+  width: 4
+mult_8:
+  width: 8
+mult_16:
+  width: 16
+mult_32:
+  width: 32
+adder_8:
+  width: 8
+adder_16:
+  width: 16
+adder_32:
+  width: 32
+adder_64:
+  width: 64
+pulse2edge_96:
+  width: 96

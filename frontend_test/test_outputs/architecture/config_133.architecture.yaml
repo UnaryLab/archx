@@ -1,0 +1,76 @@
+architecture:
+  acc_en_reg:
+    class: register
+    depth: 4
+    width: 1
+  act_en_reg:
+    class: register
+    depth: 4
+    width: 1
+  act_reg:
+    class: register
+    depth: 8
+    width: 16
+  adder:
+    class: adderbf16
+  ififo:
+    class: fifo
+    depth: 16
+    instance:
+    - 16
+    width: 16
+  mult_en_reg:
+    class: register
+    depth: 4
+    width: 1
+  multiplier:
+    class: multiplierbf16
+  ofifo:
+    class: fifo
+    depth: 16
+    instance:
+    - 16
+    width: 16
+  output_adder:
+    class: adderbf16
+    instance:
+    - 16
+  sum_en_reg:
+    class: register
+    depth: 4
+    width: 1
+  sum_reg:
+    class: register
+    depth: 16
+    instance:
+    - 16
+    - 16
+    width: 16
+  weight_en_reg:
+    class: register
+    depth: 4
+    width: 1
+  weight_path_en_reg:
+    class: register
+    depth: 4
+    width: 1
+  weight_path_reg:
+    class: register
+    depth: 4
+    instance:
+    - 16
+    - 16
+    width: 16
+  weight_reg:
+    class: register
+    depth: 4
+    instance:
+    - 16
+    - 16
+    width: 16
+  wfifo:
+    class: fifo
+    depth: 16
+    instance:
+    - 16
+    width: 16

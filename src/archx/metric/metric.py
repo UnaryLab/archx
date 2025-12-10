@@ -99,6 +99,7 @@ def create_module_metrics(event_graph: gt.Graph, architecture_dict: OrderedDict,
     for v in gt.find_vertex(event_graph, 'out', 0):
         module_name = event_graph.vp.event[v]
         assert module_name in architecture_dict, logger.error(f'Invalid module <{module_name}>.')
+        
         module_class = architecture_dict[module_name]['query']['class']
         query = architecture_dict[module_name]['query']
         result = query_interface(module_name, query, output_dir=full_path)

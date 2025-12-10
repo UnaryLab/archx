@@ -1,0 +1,10 @@
+workload:
+  tnn:
+    configuration:
+      array:
+      - 152
+      - 2
+      column:
+      - 152
+      - 2
+      mappings: 1

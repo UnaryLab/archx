@@ -1,0 +1,19 @@
+workload:
+  gemm_config_1:
+    k: 32
+    m: 32
+    n: 32
+  gemm_config_2:
+    k: 256
+    m: 256
+    n: 256
+  gemm_config_3:
+    k: 1024
+    m: 1024
+    n: 1024
+  gemm_config_4:
+    batch_size: 16
+    dim:
+    - 64
+    - 64
+    - 64

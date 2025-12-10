@@ -1,0 +1,8 @@
+workload:
+  butterfly:
+    configuration:
+      input_dim: 16
+      mappings: 1
+      matrix_dim:
+      - 16
+      - 16

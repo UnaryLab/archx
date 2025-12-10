@@ -1,0 +1,47 @@
+event:
+  gemm:
+    performance: agraph_casestudy/systolic_fine_grain/performance/performance.py
+    subevent:
+    - input_reads
+    - weight_reads
+    - output_writes
+    - input_array
+    - weight_array
+  input_array:
+    performance: agraph_casestudy/systolic_fine_grain/performance/performance.py
+    subevent:
+    - ififo
+    - wfifo
+    - ofifo
+    - output_adder
+    - multiplier
+    - adder
+    - act_en_reg
+    - mult_en_reg
+    - acc_en_reg
+    - sum_en_reg
+    - act_reg
+    - sum_reg
+    - act_mux
+    - weight_mux
+    - add_mux
+    - sum_mux
+  input_reads:
+    performance: agraph_casestudy/systolic_fine_grain/performance/performance.py
+    subevent:
+    - isram
+  output_writes:
+    performance: agraph_casestudy/systolic_fine_grain/performance/performance.py
+    subevent:
+    - osram
+  weight_array:
+    performance: agraph_casestudy/systolic_fine_grain/performance/performance.py
+    subevent:
+    - weight_path_en_reg
+    - weight_en_reg
+    - weight_path_reg
+    - weight_reg
+  weight_reads:
+    performance: agraph_casestudy/systolic_fine_grain/performance/performance.py
+    subevent:
+    - wsram

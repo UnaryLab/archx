@@ -1,0 +1,247 @@
+architecture:
+  attribute:
+    frequency: 400
+    interface: csv_cmos
+    technology: 45
+  module:
+    acc_en_reg:
+      instance:
+      - 4
+      - 4
+      query:
+        class: register
+        width: 1
+      tag:
+      - pe
+      - control
+      - array
+    act_en_reg:
+      instance:
+      - 4
+      - 4
+      query:
+        class: register
+        width: 1
+      tag:
+      - pe
+      - control
+      - array
+    act_mux:
+      instance:
+      - 4
+      - 4
+      query:
+        class: and_gate
+        width: 16
+      tag:
+      - pe
+      - array
+    act_reg:
+      instance:
+      - 4
+      - 4
+      query:
+        class: register
+        width: 16
+      tag:
+      - pe
+      - data
+      - array
+    add_mux:
+      instance:
+      - 4
+      - 4
+      query:
+        class: and_gate
+        width: 16
+      tag:
+      - pe
+      - array
+    adder:
+      instance:
+      - 4
+      - 4
+      query:
+        class: adder_bfloat16
+      tag:
+      - pe
+      - mac
+      - array
+    ififo:
+      instance:
+      - 4
+      query:
+        class: fifo
+        depth: 4
+        width: 16
+      tag:
+      - fifo
+      - array
+    isram:
+      instance:
+      - 1
+      query:
+        bank: 2
+        class: sram
+        depth: 32
+        interface: cacti7
+        width: 32
+      tag:
+      - memory
+    mult_en_reg:
+      instance:
+      - 4
+      - 4
+      query:
+        class: register
+        width: 1
+      tag:
+      - pe
+      - control
+      - array
+    multiplier:
+      instance:
+      - 4
+      - 4
+      query:
+        class: multiplier_bfloat16
+      tag:
+      - pe
+      - mac
+      - array
+    ofifo:
+      instance:
+      - 4
+      query:
+        class: fifo
+        depth: 4
+        width: 16
+      tag:
+      - fifo
+      - array
+    osram:
+      instance:
+      - 1
+      query:
+        bank: 2
+        class: sram
+        depth: 32
+        interface: cacti7
+        width: 32
+      tag:
+      - memory
+    output_adder:
+      instance:
+      - 4
+      query:
+        class: adder_bfloat16
+      tag:
+      - output_adder
+      - array
+    sum_en_reg:
+      instance:
+      - 4
+      - 4
+      query:
+        class: register
+        width: 1
+      tag:
+      - pe
+      - control
+      - array
+    sum_mux:
+      instance:
+      - 4
+      - 4
+      query:
+        class: and_gate
+        width: 16
+      tag:
+      - pe
+      - array
+    sum_reg:
+      instance:
+      - 4
+      - 4
+      query:
+        class: register
+        width: 16
+      tag:
+      - pe
+      - data
+      - array
+    weight_en_reg:
+      instance:
+      - 4
+      - 4
+      query:
+        class: register
+        width: 1
+      tag:
+      - pe
+      - control
+      - array
+    weight_mux:
+      instance:
+      - 4
+      - 4
+      query:
+        class: and_gate
+        width: 16
+      tag:
+      - pe
+      - array
+    weight_path_en_reg:
+      instance:
+      - 4
+      - 4
+      query:
+        class: register
+        width: 1
+      tag:
+      - pe
+      - control
+      - array
+    weight_path_reg:
+      instance:
+      - 4
+      - 4
+      query:
+        class: register
+        width: 16
+      tag:
+      - pe
+      - data
+      - array
+    weight_reg:
+      instance:
+      - 4
+      - 4
+      query:
+        class: register
+        width: 16
+      tag:
+      - pe
+      - data
+      - array
+    wfifo:
+      instance:
+      - 4
+      query:
+        class: fifo
+        depth: 4
+        width: 16
+      tag:
+      - fifo
+      - array
+    wsram:
+      instance:
+      - 1
+      query:
+        bank: 2
+        class: sram
+        depth: 32
+        interface: cacti7
+        width: 32
+      tag:
+      - memory

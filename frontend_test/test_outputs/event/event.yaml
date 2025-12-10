@@ -1,0 +1,25 @@
+event:
+  array:
+    subevent:
+    - ififo
+    - wfifo
+    - ofifo
+    - mac
+    - output_adder
+  gemm:
+    subevent:
+    - array
+  mac:
+    subevent:
+    - multiplier
+    - adder
+    - act_en_reg
+    - mult_en_reg
+    - acc_en_reg
+    - weight_path_en_reg
+    - weight_en_reg
+    - sum_en_reg
+    - act_reg
+    - weight_path_reg
+    - sum_reg
+    - weight_reg

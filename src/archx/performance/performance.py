@@ -62,7 +62,6 @@ def simulate_performance_one_event(event_graph: gt.Graph, architecture_dict: Ord
         for e in v.out_edges():
             edge_source = event_graph.vp.event[e.source()]
             edge_target = event_graph.vp.event[e.target()]
-
             assert edge_target in performance_dict[key_subevent], logger.error(f'  Missing subevent <{edge_target}> in the <{edge_source}> performance model.')
             if key_count not in performance_dict[key_subevent][edge_target]:
                 event_graph.ep.count[e] = 1.
