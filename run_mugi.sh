@@ -1,9 +1,5 @@
-SECONDS=0
+start=`date +%s`
 bash zoo/llm/llm_script.sh
-elapsed=$SECONDS
-elapsed=$((end - start))
-
-printf "\nTotal runtime: %02d:%02d:%02d\n" \
-  $((elapsed/3600)) \
-  $(((elapsed%3600)/60)) \
-  $((elapsed%60))
+end=`date +%s`
+runtime=$((end-start))
+echo "Total runtime: $runtime seconds."

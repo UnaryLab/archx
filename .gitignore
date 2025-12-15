@@ -1,6 +1,11 @@
 # Generated Archx yaml files and configuration files
 **/generated/
 **/runs/
+/zoo/llm/results/csv/
+/zoo/llm/results/figs/
+/zoo/llm/results/tables/
+/zoo/llm/scripts/runs.txt
+failed_runs.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
