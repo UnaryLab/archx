@@ -1,7 +1,5 @@
 #!/bin/bash
 
-cd ~/archer/archx/
-
 echo "Setting up environment."
 export PYTHONPATH="$(pwd)/zoo:$PYTHONPATH"
 
@@ -17,3 +15,5 @@ bash ./run_script.sh zoo/llm/scripts/runs.txt
 
 echo "Query performance models and generate figures."
 python -m zoo.llm.results.figure_generation
+
+cd ..

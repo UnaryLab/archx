@@ -11,7 +11,7 @@ latency,layer,arch,subarch,arch_dim,model
 13953.164902400002,attention,mugi,vlp,128x8,llama_2_70b
 36641.439744,ffn,mugi,vlp,128x8,llama_2_70b
 131.2813056,nonlinear,mugi,vlp,128x8,llama_2_70b
-7851.737088000002,projection,mugi,vlp,128x8,llama_2_70b_GQA
+7851.737088000001,projection,mugi,vlp,128x8,llama_2_70b_GQA
 1745.2466176,attention,mugi,vlp,128x8,llama_2_70b_GQA
 36641.439744,ffn,mugi,vlp,128x8,llama_2_70b_GQA
 131.2813056,nonlinear,mugi,vlp,128x8,llama_2_70b_GQA
@@ -59,7 +59,7 @@ latency,layer,arch,subarch,arch_dim,model
 10517.19106560001,attention,mugi,lut,256x8,llama_2_70b
 18320.719872,ffn,mugi,lut,256x8,llama_2_70b
 65.6406528,nonlinear,mugi,lut,256x8,llama_2_70b
-3925.868544000001,projection,mugi,lut,256x8,llama_2_70b_GQA
+3925.8685440000004,projection,mugi,lut,256x8,llama_2_70b_GQA
 1315.7498880000012,attention,mugi,lut,256x8,llama_2_70b_GQA
 18320.719872,ffn,mugi,lut,256x8,llama_2_70b_GQA
 65.6406528,nonlinear,mugi,lut,256x8,llama_2_70b_GQA
@@ -75,7 +75,7 @@ latency,layer,arch,subarch,arch_dim,model
 13953.164902400002,attention,carat,,128x8,llama_2_70b
 36641.439744,ffn,carat,,128x8,llama_2_70b
 369.22867199999996,nonlinear,carat,,128x8,llama_2_70b
-7851.737088000002,projection,carat,,128x8,llama_2_70b_GQA
+7851.737088000001,projection,carat,,128x8,llama_2_70b_GQA
 1745.2466176,attention,carat,,128x8,llama_2_70b_GQA
 36641.439744,ffn,carat,,128x8,llama_2_70b_GQA
 369.22867199999996,nonlinear,carat,,128x8,llama_2_70b_GQA
@@ -91,7 +91,7 @@ latency,layer,arch,subarch,arch_dim,model
 10517.19106560001,attention,carat,,256x8,llama_2_70b
 18320.719872,ffn,carat,,256x8,llama_2_70b
 184.61433599999998,nonlinear,carat,,256x8,llama_2_70b
-3925.868544000001,projection,carat,,256x8,llama_2_70b_GQA
+3925.8685440000004,projection,carat,,256x8,llama_2_70b_GQA
 1315.7498880000012,attention,carat,,256x8,llama_2_70b_GQA
 18320.719872,ffn,carat,,256x8,llama_2_70b_GQA
 184.61433599999998,nonlinear,carat,,256x8,llama_2_70b_GQA
@@ -187,7 +187,7 @@ latency,layer,arch,subarch,arch_dim,model
 13769.034956800035,attention,simd,figna,16x16,llama_2_70b
 36359.5825152,ffn,simd,figna,16x16,llama_2_70b
 2953.8293759999997,nonlinear,simd,figna,16x16,llama_2_70b
-7791.339110400001,projection,simd,figna,16x16,llama_2_70b_GQA
+7791.3391104,projection,simd,figna,16x16,llama_2_70b_GQA
 1721.4963712000044,attention,simd,figna,16x16,llama_2_70b_GQA
 36359.5825152,ffn,simd,figna,16x16,llama_2_70b_GQA
 2953.8293759999997,nonlinear,simd,figna,16x16,llama_2_70b_GQA

@@ -1,1 +1,0 @@
-bash zoo/llm/llm_script.sh

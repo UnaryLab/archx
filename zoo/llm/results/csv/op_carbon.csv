@@ -28,7 +28,7 @@ carbon,layer,arch,subarch,arch_dim,model
 1.6746032855693408e-05,attention,mugi,lut,128x8,llama_2_13b
 2.2905071127345043e-05,ffn,mugi,lut,128x8,llama_2_13b
 4.6009737681067544e-07,nonlinear,mugi,lut,128x8,llama_2_13b
-8.984137639398387e-06,onchip_em,mugi,lut,128x8,llama_2_13b
+8.984137639398386e-06,onchip_em,mugi,lut,128x8,llama_2_13b
 5.5258806447229076e-05,projection,mugi,lut,128x8,llama_2_70b
 5.308568882472542e-05,attention,mugi,lut,128x8,llama_2_70b
 0.0001450541589160635,ffn,mugi,lut,128x8,llama_2_70b
@@ -78,7 +78,7 @@ carbon,layer,arch,subarch,arch_dim,model
 8.134573241256948e-06,attention,mugi,lut,256x8,llama_2_70b_GQA
 0.00011552516473354534,ffn,mugi,lut,256x8,llama_2_70b_GQA
 1.4109748849060602e-06,nonlinear,mugi,lut,256x8,llama_2_70b_GQA
-2.5171580510372265e-05,onchip_em,mugi,lut,256x8,llama_2_70b_GQA
+2.5171580510372272e-05,onchip_em,mugi,lut,256x8,llama_2_70b_GQA
 6.173739219162422e-06,projection,carat,,128x8,llama_2_7b
 1.0905795955619562e-05,attention,carat,,128x8,llama_2_7b
 1.2443866989909392e-05,ffn,carat,,128x8,llama_2_7b
@@ -118,7 +118,7 @@ carbon,layer,arch,subarch,arch_dim,model
 8.686607767643661e-06,attention,carat,,256x8,llama_2_70b_GQA
 0.00012444489488752436,ffn,carat,,256x8,llama_2_70b_GQA
 4.213179355644764e-06,nonlinear,carat,,256x8,llama_2_70b_GQA
-2.6585045494926776e-05,onchip_em,carat,,256x8,llama_2_70b_GQA
+2.658504549492678e-05,onchip_em,carat,,256x8,llama_2_70b_GQA
 6.726925640779623e-06,projection,systolic,mac,16x16,llama_2_7b
 1.1793045212341545e-05,attention,systolic,mac,16x16,llama_2_7b
 1.3558889292636529e-05,ffn,systolic,mac,16x16,llama_2_7b
@@ -198,7 +198,7 @@ carbon,layer,arch,subarch,arch_dim,model
 7.924734105898748e-06,attention,systolic,pwl,16x16,llama_2_70b_GQA
 0.00016740679479697752,ffn,systolic,pwl,16x16,llama_2_70b_GQA
 2.378006329812418e-06,nonlinear,systolic,pwl,16x16,llama_2_70b_GQA
-3.624339495748945e-05,onchip_em,systolic,pwl,16x16,llama_2_70b_GQA
+3.624339495748944e-05,onchip_em,systolic,pwl,16x16,llama_2_70b_GQA
 6.604430408037382e-06,projection,simd,mac,16x16,llama_2_7b
 1.1623192169875873e-05,attention,simd,mac,16x16,llama_2_7b
 1.3311984839140447e-05,ffn,simd,mac,16x16,llama_2_7b
@@ -208,7 +208,7 @@ carbon,layer,arch,subarch,arch_dim,model
 1.8063814582126198e-05,attention,simd,mac,16x16,llama_2_13b
 2.5397118196123513e-05,ffn,simd,mac,16x16,llama_2_13b
 4.5547604456154876e-06,nonlinear,simd,mac,16x16,llama_2_13b
-9.913145009280067e-06,onchip_em,simd,mac,16x16,llama_2_13b
+9.913145009280069e-06,onchip_em,simd,mac,16x16,llama_2_13b
 6.055437301060309e-05,projection,simd,mac,16x16,llama_2_70b
 5.718069827734337e-05,attention,simd,mac,16x16,llama_2_70b
 0.0001589550211467297,ffn,simd,mac,16x16,llama_2_70b
@@ -228,13 +228,13 @@ carbon,layer,arch,subarch,arch_dim,model
 1.9833835355049346e-05,attention,simd,figna,16x16,llama_2_13b
 2.771634139461884e-05,ffn,simd,figna,16x16,llama_2_13b
 4.91726198345305e-06,nonlinear,simd,figna,16x16,llama_2_13b
-1.0817754028115776e-05,onchip_em,simd,figna,16x16,llama_2_13b
+1.0817754028115777e-05,onchip_em,simd,figna,16x16,llama_2_13b
 6.632396830460366e-05,projection,simd,figna,16x16,llama_2_70b
 6.283352358878547e-05,attention,simd,figna,16x16,llama_2_70b
 0.0001741002087934812,ffn,simd,figna,16x16,llama_2_70b
 1.640763796652746e-05,nonlinear,simd,figna,16x16,llama_2_70b
 5.4149447536265485e-05,onchip_em,simd,figna,16x16,llama_2_70b
-3.730723217133956e-05,projection,simd,figna,16x16,llama_2_70b_GQA
+3.7307232171339554e-05,projection,simd,figna,16x16,llama_2_70b_GQA
 8.241727068160087e-06,attention,simd,figna,16x16,llama_2_70b_GQA
 0.0001741002087934812,ffn,simd,figna,16x16,llama_2_70b_GQA
 1.640763796652746e-05,nonlinear,simd,figna,16x16,llama_2_70b_GQA
