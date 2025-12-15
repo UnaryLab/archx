@@ -48,7 +48,7 @@ architecture:
       query:
         class: fifo
         width: 16
-        depth: 4
+        depth: 8
 
     adder:
       tag: accumulator

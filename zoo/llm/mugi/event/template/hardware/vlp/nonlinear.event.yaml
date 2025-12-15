@@ -13,7 +13,7 @@ event:
 
   weight_nonlinear:
     subevent: [round, sign_mantissa_register, exponent_register, exp_clamp, window_select, wfifo,
-               max_tree, max_tree_register, magnitude_register, sign_register, post_comp, ofifo]
+               max_tree, max_tree_register, magnitude_register, sign_register, exp_norm, exp_select, ofifo]
     performance: zoo/llm/mugi/performance/nonlinear.performance.py
 
   weight_reuse_nonlinear:

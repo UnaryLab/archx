@@ -6,7 +6,7 @@ architecture:
       query:
         class: fifo
         width: 16
-        depth: 2
+        depth: 8
 
     wfifo:
       tag: fifo
@@ -14,7 +14,7 @@ architecture:
       query:
         class: fifo
         width: 4
-        depth: 8
+        depth: 2
 
     ofifo:
       tag: fifo

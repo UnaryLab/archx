@@ -293,7 +293,13 @@ def proj_q_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=Non
     })
 
     performance_dict = mapping(mapping_dict=mapping_dict, architecture_dict=architecture_dict, workload_dict=workload_config)
-    
+    print("-----------------------------------------------------------------------------------")
+    print(performance_dict)
+    print("\n")
+    print(workload_config)
+    print("-----------------------------------------------------------------------------------\n\n\n")
+    exit()
+
     return performance_dict
 
 def proj_k_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:

@@ -4,13 +4,15 @@ import matplotlib.colors as mcolors
 import pandas as pd
 import numpy as np
 import os
+from loguru import logger
+import sys
 
 def query(input_path, output_path):
     vlp_list = ['mugi', 'carat']
     vlp_arch_dim_list = ['128x8', '256x8']
     vlp_throughput_module = 'and_gate'
 
-    mugi_subarch_list = ['vlp', 'lut']
+    mugi_subarch_list = ['vlp']
 
     baseline_list = ['systolic', 'simd']
     baseline_arch_dim_list = ['16x16']
@@ -22,7 +24,11 @@ def query(input_path, output_path):
     batch_size = 'batch_size_8'
     network = 'single_node'
 
+    kv_paths = 'kv_heads_8'
+
     gemm_breakdown_df = pd.DataFrame()
+
+    
 
     for arch in vlp_list + baseline_list + ['tensor']:
        for arch_dim in (vlp_arch_dim_list if arch in vlp_list else baseline_arch_dim_list if arch in baseline_list else ['8x16x16'] if arch in ['tensor'] else ['']):
@@ -31,13 +37,21 @@ def query(input_path, output_path):
 
                     module = vlp_throughput_module if arch in vlp_list else baseline_throughput_module
                     termination_path = 'full_termination' if arch == 'mugi' else ''
-                    run_path = os.path.normpath(f'{input_path}{arch}/{network}/{subarch}/{arch_dim}/{model}/{max_seq_len}/{batch_size}/{termination_path}/')
+                    kv_path = kv_paths if model in ['llama_2_70b_GQA'] else ''
+                    run_path = os.path.normpath(f'{input_path}{arch}/{network}/{subarch}/{arch_dim}/{model}/{max_seq_len}/{batch_size}/{kv_path}/{termination_path}/')
                     yaml_dict = load_yaml(run_path)
 
                     event_graph = yaml_dict['event_graph']
                     metric_dict = yaml_dict['metric_dict']
 
+                    # if model != 'llama_2_7b':
+                    #     continue
+
                     proj_metric_dict = query_performance_metrics(event_graph=event_graph, metric_dict=metric_dict, module=module, workload=model, event = 'projection')
+
+                    # if str(arch_dim) == '256x8':
+                    #     exit()
+
                     proj_throughput_eff_dict = compute_throughput_efficiancy(proj_metric_dict)
 
                     attn_metric_dict = query_performance_metrics(event_graph=event_graph, metric_dict=metric_dict, module=module, workload=model, event = 'attention')
@@ -60,7 +74,7 @@ def query(input_path, output_path):
                     gemm_metric_df['arch_dim'] = arch_dim
                     gemm_metric_df['model'] = model
 
-                    gemm_metric_df = gemm_metric_df.drop(columns=['flops', 'execution_time', 'power', 'energy'], errors='ignore')
+                    gemm_metric_df = gemm_metric_df.drop(columns=['power', 'energy'], errors='ignore')
                     gemm_breakdown_df = pd.concat([gemm_breakdown_df, gemm_metric_df], axis=0)
 
     gemm_breakdown_df.to_csv(output_path + 'gemm_breakdown.csv', index=False)
@@ -103,7 +117,7 @@ def lighten_color(color, amount=0.5):
 
 def figure(input_path: str, output_path: str):
     categories = ['proj', 'attn']
-    x_labels = ['7B', '13B', '70B', '70B GQA']
+    x_labels = ['7B', '13B', '70B', 'GQA']
 
     df = pd.read_csv(input_path + 'gemm_breakdown_norm.csv')
 
@@ -161,11 +175,11 @@ def figure(input_path: str, output_path: str):
     # Define figure dimensions and font sizes
     fig_width_pt = 250  # ACM single-column width in points
     fig_width = fig_width_pt / 72  # Convert to inches
-    fig_height = fig_width /1.75 # Adjusted height for readability
+    fig_height = fig_width /1.8 # Adjusted height for readability
 
-    font_title = 5.5
-    font_label = 5
-    font_tick = 5
+    font_title = 8
+    font_label = 7
+    font_tick = 7
 
     # Define base colors (added a color for Carat)
     base_colors = {
@@ -203,9 +217,22 @@ def figure(input_path: str, output_path: str):
         'SD-F (16)': lighten_color("darkorange", 0.3),
     }
 
+    # Manual y-tick configuration - modify these values as needed
+    manual_yticks = {
+        # Format: (metric_index, category_index): [list of y-tick values]
+        # Metric: 0=Throughput, 1=Energy Efficiency, 2=Power Efficiency
+        # Category: 0=proj, 1=attn
+        (0, 0): [1, 2],  # Throughput, proj - set to None for auto, or [0, 10, 20, 30] for manual
+        (0, 1): [5, 10],  # Throughput, attn
+        (1, 0): [1, 2, 3],  # Energy Efficiency, proj
+        (1, 1): [10, 20],  # Energy Efficiency, attn
+        (2, 0): [1, 2],  # Power Efficiency, proj
+        (2, 1): [2, 4],  # Power Efficiency, attn
+    }
+
     # Define figure size and bar width
     fig, axes = plt.subplots(3, 2, figsize=(fig_width, fig_height))
-    plt.subplots_adjust(hspace=0.3, wspace=0.25)
+    plt.subplots_adjust(hspace=0.2, wspace=0.32)
     bar_width = 0.107
 
     # Plotting loop
@@ -221,19 +248,25 @@ def figure(input_path: str, output_path: str):
             for k, (model, values) in enumerate(model_values.items()):
                 ax.bar(x + k * bar_width, values, bar_width, label=model, color=colors.get(model, 'black'))
             if i == 0:  # Only set titles for the top row
-                category = 'proj/ffn' if category == 'proj' else category
+                category = 'Projection/FFN' if category == 'proj' else 'Attention'
                 ax.set_title(f"{category}", fontsize=font_title)
-            if i < 2:  # Keep ticks but hide labels for top and middle rows
-                ax.set_xticks(x + bar_width * (len(model_values) // 2))
+            if i < 2:  # Remove ticks and hide labels for top and middle rows
+                ax.set_xticks([])
                 ax.set_xticklabels([])
             else:
                 ax.set_xticks(x + bar_width * (len(model_values) // 2))
                 ax.set_xticklabels(x_lab, fontsize=font_tick)
-            ax.tick_params(axis='y', labelsize=font_title, width=0.5)  # Thinner ticks
+            ax.tick_params(axis='y', labelsize=font_tick, width=0.5)  # Thinner ticks
             ax.tick_params(axis='x', width=0.5)  # Thinner ticks
 
-            # Add "x" after each y-axis value as an integer
-            ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda val, pos: f'{int(val)}x'))
+            # Set manual y-ticks if provided, otherwise use default formatting
+            yticks = manual_yticks.get((i, j))
+            if yticks is not None:
+                ax.set_yticks(yticks)
+                ax.set_yticklabels([f'{int(val)}x' for val in yticks])
+            else:
+                # Add "x" after each y-axis value as an integer
+                ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda val, pos: f'{int(val)}x'))
 
             ax.spines['top'].set_linewidth(0.5)  # Thinner top border
             ax.spines['right'].set_linewidth(0.5)  # Thinner right border
@@ -241,10 +274,16 @@ def figure(input_path: str, output_path: str):
             ax.spines['bottom'].set_linewidth(0.5)  # Thinner bottom border
             ax.grid(axis='y', linestyle='--', alpha=0.7)
             if i == 0 and j == 0:
-                ax.legend(fontsize=5, ncol=4, loc='lower center', bbox_to_anchor=(1.115, 1.35), frameon=True)
+                ax.legend(fontsize=8, ncol=4, loc='lower center', bbox_to_anchor=(.96, 1.35), frameon=True,
+                          columnspacing=0.6, handlelength=.8, handletextpad=0.4, handleheight=0.5)
             if j == 0:
                 metric_label = 'Throughput' if metric == 'Throughput' else 'Energy Eff' if metric == 'Energy Efficiency' else 'Power Eff'
-                ax.set_ylabel(metric_label, fontsize=font_label)
+                if metric == 'Throughput':
+                    ax.set_ylabel(metric_label, fontsize=font_label-0.2, y=0.7)
+                elif metric == 'Power Efficiency':
+                    ax.set_ylabel(metric_label, fontsize=font_label-0.2, y=0.3)
+                else:
+                    ax.set_ylabel(metric_label, fontsize=font_label-0.2)
 
     plt.savefig(output_path + "gemm_breakdown.png", dpi=1200, bbox_inches="tight")
     plt.savefig(output_path + "gemm_breakdown.pdf", dpi=1200, bbox_inches="tight")

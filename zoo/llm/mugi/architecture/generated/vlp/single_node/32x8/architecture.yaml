@@ -1,6 +1,6 @@
 architecture:
   attribute:
-    technology: 32
+    technology: 45
     frequency: 400
     interface: csv_cmos
   module:
@@ -73,7 +73,25 @@ architecture:
       instance:
       - 32
       query:
-        class: clamp
+        class: vlp_clamp
+    exp_norm:
+      tag:
+      - onchip
+      - array
+      - nonlinear
+      instance:
+      - 32
+      query:
+        class: exp_norm
+    exp_select:
+      tag:
+      - onchip
+      - array
+      - nonlinear
+      instance:
+      - 32
+      query:
+        class: exp_select
     exponent_register:
       tag:
       - onchip
@@ -94,7 +112,7 @@ architecture:
       query:
         class: fifo
         width: 16
-        depth: 2
+        depth: 8
     imux:
       tag:
       - onchip
@@ -105,6 +123,7 @@ architecture:
       query:
         class: multiplexer
         width: 128
+        num_inputs: 2
     isram:
       tag:
       - onchip
@@ -136,7 +155,7 @@ architecture:
       instance:
       - 31
       query:
-        class: max
+        class: vlp_max_min
     max_tree_register:
       tag:
       - onchip
@@ -162,7 +181,7 @@ architecture:
       - array
       - value_reuse
       instance:
-      - 1
+      - 0
       - 8
       query:
         class: register
@@ -223,15 +242,6 @@ architecture:
         class: fifo
         width: 16
         depth: 8
-    post_comp:
-      tag:
-      - onchip
-      - array
-      - nonlinear
-      instance:
-      - 32
-      query:
-        class: bf_post
     register_vector:
       tag:
       - onchip
@@ -250,7 +260,7 @@ architecture:
       instance:
       - 32
       query:
-        class: round
+        class: vlp_round
     sign_fifo:
       tag:
       - onchip
@@ -260,7 +270,7 @@ architecture:
       - 32
       query:
         class: fifo
-        width: 4
+        width: 1
         depth: 2
     sign_mantissa_register:
       tag:
@@ -313,7 +323,7 @@ architecture:
       query:
         class: fifo
         width: 4
-        depth: 8
+        depth: 2
     window_select:
       tag:
       - onchip
@@ -322,7 +332,7 @@ architecture:
       instance:
       - 1
       query:
-        class: window_select
+        class: vlp_window
     wmux:
       tag:
       - onchip

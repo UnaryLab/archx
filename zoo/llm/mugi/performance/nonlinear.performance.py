@@ -37,7 +37,8 @@ def weight_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=
     magnitude_register_dim = architecture_dict['magnitude_register']['instance'][-1]
     sign_register_dim = architecture_dict['sign_register']['instance'][-1]
     sign_fifo_dim = architecture_dict['sign_fifo']['instance'][-1]
-    post_comp_dim = architecture_dict['post_comp']['instance'][-1]
+    exp_norm_dim = architecture_dict['exp_norm']['instance'][-1]
+    exp_select_dim = architecture_dict['exp_select']['instance'][-1]
     ofifo_dim = architecture_dict['ofifo']['instance'][-1]
 
     if 'window_select' in architecture_dict:
@@ -61,7 +62,8 @@ def weight_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=
     magnitude_register_dict = OrderedDict({'count': magnitude_register_dim})
     sign_register_dict = OrderedDict({'count': sign_register_dim})
     sign_fifo_dict = OrderedDict({'count': sign_fifo_dim})
-    post_comp_dict = OrderedDict({'count': post_comp_dim})
+    exp_norm_dict = OrderedDict({'count': exp_norm_dim})
+    exp_select_dict = OrderedDict({'count': exp_select_dim})
     ofifo_dict = OrderedDict({'count': ofifo_dim})
 
     if 'window_select' in architecture_dict:
@@ -81,7 +83,8 @@ def weight_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=
                                                 'magnitude_register': magnitude_register_dict,
                                                 'sign_register': sign_register_dict,
                                                 'sign_fifo': sign_fifo_dict,
-                                                'post_comp': post_comp_dict,
+                                                'exp_norm': exp_norm_dict,
+                                                'exp_select': exp_select_dict,
                                                 'ofifo': ofifo_dict})
     
     if 'window_select' in architecture_dict:

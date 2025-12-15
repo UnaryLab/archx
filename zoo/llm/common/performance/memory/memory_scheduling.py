@@ -230,16 +230,86 @@ def offchip_gemm_events(tiles: TiledGEMM, architecture_dict: OrderedDict, worklo
     k_n_events = k_full_n_full_events + k_full_n_partial_events + k_partial_n_full_events + k_partial_n_partial_events
     m_n_events = m_full_n_full_events + m_full_n_partial_events + m_partial_n_full_events + m_partial_n_partial_events
 
-    isram_offchip_writes_dict = OrderedDict({'count': m_k_events})
-    wsram_offchip_writes_dict = OrderedDict({'count': k_n_events})
-    osram_offchip_reads_dict = OrderedDict({'count': m_n_events})
-    osram_offchip_writes_dict = OrderedDict({'count': 0})
     dram_input_reads_dict = OrderedDict({'count': m_k_events})
     dram_weight_reads_dict = OrderedDict({'count': k_n_events})
     dram_output_reads_dict = OrderedDict({'count': 0})
     dram_output_writes_dict = OrderedDict({'count': m_n_events})
 
     performance_dict = OrderedDict()
+
+    if stationary == 'os':
+        # output stationary scheduling
+        # M x K Input matrix dram <-> isram events (dram reads, isram writes)
+        # input = batch x m_tiles x k_tiles x n_tiles x ceil(tile_bits / isram_width) -> (applies to all, but with flow adjusted for each, this is an output stationary example)
+        # weight = batch x k_tiles x n_tiles x m_tiles x ceil(tile_bits / wsram_width)
+        # output = batch x m_tiles x n_tiles x ceil(tile_bits / osram_width) -> (no k dim, as it's output stationary. Output stationary maps noc to outputs, so no need to map to k)
+        # More detailed breakdown, allows for instances where the tile size is smaller than sram width, which increases events compared to using total_bits/width.
+        m_full_k_full_events = tiles.m_full_k_full_total_tiles * tiles.n_tiles * math.ceil(tiles.m_full_k_full_tile_bits / isram_width)
+        m_full_k_partial_events = tiles.m_full_k_partial_total_tiles * tiles.n_tiles * math.ceil(tiles.m_full_k_partial_tile_bits / isram_width)
+        m_partial_k_full_events = tiles.m_partial_k_full_total_tiles * tiles.n_tiles * math.ceil(tiles.m_partial_k_full_tile_bits / isram_width)
+        m_partial_k_partial_events = tiles.m_partial_k_partial_total_tiles * tiles.n_tiles * math.ceil(tiles.m_partial_k_partial_tile_bits / isram_width)
+
+        # K x N Weight matrix dram <-> wsram events (dram reads, wsram writes)
+        k_full_n_full_events = tiles.k_full_n_full_total_tiles * tiles.m_tiles * math.ceil(tiles.k_full_n_full_tile_bits / wsram_width)
+        k_full_n_partial_events = tiles.k_full_n_partial_total_tiles * tiles.m_tiles * math.ceil(tiles.k_full_n_partial_tile_bits / wsram_width)
+        k_partial_n_full_events = tiles.k_partial_n_full_total_tiles * tiles.m_tiles * math.ceil(tiles.k_partial_n_full_tile_bits / wsram_width)
+        k_partial_n_partial_events = tiles.k_partial_n_partial_total_tiles * tiles.m_tiles * math.ceil(tiles.k_partial_n_partial_tile_bits / wsram_width)
+
+        # M x N Output matrix osram <-> dram events (osram reads)
+        m_full_n_full_events = tiles.m_full_n_full_total_tiles * math.ceil(tiles.m_full_n_full_tile_bits / osram_width)
+        m_full_n_partial_events = tiles.m_full_n_partial_total_tiles * math.ceil(tiles.m_full_n_partial_tile_bits / osram_width)
+        m_partial_n_full_events = tiles.m_partial_n_full_total_tiles * math.ceil(tiles.m_partial_n_full_tile_bits / osram_width)
+        m_partial_n_partial_events = tiles.m_partial_n_partial_total_tiles * math.ceil(tiles.m_partial_n_partial_tile_bits / osram_width)
+
+    elif stationary == 'is':
+        # input stationary scheduling
+        # M x K Input matrix dram <-> isram events (dram reads, isram writes)
+        m_full_k_full_events = tiles.m_full_k_full_total_tiles * math.ceil(tiles.m_full_k_full_tile_bits / isram_width)
+        m_full_k_partial_events = tiles.m_full_k_partial_total_tiles * math.ceil(tiles.m_full_k_partial_tile_bits / isram_width)
+        m_partial_k_full_events = tiles.m_partial_k_full_total_tiles * math.ceil(tiles.m_partial_k_full_tile_bits / isram_width)
+        m_partial_k_partial_events = tiles.m_partial_k_partial_total_tiles * math.ceil(tiles.m_partial_k_partial_tile_bits / isram_width)
+
+        # K x N Weight matrix dram <-> wsram events (dram reads, wsram writes)
+        k_full_n_full_events = tiles.k_full_n_full_total_tiles * tiles.m_tiles * math.ceil(tiles.k_full_n_full_tile_bits / wsram_width)
+        k_full_n_partial_events = tiles.k_full_n_partial_total_tiles * tiles.m_tiles * math.ceil(tiles.k_full_n_partial_tile_bits / wsram_width)
+        k_partial_n_full_events = tiles.k_partial_n_full_total_tiles * tiles.m_tiles * math.ceil(tiles.k_partial_n_full_tile_bits / wsram_width)
+        k_partial_n_partial_events = tiles.k_partial_n_partial_total_tiles * tiles.m_tiles * math.ceil(tiles.k_partial_n_partial_tile_bits / wsram_width)
+
+        # M x N Output matrix osram <-> dram events (osram reads)
+        m_full_n_full_events = tiles.m_full_n_full_total_tiles * tiles.k_tiles * math.ceil(tiles.m_full_n_full_tile_bits / osram_width)
+        m_full_n_partial_events = tiles.m_full_n_partial_total_tiles * tiles.k_tiles * math.ceil(tiles.m_full_n_partial_tile_bits / osram_width)
+        m_partial_n_full_events = tiles.m_partial_n_full_total_tiles * tiles.k_tiles * math.ceil(tiles.m_partial_n_full_tile_bits / osram_width)
+        m_partial_n_partial_events = tiles.m_partial_n_partial_total_tiles * tiles.k_tiles * math.ceil(tiles.m_partial_n_partial_tile_bits / osram_width)
+
+    elif stationary == 'ws':
+        # weight stationary scheduling
+        # M x K Input matrix dram <-> isram events (dram reads, isram writes)
+        m_full_k_full_events = tiles.m_full_k_full_total_tiles * tiles.n_tiles * math.ceil(tiles.m_full_k_full_tile_bits / isram_width)
+        m_full_k_partial_events = tiles.m_full_k_partial_total_tiles * tiles.n_tiles * math.ceil(tiles.m_full_k_partial_tile_bits / isram_width)
+        m_partial_k_full_events = tiles.m_partial_k_full_total_tiles * tiles.n_tiles * math.ceil(tiles.m_partial_k_full_tile_bits / isram_width)
+        m_partial_k_partial_events = tiles.m_partial_k_partial_total_tiles * tiles.n_tiles * math.ceil(tiles.m_partial_k_partial_tile_bits / isram_width)
+
+        # K x N Weight matrix dram <-> wsram events (dram reads, wsram writes)
+        k_full_n_full_events = tiles.k_full_n_full_total_tiles * math.ceil(tiles.k_full_n_full_tile_bits / wsram_width)
+        k_full_n_partial_events = tiles.k_full_n_partial_total_tiles * math.ceil(tiles.k_full_n_partial_tile_bits / wsram_width)
+        k_partial_n_full_events = tiles.k_partial_n_full_total_tiles * math.ceil(tiles.k_partial_n_full_tile_bits / wsram_width)
+        k_partial_n_partial_events = tiles.k_partial_n_partial_total_tiles * math.ceil(tiles.k_partial_n_partial_tile_bits / wsram_width)
+
+        # M x N Output matrix osram <-> dram events (osram reads)
+        m_full_n_full_events = tiles.m_full_n_full_total_tiles * tiles.k_tiles * math.ceil(tiles.m_full_n_full_tile_bits / osram_width)
+        m_full_n_partial_events = tiles.m_full_n_partial_total_tiles * tiles.k_tiles * math.ceil(tiles.m_full_n_partial_tile_bits / osram_width)
+        m_partial_n_full_events = tiles.m_partial_n_full_total_tiles * tiles.k_tiles * math.ceil(tiles.m_partial_n_full_tile_bits / osram_width)
+        m_partial_n_partial_events = tiles.m_partial_n_partial_total_tiles * tiles.k_tiles * math.ceil(tiles.m_partial_n_partial_tile_bits / osram_width)
+
+    # Total dram <-> sram events
+    m_k_events = m_full_k_full_events + m_full_k_partial_events + m_partial_k_full_events + m_partial_k_partial_events
+    k_n_events = k_full_n_full_events + k_full_n_partial_events + k_partial_n_full_events + k_partial_n_partial_events
+    m_n_events = m_full_n_full_events + m_full_n_partial_events + m_partial_n_full_events + m_partial_n_partial_events
+
+    isram_offchip_writes_dict = OrderedDict({'count': m_k_events})
+    wsram_offchip_writes_dict = OrderedDict({'count': k_n_events})
+    osram_offchip_reads_dict = OrderedDict({'count': m_n_events})
+    osram_offchip_writes_dict = OrderedDict({'count': 0})
 
     performance_dict['subevent'] = OrderedDict({
         'isram_offchip_writes': isram_offchip_writes_dict,
@@ -318,6 +388,7 @@ def onchip_gemm_events(onchip_tiling: list[TiledGEMM], architecture_dict: Ordere
     wsram_onchip_reads_dict = OrderedDict({'count': wsram_onchip_reads_count})
     osram_onchip_reads_dict = OrderedDict({'count': osram_onchip_reads_count})
     osram_onchip_writes_dict = OrderedDict({'count': osram_onchip_writes_count})
+
 
     performance_dict['subevent'] = OrderedDict({
         'isram_onchip_reads': isram_onchip_reads_dict,

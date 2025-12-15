@@ -197,7 +197,7 @@ def nonlinear_tile_events(function: str, tiles: TiledMatrix, architecture_dict: 
         if function == 'softmax':
             # array computation (LUT selection)
             array_events = tiles.m_tiles * tiles.n_total
-            array_events_utilization = weight_events_utilization
+            array_events_utilization = weight_events_utilization * 2
             array_events *= array_events_utilization
             array_cycle_utilization = 1 / array_events_utilization
             performance_dict['subevent']['array_nonlinear'] = OrderedDict({'count': array_events,

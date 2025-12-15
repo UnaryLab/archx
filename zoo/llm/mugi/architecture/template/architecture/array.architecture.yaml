@@ -18,7 +18,7 @@ architecture:
       instance: height
       query:
         class: fifo
-        width: 4
+        width: 1
         depth: 2
 
     pe_fifo:

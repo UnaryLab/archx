@@ -1,6 +1,6 @@
 architecture:
   attribute:
-    technology: 32
+    technology: 45
     frequency: 400
     interface: csv_cmos
   module:
@@ -85,7 +85,29 @@ architecture:
       - 4
       - 128
       query:
-        class: clamp
+        class: vlp_clamp
+    exp_norm:
+      tag:
+      - onchip
+      - array
+      - nonlinear
+      instance:
+      - 4
+      - 4
+      - 128
+      query:
+        class: exp_norm
+    exp_select:
+      tag:
+      - onchip
+      - array
+      - nonlinear
+      instance:
+      - 4
+      - 4
+      - 128
+      query:
+        class: exp_select
     exponent_register:
       tag:
       - onchip
@@ -110,7 +132,7 @@ architecture:
       query:
         class: fifo
         width: 16
-        depth: 2
+        depth: 8
     imux:
       tag:
       - onchip
@@ -123,6 +145,7 @@ architecture:
       query:
         class: multiplexer
         width: 128
+        num_inputs: 2
     irouter:
       tag:
       - onchip
@@ -197,7 +220,7 @@ architecture:
       - 4
       - 127
       query:
-        class: max
+        class: vlp_max_min
     max_tree_register:
       tag:
       - onchip
@@ -229,7 +252,7 @@ architecture:
       instance:
       - 4
       - 4
-      - 3
+      - 2
       - 8
       query:
         class: register
@@ -311,17 +334,6 @@ architecture:
         class: fifo
         width: 16
         depth: 8
-    post_comp:
-      tag:
-      - onchip
-      - array
-      - nonlinear
-      instance:
-      - 4
-      - 4
-      - 128
-      query:
-        class: bf_post
     register_vector:
       tag:
       - onchip
@@ -344,7 +356,7 @@ architecture:
       - 4
       - 128
       query:
-        class: round
+        class: vlp_round
     sign_fifo:
       tag:
       - onchip
@@ -356,7 +368,7 @@ architecture:
       - 128
       query:
         class: fifo
-        width: 4
+        width: 1
         depth: 2
     sign_mantissa_register:
       tag:
@@ -419,7 +431,7 @@ architecture:
       query:
         class: fifo
         width: 4
-        depth: 8
+        depth: 2
     wmux:
       tag:
       - onchip

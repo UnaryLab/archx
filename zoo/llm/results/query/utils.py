@@ -6,6 +6,8 @@ from archx.event import load_event_graph
 from archx.metric import load_metric_dict
 import statistics
 import numpy as np
+import sys
+from loguru import logger
 
 def geomean(dict_list: list[OrderedDict]) -> OrderedDict:
     geomean_dict = OrderedDict()
@@ -42,11 +44,19 @@ def query_dynamic_energy(event_graph, metric_dict, workload, event=None, tag=Non
         dynamic_energy_dict = aggregate_tag_metric(event_graph=event_graph, metric_dict=metric_dict, metric='dynamic_energy', workload=workload, tag=tag)
     return dynamic_energy_dict['value'] / 10**9 # nJ -> J
 
+def query_dynamic_energy_carbon(event_graph, metric_dict, workload, event=None, tag=None) -> OrderedDict:
+    if tag is None:
+        dynamic_energy_dict = aggregate_event_metric(event_graph=event_graph, metric_dict=metric_dict, metric='dynamic_energy', workload=workload, event=event)
+    else:
+        dynamic_energy_dict = aggregate_tag_metric(event_graph=event_graph, metric_dict=metric_dict, metric='dynamic_energy', workload=event, tag=tag)
+    return dynamic_energy_dict['value'] / 10**9 # nJ -> J
+
+
 def query_leakage_power(event_graph, metric_dict, workload, event=None, tag=None) -> OrderedDict:
     if tag is None:
         leakage_power = aggregate_event_metric(event_graph=event_graph, metric_dict=metric_dict, metric='leakage_power', workload=workload, event=event)
     else:
-        leakage_power =  aggregate_tag_metric(event_graph=event_graph, metric_dict=metric_dict, metric='leakage_power', workload=workload, tag=tag)
+        leakage_power =  aggregate_tag_metric(event_graph=event_graph, metric_dict=metric_dict, metric='leakage_power', workload=event, tag=tag)
     return leakage_power['value'] / 10**3 # mW -> W
 
 def query_area(event_graph, metric_dict, workload=None, tag=None, module=None) -> np.float64:
@@ -61,11 +71,12 @@ def query_area(event_graph, metric_dict, workload=None, tag=None, module=None) -
 
 def query_operational_carbon(tag, event_graph, metric_dict, workload, event, CI) -> OrderedDict:
     execution_time = query_execution_time(event_graph=event_graph, metric_dict=metric_dict, workload=workload, event=event)
-    dynamic_energy = query_dynamic_energy(event_graph=event_graph, metric_dict=metric_dict, workload=workload, tag=tag)
-    leakage_power = query_leakage_power(event_graph=event_graph, metric_dict=metric_dict, workload=workload, tag=tag)
-    power = (leakage_power + (dynamic_energy / execution_time)) * 10**3 # W -> mW
+    dynamic_energy = query_dynamic_energy_carbon(event_graph=event_graph, metric_dict=metric_dict, workload=workload, event=event, tag=tag)
+    leakage_power = query_leakage_power(event_graph=event_graph, metric_dict=metric_dict, workload=workload, event=event, tag=tag)
+    power = (leakage_power + (dynamic_energy / execution_time)) # W -> mW
 
-    op_carbon = CI * (power / 1000000) * (execution_time / 3600) # mW -> KW, s -> H
+    op_carbon = CI * (power / 1000) * (execution_time / 3600) # W -> KW, s -> H
+    op_carbon /= 1000  # convert to kgCO2eq
 
     return op_carbon
 
@@ -130,9 +141,11 @@ def query_throughput_metrics(event_graph, metric_dict, module, workload, event)-
     return performance_metrics_dict
 
 def query_performance_metrics(event_graph, metric_dict, module, workload, event) -> OrderedDict:
-
+    # logger.add(sys.stdout, level="DEBUG")
     execution_time = query_execution_time(event_graph=event_graph, metric_dict=metric_dict, workload=event, event=event)
+    # logger.remove()
     cycle_count = query_cycle_count(event_graph=event_graph, metric_dict=metric_dict, workload=event, event=event)
+    
     pe_count = aggregate_event_count(event_graph=event_graph, workload=event, event=module)
     dynamic_energy = query_dynamic_energy(event_graph=event_graph, metric_dict=metric_dict, workload=event, tag='onchip')
     leakage_power = query_leakage_power(event_graph=event_graph, metric_dict=metric_dict, workload=event, tag='onchip')

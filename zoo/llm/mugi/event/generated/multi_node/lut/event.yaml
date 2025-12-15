@@ -194,7 +194,8 @@ event:
     - exp_clamp
     - lut_register
     - lut_decoder
-    - post_comp
+    - exp_norm
+    - exp_select
     - max_tree
     - max_tree_register
     performance: zoo/llm/mugi/performance/gemm.performance.py
@@ -925,7 +926,8 @@ event:
     - max_tree_register
     - magnitude_register
     - sign_register
-    - post_comp
+    - exp_norm
+    - exp_select
     - ofifo
     performance: zoo/llm/mugi/performance/nonlinear.performance.py
   weight_reuse_gemm:

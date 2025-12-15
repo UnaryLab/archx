@@ -1,6 +1,6 @@
 architecture:
   attribute:
-    technology: 32
+    technology: 45
     frequency: 400
     interface: csv_cmos
   module:
@@ -213,7 +213,7 @@ architecture:
       - 8
       - 21
       query:
-        class: bf_comparator
+        class: pwl_bf_max
     pwl_encoder:
       tag:
       - onchip
@@ -222,7 +222,7 @@ architecture:
       instance:
       - 8
       query:
-        class: 21_22_encoder
+        class: pwl_22_seg_encoder
     pwl_register:
       tag:
       - onchip
