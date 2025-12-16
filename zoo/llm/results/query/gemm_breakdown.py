@@ -287,4 +287,3 @@ def figure(input_path: str, output_path: str):
 
     plt.savefig(output_path + "gemm_breakdown.png", dpi=1200, bbox_inches="tight")
     plt.savefig(output_path + "gemm_breakdown.pdf", dpi=1200, bbox_inches="tight")
-    plt.show()

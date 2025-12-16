@@ -303,4 +303,3 @@ def figure(input_path, output_path):
     plt.tight_layout(pad=0.5)
     plt.savefig(output_path + 'dram_roofline.png', bbox_inches='tight', dpi=1200, pad_inches=0.065)
     plt.savefig(output_path + 'dram_roofline.pdf', bbox_inches='tight', dpi=1200, pad_inches=0.065)
-    plt.show()

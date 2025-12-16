@@ -536,4 +536,3 @@ def figure(input_path: str, output_path: str):
     plt.tight_layout(pad=0.1)
     plt.savefig(output_path + 'nonlinear_breakdown.png', dpi=1200, bbox_inches='tight')
     plt.savefig(output_path + 'nonlinear_breakdown.pdf', dpi=1200, bbox_inches='tight')
-    plt.show()
