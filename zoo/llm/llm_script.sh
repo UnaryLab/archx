@@ -3,7 +3,6 @@
 echo "Setting up environment."
 export PYTHONPATH="$(pwd)/zoo:$PYTHONPATH"
 
-Run the first script to generate dictionary
 echo "Generating yaml files."
 python3 -m zoo.llm.scripts.generate_dicts
 

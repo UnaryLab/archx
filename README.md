@@ -6,19 +6,15 @@ All provided installation methods allow running ```archx``` in the command line 
 
 Make sure you have [Anaconda](https://www.anaconda.com/) installed before the steps below.
 
-### Option 1: pip installation
-1. ```git clone``` [this repo](https://github.com/UnaryLab/archx) and ```cd``` to the repo dir
-2. ```conda env create -f environment.yaml```
-   - The ```name: archx``` in ```evironment.yaml``` can be updated to a preferred one.
-3. ```conda activate archx```
-4. ```pip install archx```
-5. Validate installation via ```archx -h``` in the command line or ```import archx``` in python code
-
-### Option 2: source installation
+### AE setup
 This is the developer mode, where you can edit the source code with live changes reflected for simulation.
-1. ```git clone``` [this repo](https://github.com/UnaryLab/archx) and ```cd``` to the repo dir
-2. ```conda env create -f environment.yaml```
+1. ```git clone``` [this repo](https://github.com/UnaryLab/archx) and ```cd archx``` to the repo dir.
+2. ```git fetch --all` to retrieve branches.
+3. ```git checkout -b asplos_2026_ae origin/asplos_2026_ae``` to switch to the AE branch
+4. ```conda env create -f environment.yaml```
    - The ```name: archx``` in ```evironment.yaml``` can be updated to a preferred one.
-3. ```conda activate archx```
-4. ```python3 -m pip install -e . --no-deps```
-5. Validate installation via ```archx -h``` in the command line or ```import archx``` in python code
+5. ```conda activate archx```
+6. Validate installation via ```archx -h``` in the command line or ```import archx``` in python code.
+7. ```bash run_mugi.sh``` to run the simulation workflow.
+8. Output figures can be found in ```zoo/llm/results/figs/``` and ```zoo/llm/results/tables```.
+
