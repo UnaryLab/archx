@@ -18,3 +18,14 @@ This is the developer mode, where you can edit the source code with live changes
 7. ```bash run_mugi.sh``` to run the simulation workflow.
 8. Output figures can be found in ```zoo/llm/results/figs/``` and ```zoo/llm/results/tables```.
 
+## Citation
+If Mugi has been useful in your own research, please cite us using the following bibtex citation:
+
+```
+@inproceedings{price2026asplos,
+  title     = {Mugi: Value Level Parallelism For Efficient LLMs},
+  author    = {Daniel Price and Prabhu Vellaisamy and John Paul Shen and Di Wu},
+  booktitle = {International Conference on Architectural Support for Programming Languages and Operating Systems},
+  year      = {2026}
+}
+```
