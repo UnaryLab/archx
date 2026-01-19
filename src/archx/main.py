@@ -10,6 +10,9 @@ from archx.performance import simulate_performance_all_events
 from archx.utils import bcolors, write_yaml, read_yaml
 from archx.interface import register_interface, unregister_interface, copy_interface
 
+# archx -a -e -w -m -r : single run
+# archx -compile -<file>: sweeping generation
+# archx -sweep -<dir>: call multi-run script
 
 def parse_commandline_args():
     """

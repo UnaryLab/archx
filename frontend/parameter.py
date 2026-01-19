@@ -1,44 +1,13 @@
-class Parameter():
-    def __init__(self, value, sweep):
-        self.value = value
-        self.sweep = sweep
+class Parameter:
+    def __init__(self, graph):
+        self.graph = graph
 
-    def set_vertex(self, vertex):
-        self.vertex = vertex
-
-    def get_vertex(self):
-        return self.vertex
-
-    def get_value(self):
-        return self.value
-    
-    def get_sweep(self):
-        return self.sweep
-    
-class SweepParameter():
-    def __init__(self, d: dict):
-        self.d = d
-
-    def get_dict(self):
-        return self.d
-    
-class ArchitectureParameter():
-    def __init__(self, d: dict):
-        self.d = d
-
-    def get_dict(self):
-        return self.d
-    
-class WorkloadParameter():
-    def __init__(self, d: dict):
-        self.d = d
-
-    def get_dict(self):
-        return self.d
-    
-class ArchitectureWorkloadParameter():
-    def __init__(self, d: dict):
-        self.d = d
-
-    def get_dict(self):
-        return self.d
+    def _add_node(self, name: str, param_name: str, value, type: str, sweep: bool, desc: str):
+        vertex = self.graph.add_vertex()
+        self.graph.vp.name[vertex] = name
+        self.graph.vp.param_name[vertex] = param_name
+        self.graph.vp.value[vertex] = value
+        self.graph.vp.type[vertex] = type
+        self.graph.vp.sweep[vertex] = sweep
+        self.graph.vp.desc[vertex] = desc
+        return vertex

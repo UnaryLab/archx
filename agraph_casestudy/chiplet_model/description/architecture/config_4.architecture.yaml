@@ -1,0 +1,310 @@
+architecture:
+  module:
+    wfifo:
+      instance:
+      - 1
+      - 1
+      - 512
+      tag:
+      - fifo
+      - array
+      query:
+        depth: 64
+        width: 16
+        class: fifo
+    weight_reg:
+      instance:
+      - 1
+      - 1
+      - 512
+      - 512
+      query:
+        width: 16
+        class: register
+      tag:
+      - pe
+      - data
+      - array
+    weight_en_reg:
+      instance:
+      - 1
+      - 1
+      - 512
+      - 512
+      query:
+        width: 1
+        class: register
+      tag:
+      - pe
+      - control
+      - array
+    acc_en_reg:
+      instance:
+      - 1
+      - 1
+      - 512
+      - 512
+      query:
+        width: 1
+        class: register
+      tag:
+      - pe
+      - control
+      - array
+    adder:
+      instance:
+      - 1
+      - 1
+      - 512
+      - 512
+      tag:
+      - pe
+      - mac
+      - array
+      query:
+        class: adder_bfloat16
+    weight_path_en_reg:
+      instance:
+      - 1
+      - 1
+      - 512
+      - 512
+      query:
+        width: 1
+        class: register
+      tag:
+      - pe
+      - control
+      - array
+    ofifo:
+      instance:
+      - 1
+      - 1
+      - 512
+      tag:
+      - fifo
+      - array
+      query:
+        depth: 64
+        width: 16
+        class: fifo
+    vector_adder:
+      instance:
+      - 1
+      - 1
+      - 512
+      tag:
+      - vector
+      - array
+      query:
+        class: adder_bfloat16
+    multiplier:
+      instance:
+      - 1
+      - 1
+      - 512
+      - 512
+      tag:
+      - pe
+      - mac
+      - array
+      query:
+        class: multiplier_bfloat16
+    act_reg:
+      instance:
+      - 1
+      - 1
+      - 512
+      - 512
+      query:
+        width: 16
+        class: register
+      tag:
+      - pe
+      - data
+      - array
+    vector_reg:
+      instance:
+      - 1
+      - 1
+      - 512
+      query:
+        width: 16
+        class: register
+      tag:
+      - vector
+      - array
+    sum_reg:
+      instance:
+      - 1
+      - 1
+      - 512
+      - 512
+      query:
+        width: 16
+        class: register
+      tag:
+      - pe
+      - data
+      - array
+    act_mux:
+      instance:
+      - 1
+      - 1
+      - 512
+      - 512
+      query:
+        width: 16
+        class: and_gate
+      tag:
+      - pe
+      - array
+    add_mux:
+      instance:
+      - 1
+      - 1
+      - 512
+      - 512
+      query:
+        width: 16
+        class: and_gate
+      tag:
+      - pe
+      - array
+    sram:
+      instance:
+      - 1
+      - 5
+      query:
+        interface: cacti7
+        bank:
+        - 512
+        - 1
+        width: 16
+        depth: 8192
+        class: sram
+      tag:
+      - memory
+    ififo:
+      instance:
+      - 1
+      - 1
+      - 512
+      tag:
+      - fifo
+      - array
+      query:
+        depth: 64
+        width: 16
+        class: fifo
+    mult_en_reg:
+      instance:
+      - 1
+      - 1
+      - 512
+      - 512
+      query:
+        width: 1
+        class: register
+      tag:
+      - pe
+      - control
+      - array
+    accumulator_reg:
+      instance:
+      - 1
+      - 1
+      - 512
+      query:
+        width: 16
+        class: register
+      tag:
+      - output_register
+      - array
+    weight_path_reg:
+      instance:
+      - 1
+      - 1
+      - 512
+      - 512
+      query:
+        width: 16
+        class: register
+      tag:
+      - pe
+      - data
+      - array
+    sum_en_reg:
+      instance:
+      - 1
+      - 1
+      - 512
+      - 512
+      query:
+        width: 1
+        class: register
+      tag:
+      - pe
+      - control
+      - array
+    sum_mux:
+      instance:
+      - 1
+      - 1
+      - 512
+      - 512
+      query:
+        width: 16
+        class: and_gate
+      tag:
+      - pe
+      - array
+    vector_multiplier:
+      instance:
+      - 1
+      - 1
+      - 512
+      tag:
+      - vector
+      - array
+      query:
+        class: multiplier_bfloat16
+    act_en_reg:
+      instance:
+      - 1
+      - 1
+      - 512
+      - 512
+      query:
+        width: 1
+        class: register
+      tag:
+      - pe
+      - control
+      - array
+    accumulator:
+      instance:
+      - 1
+      - 1
+      - 512
+      tag:
+      - output_adder
+      - array
+      query:
+        class: adder_bfloat16
+    weight_mux:
+      instance:
+      - 1
+      - 1
+      - 512
+      - 512
+      query:
+        width: 16
+        class: and_gate
+      tag:
+      - pe
+      - array
+  attribute:
+    technology: 45
+    frequency: 400
+    interface: csv_cmos

@@ -5,7 +5,7 @@ import os
 import yaml
 
 from frontend.architecture import Architecture
-from frontend.event import Event
+from archx.programming.object.event import Event
 from frontend.metric import Metric
 from frontend.workload import Workload
 from frontend.constraint import ConstraintGraph

@@ -1,73 +1,15 @@
-Design
-    Architecture:
-        Module:
-    Event:
-        Node:
-    Workload:
-        Configuration:
-            Parameter:
+Agraph:
+    architecture: node
+    event:        node
+    metric:       node
+    workload:     node
+    constraint:   edge
 
-ConfigIter:
-    Examples:
-
-DependencyGraph:
-
-functionality
-✅  - add each object manually (Arch, Event, Workload)
-🟥  - add architecture instance by other instance(maybe dependency?)
-✅  - add each object as a explicit config (Arch, Workload)
-✅  - add each object as a iteration config (Arch, Workload)
-🟥  - add each object as a direct dependency (instance, parameter, tag is supplied)
-🟥  - add each object as a function of another object (Arch, Workload)
-🟥  - add each dependency as a manual tag (Arch Workload)
-🟥  - add each antidependency as a manual tag with default configuration
-🟥  - add each object as a function of another object with antidependency (Arch, Workload)
-🟥      - conditional, needs to match the dimensions passed.
-🟥  - add conditional dependency 
-🟥      - acts as dependency when condition met
-🟥      - acts as anti where condition met
-🟥      - else no dependency
-🟥  - add performance to event as
-✅      - path
-🟥      - function ?
-🟥  - what if they want to reuse an object from one design to another?
-🟥  - add loggeru
-🟥  - what if I want multiple workloads, archs tied dependent together?
-
-Flow
-- Add designs
-- Create dependencies
-- Expand iterations
-
-Add designs
-
-parameters:
-    normal: not affected by iteration
-    iteration: affected by iteration
-    depth_iteration: structure where it is effected by internal iteration (query)
-    dependencies: defines interation interaction (none, dependency, antidependency, conditional dependency)
-
-helpers
-    parent class:
-        - add
-        - remove
-    child class (implicit by changing parameters)
-        - update
-
-typechecking at module for different options
-
-Add dependencies
-
-allow dependencies at 3 levels
-    - across designs
-    - within designs (workload <-> architecture)
-    - within designs (workload <-> workload) || (architecture <-> architecture)
-
-    handle dependency assertions and typechecking specific to dependencies
-
-After dependencies built, now expand and iterate
-
-no dependency: iterates on both dims
-dependency: iterates together
-antidependency: Do not iterate together
-conditional dependency: Condition decides which 3 it is.
+  step 1. Add nodes (architecture, event, metric, workload)
+  step 2. Add edges (constraint)
+  step 3. Compute constraints
+  step 4. Split nodes
+    - add anti constraints to same parameters
+  step 5. Create subgraphs
+step 6. Process subgraph sweeping
+step 7. Process global sweeping

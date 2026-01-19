@@ -1,0 +1,55 @@
+event:
+  gemm:
+    subevent:
+    - ai_chiplet
+    - memory_chiplet
+    - accumulator_chiplet
+    - vector_unit_chiplet
+    performance: agraph_casestudy/chiplet_performance/models/llama/performance.py
+  ai_chiplet_compute:
+    subevent:
+    - ififo
+    - wfifo
+    - ofifo
+    - multiplier
+    - adder
+    - act_en_reg
+    - mult_en_reg
+    - acc_en_regsum_en_reg
+    - act_reg
+    - sum_reg
+    - act_mux
+    - add_mux
+    - sum_mux
+    performance: agraph_casestudy/chiplet_performance/chiplets/performance.py
+  ai_chiplet_weight:
+    subevent:
+    - weight_path_en_reg
+    - weight_en_reg
+    - weight_path_reg
+    - weight_reg
+    - weight_mux
+    performance: agraph_casestudy/chiplet_performance/chiplets/performance.py
+  memory_weight_reads:
+    subevent:
+    - sram
+    performance: agraph_casestudy/chiplet_performance/chiplets/performance.py
+  memory_compute_reads:
+    subevent:
+    - sram
+    performance: agraph_casestudy/chiplet_performance/chiplets/performance.py
+  memory_compute_writes:
+    subevent:
+    - sram
+    performance: agraph_casestudy/chiplet_performance/chiplets/performance.py
+  accumulator_chiplet:
+    subevent:
+    - accumulator
+    - accumulator_reg
+    performance: agraph_casestudy/chiplet_performance/chiplets/performance.py
+  vector_unit_chiplet:
+    subevent:
+    - vector_multiplier
+    - vector_adder
+    - vector_reg
+    performance: agraph_casestudy/chiplet_performance/chiplets/performance.py

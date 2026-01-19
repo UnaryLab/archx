@@ -1,8 +1,8 @@
 workload:
   gemm:
     configuration:
-      array_dim: 8
-      bitwidth: 16
       k: 32
-      m: 32
       n: 32
+      bitwidth: 16
+      m: 32
+      array_dim: 8

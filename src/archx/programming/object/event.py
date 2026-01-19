@@ -1,0 +1,16 @@
+# TODO:
+#   - How to increase flexibility with performance path?
+#   - Finalize method signitures
+#   - Finalize assertion messages
+
+class Event:
+    def __init__(self):
+        self.events = {'event': {}}
+
+    def add_event(self, name: str, subevent: list, performance: str):
+        assert isinstance(name, str), "'name' parameter must be of type 'str'."
+        assert name not in self.events, f"Event '{name}' already exists in event."
+        assert isinstance(subevent, list), "'subevent' parameter must be of type 'list'."
+        assert isinstance(performance, str), "'performance' parameter must be of type 'str' or not provided."
+
+        self.events['event'][name] = {'subevent': subevent, 'performance': performance}
