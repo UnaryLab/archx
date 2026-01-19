@@ -18,6 +18,9 @@ This is the developer mode, where you can edit the source code with live changes
 7. ```bash run_mugi.sh``` to run the simulation workflow.
 8. Output figures can be found in ```zoo/llm/results/figs/``` and ```zoo/llm/results/tables```.
 
+## Zenodo
+A zenodo submission exists at https://zenodo.org/records/18063514
+
 ## Citation
 If Mugi has been useful in your own research, please cite us using the following bibtex citation:
 
