@@ -3,7 +3,10 @@ from itertools import product, zip_longest
 from yaml import safe_dump
 from copy import deepcopy
 import os
-import tqdm
+import pandas as pd
+import shutil
+import ipywidgets as widgets
+from IPython.display import display, clear_output
 
 # Helper functions
 # create graph
@@ -21,10 +24,10 @@ import tqdm
 #  - currently naivly copies arch, workload dicts. Optimize this.
 #  - value conllisions when trying to do direct list constraints (i.e. inst=[1,2,3] and inst=[1,1,1]), the [1,1,1] has collisions.
 
-from frontend.architecture import Architecture
+from archx.programming.object.architecture import Architecture
 from archx.programming.object.event import Event
-from frontend.metric import Metric
-from frontend.workload import Workload
+from archx.programming.object.metric import Metric
+from archx.programming.object.workload import Workload
 
 class AGraph:
     def __init__(self, path):
@@ -71,6 +74,7 @@ class AGraph:
         print(f"Generated {len(self.configurations)} configurations.")
         self._to_yaml()
         print('Done!')
+        self._gui()
         
 
     def _create_graph(self):
@@ -202,8 +206,6 @@ class AGraph:
                                     ((src_dict['name'], src_dict['param_name'], src_dict['type'], src_dict['desc'])): src_c,
                                     ((trg_dict['name'], trg_dict['param_name'], trg_dict['type'], trg_dict['desc'])): trg_c
                                 }
-                                # Debug: print when direct edges are created
-                                #print(f"  Created direct-edge {new_edge}: {src_dict['name']}.{src_dict['param_name']} {value} -> {trg_dict['name']}.{trg_dict['param_name']} {trg_dict['value']}")
                                 break
 
                     elif src_constraints == value:
@@ -211,8 +213,6 @@ class AGraph:
                                     type=edge_dict['type'],
                                     condition=edge_dict['condition'],
                                     condition_type=edge_dict['condition_type'])
-                        # Debug: print when direct edges are created
-                        #print(f"  Created direct-edge {new_edge}: {src_dict['name']}.{src_dict['param_name']} {value} -> {trg_dict['name']}.{trg_dict['param_name']} {trg_dict['value']}")
 
             for new_src_v in new_vertices:
                 for new_trg_v in new_vertices:
@@ -221,14 +221,10 @@ class AGraph:
                         if existing_edge is None:
                             existing_edge = self.graph.edge(new_trg_v, new_src_v)
                             if existing_edge is None:
-                                anti_edge = self._add_edge(new_src_v, new_trg_v, type='anti')
-                                # Debug: print when anti-edges are created
-                                src_val = self.graph.vp.value[new_src_v]
-                                trg_val = self.graph.vp.value[new_trg_v]
-                                #print(f"  Created anti-edge {anti_edge}: {src_dict['name']}.{src_dict['param_name']} {src_val} <-> {trg_val}")
+                                self._add_edge(new_src_v, new_trg_v, type='anti')
+
             for e in edges:
                 edge = self.graph.edge(e[0], e[1])
-                #print(f"  Removed edge {edge} between sweeping vertex '{src_dict['name']}.{src_dict['param_name']}' and vertex '{self.graph.vp.name[trg_v]}.{self.graph.vp.param_name[trg_v]}'")
                 self.graph.remove_edge(edge)
                 
 
@@ -245,10 +241,6 @@ class AGraph:
             vfilt.a = (comp.a == c)  # True for vertices in this component
             subgraph = gt.GraphView(self.graph, vfilt=vfilt)
             self.subgraphs.append(subgraph)
-        
-        # print(f"Total subgraphs: {len(self.subgraphs)}")
-        # for i, subgraph in enumerate(self.subgraphs):
-        #     print(f"  Subgraph {i}: {subgraph.num_vertices()} nodes")
 
     def _add_node(self, name: str, param_name: str, value, type: str, sweep: bool, desc: str, idx: int = 0):
         vertex = self.graph.add_vertex()
@@ -318,13 +310,6 @@ class AGraph:
             new_subgraphs.append(subgraph_components)
         
         self.subgraphs = new_subgraphs
-        
-        # total_subgraphs = sum(len(sg) for sg in self.subgraphs)
-        # # print(f"Total subgraphs after direct constraint grouping: {total_subgraphs}")
-        # # for i, subgraph_list in enumerate(self.subgraphs):
-        # #     print(f"  Group {i}: {len(subgraph_list)} subgraphs")
-        # #     for j, subgraph in enumerate(subgraph_list):
-        # #         print(f"    Subgraph {j}: {subgraph.num_vertices()} nodes")
 
     def _collapse_direct_constraints(self):
         
@@ -371,15 +356,121 @@ class AGraph:
 
     def _reduce_anti_constraints(self):
         self.configurations = []
+        
+        # Categorize groups based on whether they contain arch-only, work-only, or mixed
+        arch_only_groups = []  # Groups where all items have empty workload
+        work_only_groups = []  # Groups where all items have empty architecture
+        mixed_groups = []      # Groups where items have both arch and workload (direct constraints between them)
+        
+        for group in self.grouped_dicts:
+            has_arch = any(item['arch']['architecture'] for item in group)
+            has_work = any(item['work']['workload'] for item in group)
+            
+            if has_arch and has_work:
+                mixed_groups.append(group)
+            elif has_arch:
+                arch_only_groups.append(group)
+            elif has_work:
+                work_only_groups.append(group)
+        
+        # Calculate unique configs
+        if arch_only_groups:
+            unique_arch_configs = list(product(*arch_only_groups))
+        else:
+            unique_arch_configs = [()]
+        if work_only_groups:
+            unique_work_configs = list(product(*work_only_groups))
+        else:
+            unique_work_configs = [()]
+        if mixed_groups:
+            mixed_configs = list(product(*mixed_groups))
+        else:
+            mixed_configs = [()]
+        
 
-        # for group in self.grouped_dicts:
-        #     if len(group) > 1:
-        #         print(len(group))
+        
 
+        # Build unique arch and workload dictionaries
+        # For arch-only groups, merge them into complete arch configs
+        self.unique_arch_dicts = []
+        if arch_only_groups:
+            for arch_combo in unique_arch_configs:
+                # Merge all arch dicts in this combination
+                merged_arch = {'architecture': {}}
+                for item in arch_combo:
+                    merged_arch = self._merge_arch_dicts(merged_arch, item['arch'])
+                self.unique_arch_dicts.append(merged_arch)
+        
+        # For work-only groups, merge them into complete work configs  
+        self.unique_work_dicts = []
+        if work_only_groups:
+            for work_combo in unique_work_configs:
+                # Merge all work dicts in this combination
+                merged_work = {'workload': {}}
+                for item in work_combo:
+                    merged_work = self._merge_work_dicts(merged_work, item['work'])
+                self.unique_work_dicts.append(merged_work)
+        
+        # Handle mixed groups - they contribute to both arch and work
+        if mixed_groups:
+            # For mixed, we need to combine with arch-only and work-only
+            new_unique_arch = []
+            new_unique_work = []
+            for mixed_combo in mixed_configs:
+                # Extract arch parts from mixed
+                mixed_arch = {'architecture': {}}
+                mixed_work = {'workload': {}}
+                for item in mixed_combo:
+                    mixed_arch = self._merge_arch_dicts(mixed_arch, item['arch'])
+                    mixed_work = self._merge_work_dicts(mixed_work, item['work'])
+                
+                # Combine with each unique arch config
+                if self.unique_arch_dicts:
+                    for arch_dict in self.unique_arch_dicts:
+                        combined = self._merge_arch_dicts(deepcopy(arch_dict), mixed_arch)
+                        new_unique_arch.append(combined)
+                else:
+                    new_unique_arch.append(mixed_arch)
+                
+                # Combine with each unique work config
+                if self.unique_work_dicts:
+                    for work_dict in self.unique_work_dicts:
+                        combined = self._merge_work_dicts(deepcopy(work_dict), mixed_work)
+                        new_unique_work.append(combined)
+                else:
+                    new_unique_work.append(mixed_work)
+            
+            self.unique_arch_dicts = new_unique_arch
+            self.unique_work_dicts = new_unique_work
 
-        total_configs = list(product(*self.grouped_dicts))
-        for group in tqdm.tqdm(total_configs, desc="Merging configurations"):
-            self.configurations.append(self._combine_dicts(group))
+        # Build configurations as index pairs (arch_idx, work_idx) instead of full dicts
+        # This avoids redundant storage - just point to unique arch/work configs
+        self.configurations = []
+        
+        # If there are mixed groups, arch and work are constrained together
+        # so we can't do a full cartesian product - they must be paired
+        if mixed_groups:
+            # Mixed groups mean arch and work indices are tied together
+            # The number of configs equals the number of unique arch (or work) dicts
+            # since they were built in lockstep from mixed_configs
+            num_configs = len(self.unique_arch_dicts)
+            for i in range(num_configs):
+                self.configurations.append({
+                    'arch_idx': i,
+                    'work_idx': i  # Paired together due to constraints
+                })
+        else:
+            # No mixed groups - arch and work are independent
+            # Do cartesian product
+            num_arch = len(self.unique_arch_dicts) if self.unique_arch_dicts else 1
+            num_work = len(self.unique_work_dicts) if self.unique_work_dicts else 1
+            
+            for arch_idx in range(num_arch):
+                for work_idx in range(num_work):
+                    self.configurations.append({
+                        'arch_idx': arch_idx if self.unique_arch_dicts else None,
+                        'work_idx': work_idx if self.unique_work_dicts else None
+                    })
 
     def _combine_dicts(self, dict_list):
         if not dict_list:
@@ -421,12 +512,51 @@ class AGraph:
         
         return result
 
-    def _to_yaml(self):
+    def _merge_arch_dicts(self, d1, d2):
+        """Merge two architecture dictionaries."""
+        result = deepcopy(d1)
+        for key, value in d2.get('architecture', {}).items():
+            if key not in result['architecture']:
+                result['architecture'][key] = deepcopy(value)
+            elif isinstance(value, dict):
+                for sub_key, sub_value in value.items():
+                    if sub_key not in result['architecture'][key]:
+                        result['architecture'][key][sub_key] = deepcopy(sub_value)
+                    elif isinstance(sub_value, dict):
+                        result['architecture'][key][sub_key].update(deepcopy(sub_value))
+                    else:
+                        result['architecture'][key][sub_key] = deepcopy(sub_value)
+            else:
+                result['architecture'][key] = deepcopy(value)
+        return result
 
-        runs = []
-        runs_txt = self.path + 'runs.txt'
+    def _merge_work_dicts(self, d1, d2):
+        """Merge two workload dictionaries."""
+        result = deepcopy(d1)
+        for key, value in d2.get('workload', {}).items():
+            if key not in result['workload']:
+                result['workload'][key] = deepcopy(value)
+            elif isinstance(value, dict):
+                for sub_key, sub_value in value.items():
+                    if sub_key not in result['workload'][key]:
+                        result['workload'][key][sub_key] = deepcopy(sub_value)
+                    elif isinstance(sub_value, dict):
+                        result['workload'][key][sub_key].update(deepcopy(sub_value))
+                    else:
+                        result['workload'][key][sub_key] = deepcopy(sub_value)
+            else:
+                result['workload'][key] = deepcopy(value)
+        return result
+
+    def _to_yaml(self):
+        if os.path.exists(self.path):
+            shutil.rmtree(self.path)
+        os.makedirs(self.path)
+
+        config_path = self.path + 'configurations.csv'
         event_path = self.path + 'event/event.yaml'
         metric_path = self.path + f'metric/metric.yaml'
+        df = pd.DataFrame(columns=['arch_config', 'arch_path', 'work_config', 'work_path', 'event_path', 'metric_path', 'run_path', 'checkpoint_path'])
 
         if not os.path.exists(self.path + 'event/'):
             os.makedirs(self.path + 'event/')
@@ -451,45 +581,118 @@ class AGraph:
                 sort_keys=False
             )
 
+        for i, arch in enumerate(self.unique_arch_dicts):
+            arch_yaml = arch
+            arch_path = self.path + f'architecture/config_{i}.architecture.yaml'
+            with open(arch_path, 'w') as f:
+                safe_dump(arch_yaml,
+                        f,
+                        sort_keys=False)
+                
+        for i, work in enumerate(self.unique_work_dicts):
+            work_yaml = work
+            work_path = self.path + f'workload/config_{i}.workload.yaml'
+            with open(work_path, 'w') as f:
+                safe_dump(work_yaml,
+                        f,
+                        sort_keys=False)
+
         for i, config in enumerate(self.configurations):
-            arch_yaml = config['arch']
-            work_yaml = config['work']
+            arch_yaml = self.unique_arch_dicts[config['arch_idx']]
+            work_yaml = self.unique_work_dicts[config['work_idx']]
 
             arch_path = self.path + f'architecture/config_{i}.architecture.yaml'
             work_path = self.path + f'workload/config_{i}.workload.yaml'
             run_path = self.path + f'runs/config_{i}'
             checkpoint_path = self.path + f'runs/config_{i}/checkpoint.gt'
-
-            with open(arch_path, 'w') as f:
-                safe_dump(arch_yaml,
-                        f,
-                        sort_keys=False)
-            
-            with open(work_path, 'w') as f:
-                safe_dump(work_yaml,
-                        f,
-                        sort_keys=False)
-            
-            runs.append({
+                
+            row = {
+                'arch_config': config['arch_idx'],
                 'arch_path': arch_path,
+                'work_config': config['work_idx'],
                 'work_path': work_path,
                 'event_path': event_path,
                 'metric_path': metric_path,
                 'run_path': run_path,
                 'checkpoint_path': checkpoint_path
-            })
+            }
+            df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
 
-        with open(runs_txt, 'w') as f:
-            f.write('')
-
-        for run in runs:
-            with open(runs_txt, 'a') as f:
-                run_line = f"-a {run['arch_path']}"
-                run_line += f" -e {run['event_path']}"
-                run_line += f" -m {run['metric_path']}"
-                run_line += f" -r {run['run_path']}"
-                run_line += f" -w {run['work_path']}"
-                run_line += f" -c {run['checkpoint_path']}"
-                run_line += ' -s\n'
-                f.write(run_line)
+        df.to_csv(config_path, index=False)
             
+    def _gui(self):
+        
+        
+        # Read configurations from CSV
+        config_path = self.path + 'configurations.csv'
+        df = pd.read_csv(config_path)
+        
+        # Get unique values for arch_config and work_config
+        arch_configs = sorted(df['arch_config'].unique().tolist())
+        work_configs = sorted(df['work_config'].unique().tolist())
+        
+        # Convert to strings for dropdown options
+        arch_options = [str(x) for x in arch_configs]
+        work_options = [str(x) for x in work_configs]
+        
+        # Create header labels
+        header = widgets.HBox([
+            widgets.Label(value='Row', layout=widgets.Layout(width='50px', font_weight='bold')),
+            widgets.Label(value='Arch Config', layout=widgets.Layout(width='150px', font_weight='bold')),
+            widgets.Label(value='Work Config', layout=widgets.Layout(width='150px', font_weight='bold'))
+        ])
+        
+        # Create rows with dropdowns
+        rows = []
+        arch_dropdowns = []
+        work_dropdowns = []
+        
+        for i, row in df.iterrows():
+            arch_dropdown = widgets.Dropdown(
+                options=arch_options,
+                value=str(row['arch_config']),
+                layout=widgets.Layout(width='150px')
+            )
+            work_dropdown = widgets.Dropdown(
+                options=work_options,
+                value=str(row['work_config']),
+                layout=widgets.Layout(width='150px')
+            )
+            
+            arch_dropdowns.append(arch_dropdown)
+            work_dropdowns.append(work_dropdown)
+            
+            row_widget = widgets.HBox([
+                widgets.Label(value=str(i), layout=widgets.Layout(width='50px')),
+                arch_dropdown,
+                work_dropdown
+            ])
+            rows.append(row_widget)
+        
+        # Output area for displaying selections
+        output = widgets.Output()
+        
+        # Button to get current selections
+        def on_get_selections(b):
+            with output:
+                clear_output()
+                print("Current Selections:")
+                print("-" * 40)
+                for i, (arch_dd, work_dd) in enumerate(zip(arch_dropdowns, work_dropdowns)):
+                    print(f"Row {i}: arch_config={arch_dd.value}, work_config={work_dd.value}")
+        
+        get_button = widgets.Button(description='Get Selections', button_style='primary')
+        get_button.on_click(on_get_selections)
+        
+        # Assemble the GUI
+        table = widgets.VBox([header] + rows)
+        gui_layout = widgets.VBox([
+            widgets.Label(value='Configuration Selection Table', style={'font_weight': 'bold', 'font_size': '16px'}),
+            table,
+            get_button,
+            output
+        ])
+        
+        display(gui_layout)
+        
+        return arch_dropdowns, work_dropdowns

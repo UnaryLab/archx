@@ -55,11 +55,8 @@ init_metric(metric)
 ###############   Workload   #################
 ##############################################
 workload.add_configuration(name='gemm')
-workload.add_parameter(configuration='gemm', parameter_name='m', parameter_value=[16, 32, 64, 128], sweep=True)
-workload.add_parameter(configuration='gemm', parameter_name='k', parameter_value=[16, 32, 64, 128], sweep=True)
-workload.add_parameter(configuration='gemm', parameter_name='n', parameter_value=[16, 32, 64, 128], sweep=True)
-workload.add_parameter(configuration='gemm', parameter_name='array_dim', parameter_value=[4, 8, 16, 32], sweep=True)
-workload.add_parameter(configuration='gemm', parameter_name='bitwidth', parameter_value=16, sweep=False)
+workload.add_parameter(configuration='gemm', parameter_name='matrix_dim', parameter_value=[16, 32, 64, 128], sweep=True)
+
 
 
 agraph.add_constraint(multiplier=['instance'],
@@ -84,7 +81,6 @@ agraph.add_constraint(multiplier=['instance'],
                       act_mux=['instance'],
                       weight_mux=['instance'],
                       add_mux=['instance'],
-                      sum_mux=['instance'],
-                      gemm=['m', 'n', 'k', 'array_dim'])
+                      sum_mux=['instance'])
 
 agraph.generate()

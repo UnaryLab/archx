@@ -1,8 +1,4 @@
 workload:
   gemm:
     configuration:
-      k: 128
-      n: 128
-      bitwidth: 16
-      m: 128
-      array_dim: 32
+      matrix_dim: 128

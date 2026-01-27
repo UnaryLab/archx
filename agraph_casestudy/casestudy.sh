@@ -13,7 +13,7 @@ start_time=$(date +%s.%N)
 
 # Run the three commands
 python -m "agraph_casestudy.${cs}.description"
-# bash run_script.sh "agraph_casestudy/${cs}/description/runs.txt"
+# bash src/archx/run_archx.sh "agraph_casestudy/${cs}/description/runs.txt"
 # python -m "agraph_casestudy.${cs}.query.query"
 
 # # Record end time with nanosecond precision

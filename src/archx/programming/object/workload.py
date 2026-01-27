@@ -1,4 +1,4 @@
-from frontend.parameter import Parameter
+from archx.programming.object.parameter import Parameter
 
 # TODO:
 #   - Finalize method signitures

@@ -1,247 +1,218 @@
 architecture:
+  attribute:
+    technology: 45
+    frequency: 400
+    interface: csv_cmos
   module:
-    act_reg:
+    isram:
+      instance:
+      - 1
       tag:
-      - pe
-      - data
+      - memory
+      query:
+        width: 32
+        depth: 32
+    wsram:
+      instance:
+      - 1
+      tag:
+      - memory
+      query:
+        width: 32
+        depth: 32
+    osram:
+      instance:
+      - 1
+      tag:
+      - memory
+      query:
+        width: 32
+        depth: 32
+    ififo:
+      tag:
+      - fifo
       - array
+      query:
+        depth: 4
       instance:
       - 4
-      - 4
-      query:
-        width: 16
-        class: register
-    acc_en_reg:
+    wfifo:
       tag:
-      - pe
-      - control
+      - fifo
       - array
+      query:
+        depth: 4
       instance:
       - 4
-      - 4
+    ofifo:
+      tag:
+      - fifo
+      - array
       query:
-        width: 1
-        class: register
+        depth: 4
+      instance:
+      - 4
+    output_adder:
+      tag:
+      - output_adder
+      - array
+      query:
+        class: adder_bfloat16
+      instance:
+      - 4
     multiplier:
       tag:
       - pe
       - mac
       - array
-      instance:
-      - 4
-      - 4
       query:
         class: multiplier_bfloat16
-    weight_path_reg:
-      tag:
-      - pe
-      - data
-      - array
       instance:
       - 4
       - 4
-      query:
-        width: 16
-        class: register
-    sum_en_reg:
-      tag:
-      - pe
-      - control
-      - array
-      instance:
-      - 4
-      - 4
-      query:
-        width: 1
-        class: register
-    osram:
-      tag:
-      - memory
-      instance:
-      - 1
-      query:
-        depth: 32
-        bank: 2
-        width: 32
-        interface: cacti7
-        class: sram
-    add_mux:
-      tag:
-      - pe
-      - array
-      instance:
-      - 4
-      - 4
-      query:
-        width: 16
-        class: and_gate
-    act_en_reg:
-      tag:
-      - pe
-      - control
-      - array
-      instance:
-      - 4
-      - 4
-      query:
-        width: 1
-        class: register
-    mult_en_reg:
-      tag:
-      - pe
-      - control
-      - array
-      instance:
-      - 4
-      - 4
-      query:
-        width: 1
-        class: register
     adder:
       tag:
       - pe
       - mac
       - array
+      query:
+        class: adder_bfloat16
       instance:
       - 4
       - 4
+    act_en_reg:
+      tag:
+      - pe
+      - control
+      - array
       query:
-        class: adder_bfloat16
+        width: 1
+      instance:
+      - 4
+      - 4
+    mult_en_reg:
+      tag:
+      - pe
+      - control
+      - array
+      query:
+        width: 1
+      instance:
+      - 4
+      - 4
+    acc_en_reg:
+      tag:
+      - pe
+      - control
+      - array
+      query:
+        width: 1
+      instance:
+      - 4
+      - 4
     weight_path_en_reg:
       tag:
       - pe
       - control
       - array
-      instance:
-      - 4
-      - 4
       query:
         width: 1
-        class: register
-    wfifo:
-      tag:
-      - fifo
-      - array
-      instance:
-      - 4
-      query:
-        width: 16
-        depth: 4
-        class: fifo
-    sum_reg:
-      tag:
-      - pe
-      - data
-      - array
       instance:
       - 4
       - 4
-      query:
-        width: 16
-        class: register
-    wsram:
-      tag:
-      - memory
-      instance:
-      - 1
-      query:
-        depth: 32
-        bank: 2
-        width: 32
-        interface: cacti7
-        class: sram
-    isram:
-      tag:
-      - memory
-      instance:
-      - 1
-      query:
-        depth: 32
-        bank: 2
-        width: 32
-        interface: cacti7
-        class: sram
-    weight_reg:
-      tag:
-      - pe
-      - data
-      - array
-      instance:
-      - 4
-      - 4
-      query:
-        width: 16
-        class: register
-    ofifo:
-      tag:
-      - fifo
-      - array
-      instance:
-      - 4
-      query:
-        width: 16
-        depth: 4
-        class: fifo
-    act_mux:
-      tag:
-      - pe
-      - array
-      instance:
-      - 4
-      - 4
-      query:
-        width: 16
-        class: and_gate
-    ififo:
-      tag:
-      - fifo
-      - array
-      instance:
-      - 4
-      query:
-        width: 16
-        depth: 4
-        class: fifo
-    weight_mux:
-      tag:
-      - pe
-      - array
-      instance:
-      - 4
-      - 4
-      query:
-        width: 16
-        class: and_gate
-    output_adder:
-      tag:
-      - output_adder
-      - array
-      instance:
-      - 4
-      query:
-        class: adder_bfloat16
-    sum_mux:
-      tag:
-      - pe
-      - array
-      instance:
-      - 4
-      - 4
-      query:
-        width: 16
-        class: and_gate
     weight_en_reg:
       tag:
       - pe
       - control
       - array
+      query:
+        width: 1
       instance:
       - 4
       - 4
+    sum_en_reg:
+      tag:
+      - pe
+      - control
+      - array
       query:
         width: 1
-        class: register
-  attribute:
-    interface: csv_cmos
-    technology: 45
-    frequency: 400
+      instance:
+      - 4
+      - 4
+    act_reg:
+      tag:
+      - pe
+      - data
+      - array
+      query:
+        width: 16
+      instance:
+      - 4
+      - 4
+    weight_path_reg:
+      tag:
+      - pe
+      - data
+      - array
+      query:
+        width: 16
+      instance:
+      - 4
+      - 4
+    sum_reg:
+      tag:
+      - pe
+      - data
+      - array
+      query:
+        width: 16
+      instance:
+      - 4
+      - 4
+    weight_reg:
+      tag:
+      - pe
+      - data
+      - array
+      query:
+        width: 16
+      instance:
+      - 4
+      - 4
+    act_mux:
+      tag:
+      - pe
+      - array
+      query:
+        width: 16
+      instance:
+      - 4
+      - 4
+    weight_mux:
+      tag:
+      - pe
+      - array
+      query:
+        width: 16
+      instance:
+      - 4
+      - 4
+    add_mux:
+      tag:
+      - pe
+      - array
+      query:
+        width: 16
+      instance:
+      - 4
+      - 4
+    sum_mux:
+      tag:
+      - pe
+      - array
+      query:
+        width: 16
+      instance:
+      - 4
+      - 4

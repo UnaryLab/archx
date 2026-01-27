@@ -1,0 +1,8 @@
+workload:
+  gemm:
+    configuration:
+      array_dim: 256
+      bitwidth: 16
+      k: 256
+      m: 256
+      n: 256

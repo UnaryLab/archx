@@ -13,11 +13,11 @@ def gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)->Order
     osram_bank = architecture_dict['osram']['query']['bank']
     osram_width = architecture_dict['osram']['query']['width']
 
-    m = workload_dict['gemm']['configuration']['m']
-    k = workload_dict['gemm']['configuration']['k']
-    n = workload_dict['gemm']['configuration']['n']
-    array_dim = workload_dict['gemm']['configuration']['array_dim']
-    bitwidth = workload_dict['gemm']['configuration']['bitwidth']
+    m = workload_dict['gemm']['configuration']['matrix_dim']
+    k = workload_dict['gemm']['configuration']['matrix_dim']
+    n = workload_dict['gemm']['configuration']['matrix_dim']
+    array_dim = architecture_dict['multiplier']['instance'][-1]
+    bitwidth = architecture_dict['ififo']['query']['width']
 
     isram_reads = (m * k * (n / array_dim) *  bitwidth) / min((isram_bank * isram_width), (array_dim * bitwidth))
     wsram_reads = (k * n * bitwidth) / min((wsram_bank * wsram_width), (array_dim * bitwidth))
