@@ -47,6 +47,8 @@ def parse_commandline_args():
                         help = 'Extract unfiltered configuration results from generated csv file.')
     parser.add_argument('-f', '--filter', type=str, default=None,
                         help = 'Open GUI to filter configurations from generated csv file.')
+    parser.add_argument('-ff', '--filter_full', action='store_true', default=False,
+                        help = 'Enable full mode for frontend programming filtering (filter + execute).')
     parser.add_argument('-t', '--tabular', action='store_true', default=False,
                         help = 'Add logger debug to terminal output.')
     parser.add_argument('-x', '--execute', type=str, default=None,
@@ -108,8 +110,11 @@ def main():
 
     if args.tabular:
         logger.add(sys.stdout, level=args.log_level)
+        logger.info('Enable logger output to terminal.')
 
     archx_run = args.architecture_yaml is not None and args.metric_yaml is not None and args.workload_yaml is not None and args.event_yaml is not None and args.checkpoint is not None
+
+    tabular_mode = "-t" if args.tabular else ""
 
     if archx_run:
         # validate checkpoint
@@ -164,8 +169,8 @@ def main():
             df = pd.read_csv(extract_path)
             _generate_runs(df=df, path=args.run_dir + '/runs.txt')
 
-            if args.filter:
-                filter_path = args.run_dir + '/runs.txt'
+            if args.filter_full:
+                filter_path = args.run_dir + '/configurations.csv'
                 df = pd.read_csv(filter_path)
                 _gui(df=df, path=args.run_dir + '/runs.txt')
             else:
@@ -174,7 +179,7 @@ def main():
 
             # call run_archx.sh with runs file
             script_path = os.path.join(os.path.dirname(__file__), 'bin', 'run_archx.sh')
-            command = f'bash {script_path} {execute_path}'
+            command = f'bash {script_path} {execute_path} {tabular_mode}'
             logger.info(f'Executing command: {command}')
             process = subprocess.Popen(command, shell=True)
             process.communicate()
@@ -209,7 +214,7 @@ def main():
 
         # call run_archx.sh with runs file
         script_path = os.path.join(os.path.dirname(__file__), 'bin', 'run_archx.sh')
-        command = f'bash {script_path} {execute_path}'
+        command = f'bash {script_path} {execute_path} {tabular_mode}'
         logger.info(f'Executing command: {command}')
         process = subprocess.Popen(command, shell=True)
         process.communicate()
