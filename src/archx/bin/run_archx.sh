@@ -1,6 +1,6 @@
 #!/bin/bash
 # This script runs the configs specified in the input file
-# Usage: bash ./run_script.sh <input_file>
+# Usage: bash ./run_script.sh <input_file> <tabular>
 # Each line in the input file should be the config for a single run
 # Be sure to add end of line character at the end of the file
 # Runs that throw errors will be logged in failed_runs.txt
@@ -13,14 +13,16 @@ error_log="failed_runs.txt"
 # Clear error log at start
 > $error_log
 
+echo $2
+
 while IFS= read -r line; do
     # Run archx and check its exit status
-    archx $line &
+    archx $line $2 &
     pid=$!
     pids[$counter]=$pid
-    cmds[$counter]=$line
+    cmds[$counter]="$line $2"
     
-    echo "Launched $line"
+    echo "Launched $line $2"
     echo ""
     
     counter=$((counter+1))
