@@ -10,6 +10,9 @@ architecture:
       tag:
       - memory
       query:
+        class: sram
+        interface: cacti7
+        bank: 2
         width: 64
         depth: 64
     wsram:
@@ -18,6 +21,9 @@ architecture:
       tag:
       - memory
       query:
+        class: sram
+        interface: cacti7
+        bank: 2
         width: 64
         depth: 64
     osram:
@@ -26,6 +32,9 @@ architecture:
       tag:
       - memory
       query:
+        class: sram
+        interface: cacti7
+        bank: 2
         width: 64
         depth: 64
     ififo:
@@ -33,6 +42,8 @@ architecture:
       - fifo
       - array
       query:
+        class: fifo
+        width: 16
         depth: 8
       instance:
       - 8
@@ -41,6 +52,8 @@ architecture:
       - fifo
       - array
       query:
+        class: fifo
+        width: 16
         depth: 8
       instance:
       - 8
@@ -49,6 +62,8 @@ architecture:
       - fifo
       - array
       query:
+        class: fifo
+        width: 16
         depth: 8
       instance:
       - 8
@@ -86,6 +101,7 @@ architecture:
       - control
       - array
       query:
+        class: register
         width: 1
       instance:
       - 8
@@ -96,6 +112,7 @@ architecture:
       - control
       - array
       query:
+        class: register
         width: 1
       instance:
       - 8
@@ -106,6 +123,7 @@ architecture:
       - control
       - array
       query:
+        class: register
         width: 1
       instance:
       - 8
@@ -116,6 +134,7 @@ architecture:
       - control
       - array
       query:
+        class: register
         width: 1
       instance:
       - 8
@@ -126,6 +145,7 @@ architecture:
       - control
       - array
       query:
+        class: register
         width: 1
       instance:
       - 8
@@ -136,6 +156,7 @@ architecture:
       - control
       - array
       query:
+        class: register
         width: 1
       instance:
       - 8
@@ -146,6 +167,7 @@ architecture:
       - data
       - array
       query:
+        class: register
         width: 16
       instance:
       - 8
@@ -156,6 +178,7 @@ architecture:
       - data
       - array
       query:
+        class: register
         width: 16
       instance:
       - 8
@@ -166,6 +189,7 @@ architecture:
       - data
       - array
       query:
+        class: register
         width: 16
       instance:
       - 8
@@ -176,6 +200,7 @@ architecture:
       - data
       - array
       query:
+        class: register
         width: 16
       instance:
       - 8
@@ -185,6 +210,7 @@ architecture:
       - pe
       - array
       query:
+        class: and_gate
         width: 16
       instance:
       - 8
@@ -194,6 +220,7 @@ architecture:
       - pe
       - array
       query:
+        class: and_gate
         width: 16
       instance:
       - 8
@@ -203,6 +230,7 @@ architecture:
       - pe
       - array
       query:
+        class: and_gate
         width: 16
       instance:
       - 8
@@ -212,6 +240,7 @@ architecture:
       - pe
       - array
       query:
+        class: and_gate
         width: 16
       instance:
       - 8

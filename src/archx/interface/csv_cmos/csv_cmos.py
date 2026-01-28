@@ -39,7 +39,6 @@ def query(name: str, interface: str, query: OrderedDict, input_dir=None, output_
                 dynamic_power_mW *= (query_frequency / float(row['frequency'])) # in mW
 
                 for attr_key in query:
-                    print(attr_key)
                     assert attr_key in row, logger.error(f'Invalid query attribute <{attr_key}>.')
 
                 for attr_key in row:

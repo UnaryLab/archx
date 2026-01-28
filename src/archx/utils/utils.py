@@ -230,7 +230,6 @@ def get_path(path: str, check_exist: bool=True) -> str:
     path = os.path.abspath(path)
     path = os.path.realpath(path)
     if check_exist:
-        print(path)
         assert os.path.exists(path), logger.error(f'Invalid path <{path}>')
     return path
 

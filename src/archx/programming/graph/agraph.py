@@ -771,7 +771,6 @@ class AGraph:
         mixed_groups = []      # Groups where items have both arch and workload (direct constraints between them)
         
         for group in self.grouped_dicts:
-            print(group)
             has_arch = any(item['arch']['architecture'] for item in group)
             has_work = any(item['work']['workload'] for item in group)
             
@@ -781,7 +780,7 @@ class AGraph:
                 arch_only_groups.append(group)
             elif has_work:
                 work_only_groups.append(group)
-        
+
         # Calculate unique configs
         if arch_only_groups:
             unique_arch_configs = list(product(*arch_only_groups))
@@ -795,7 +794,7 @@ class AGraph:
             mixed_configs = list(product(*mixed_groups))
         else:
             mixed_configs = [()]
-        
+
         # Build unique arch and workload dictionaries
         # For arch-only groups, merge them into complete arch configs
         self.unique_arch_dicts = []
@@ -804,9 +803,11 @@ class AGraph:
                 # Merge all arch dicts in this combination
                 merged_arch = {'architecture': {}}
                 for item in arch_combo:
-                    merged_arch = self._merge_arch_dicts(merged_arch, item['arch'])
+                    # Support both {'arch': ...} and direct arch dicts
+                    arch_dict = item['arch'] if isinstance(item, dict) and 'arch' in item else item
+                    merged_arch = self._merge_arch_dicts(merged_arch, arch_dict)
                 self.unique_arch_dicts.append(merged_arch)
-        
+
         # For work-only groups, merge them into complete work configs  
         self.unique_work_dicts = []
         if work_only_groups:
@@ -919,40 +920,34 @@ class AGraph:
         return result
 
     def _merge_arch_dicts(self, d1, d2):
-        """Merge two architecture dictionaries."""
+        """Merge two architecture dictionaries using recursive merge to preserve all nested keys/values."""
         result = deepcopy(d1)
-        for key, value in d2.get('architecture', {}).items():
-            if key not in result['architecture']:
-                result['architecture'][key] = deepcopy(value)
-            elif isinstance(value, dict):
-                for sub_key, sub_value in value.items():
-                    if sub_key not in result['architecture'][key]:
-                        result['architecture'][key][sub_key] = deepcopy(sub_value)
-                    elif isinstance(sub_value, dict):
-                        result['architecture'][key][sub_key].update(deepcopy(sub_value))
-                    else:
-                        result['architecture'][key][sub_key] = deepcopy(sub_value)
-            else:
-                result['architecture'][key] = deepcopy(value)
+        arch2 = d2.get('architecture', {})
+        arch1 = result.get('architecture', {})
+        result['architecture'] = self._recursive_merge(arch1, arch2)
         return result
 
     def _merge_work_dicts(self, d1, d2):
-        """Merge two workload dictionaries."""
+        """Merge two workload dictionaries using recursive merge to preserve all nested keys/values."""
         result = deepcopy(d1)
-        for key, value in d2.get('workload', {}).items():
-            if key not in result['workload']:
-                result['workload'][key] = deepcopy(value)
-            elif isinstance(value, dict):
-                for sub_key, sub_value in value.items():
-                    if sub_key not in result['workload'][key]:
-                        result['workload'][key][sub_key] = deepcopy(sub_value)
-                    elif isinstance(sub_value, dict):
-                        result['workload'][key][sub_key].update(deepcopy(sub_value))
-                    else:
-                        result['workload'][key][sub_key] = deepcopy(sub_value)
-            else:
-                result['workload'][key] = deepcopy(value)
+        work2 = d2.get('workload', {})
+        work1 = result.get('workload', {})
+        result['workload'] = self._recursive_merge(work1, work2)
         return result
+
+    def _recursive_merge(self, d1, d2):
+        """Recursively merge d2 into d1, modifying d1 in-place and returning it."""
+        for k, v in d2.items():
+            if k in d1:
+                if isinstance(d1[k], dict) and isinstance(v, dict):
+                    self._recursive_merge(d1[k], v)
+                elif d1[k] == v:
+                    pass  # same leaf value, OK
+                else:
+                    d1[k] = deepcopy(v)  # Overwrite on collision
+            else:
+                d1[k] = deepcopy(v)
+        return d1
 
     def _to_yaml(self):
         if os.path.exists(self.path):

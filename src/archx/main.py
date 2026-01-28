@@ -45,12 +45,14 @@ def parse_commandline_args():
                         help = 'Path to archx frontent python file for configuration sweeping.')
     parser.add_argument('-extract', '--extract', type=str, default=None,
                         help = 'Extract unfiltered configuration results from generated csv file.')
-    parser.add_argument('-filter', '--filter', type=str, default=None,
+    parser.add_argument('-f', '--filter', type=str, default=None,
                         help = 'Open GUI to filter configurations from generated csv file.')
-    parser.add_argument('-tabular', '--tabular', action='store_true', default=False,
+    parser.add_argument('-t', '--tabular', action='store_true', default=False,
                         help = 'Add logger debug to terminal output.')
-    parser.add_argument('-execute', '--execute', type=str, default=None,
+    parser.add_argument('-x', '--execute', type=str, default=None,
                         help = 'Path to generated configuration runs text file for execution.')
+    parser.add_argument('-full', '--full', action='store_true', default=False,
+                        help = 'Enable full mode for frontend programming (compile, extract, filter, execute).')
 
     return parser.parse_args()
 
@@ -96,6 +98,8 @@ def main():
         logger.info(f'Create run directory <{args.run_dir}>.')
     else:
         logger.info(f'Find run directory <{args.run_dir}>.')
+    if not args.run_dir.endswith('/'):
+        args.run_dir += '/'
 
     # set up output log
     logger.remove()
@@ -140,7 +144,7 @@ def main():
             logger.success(f'Save dictionaries to <{args.run_dir}>.')
 
         logger.success(f'Save log to <{output_log}>.')
-    if args.compile:
+    elif args.compile:
         # frontend programming compile mode
         compile_path = args.compile
         assert os.path.isfile(compile_path), logger.error(f'Invalid compile file path <{compile_path}>.')
@@ -152,10 +156,33 @@ def main():
         spec.loader.exec_module(compile_module) 
         # call compile function
         assert hasattr(compile_module, 'description'), logger.error(f'Compile file <{compile_path}> does not contain <description()> function.')
-        compile_module.description(path=args.run_dir)
-
+        agraph = compile_module.description(path=args.run_dir)
         logger.success(f'Compile generation completed in <{args.run_dir}>.')
-    if args.extract:
+        
+        if args.full:
+            extract_path = args.run_dir + '/configurations.csv'
+            df = pd.read_csv(extract_path)
+            _generate_runs(df=df, path=args.run_dir + '/runs.txt')
+
+            if args.filter:
+                filter_path = args.run_dir + '/runs.txt'
+                df = pd.read_csv(filter_path)
+                _gui(df=df, path=args.run_dir + '/runs.txt')
+            else:
+                execute_path = args.run_dir + '/runs.txt'
+                assert os.path.isfile(execute_path), logger.error(f'Invalid execute runs file <{execute_path}>.')
+
+            # call run_archx.sh with runs file
+            script_path = os.path.join(os.path.dirname(__file__), 'bin', 'run_archx.sh')
+            command = f'bash {script_path} {execute_path}'
+            logger.info(f'Executing command: {command}')
+            process = subprocess.Popen(command, shell=True)
+            process.communicate()
+
+            logger.success(f'Execution of runs in <{execute_path}> completed.')
+
+        
+    elif args.extract:
         # frontend programming extract mode
         extract_path = args.extract
         assert os.path.isfile(extract_path), logger.error(f'Invalid extract csv file <{extract_path}>.')
@@ -165,7 +192,7 @@ def main():
         
         logger.success(f'Extract runs.txt file compiled in <{extract_path}>.')
 
-    if args.filter:
+    elif args.filter:
         # frontend programming filter mode
         filter_path = args.filter
         assert os.path.isfile(filter_path), logger.error(f'Invalid filter csv file <{filter_path}>.')
@@ -175,7 +202,7 @@ def main():
         
         logger.success(f'Filter runs.txt file compiled in <{filter_path}>.')
 
-    if args.execute:
+    elif args.execute:
         # frontend programming execute mode
         execute_path = args.execute
         assert os.path.isfile(execute_path), logger.error(f'Invalid execute runs file <{execute_path}>.')

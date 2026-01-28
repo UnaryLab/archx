@@ -89,3 +89,4 @@ def description(path):
                         )
 
     agraph.generate()
+    return agraph
