@@ -7,6 +7,7 @@ where y parameter != 2
 generate all runs -> 
 
 archx -sweep -filter -<file>
+archx -filter -<csv>
 archx -sweep -tabular -> creates default filter file
 
 generate csv
@@ -15,4 +16,10 @@ UI
 
 change to absolute path
 
-if -terminal then log to the stdout and log file.
+description -> sweep -> csv -> filter (gui) -> runs.txt file -> execution
+
+csv -> filter
+
+archx -execute -<runs.txt>
+
+archx -sweep -filter -execute -<python file>

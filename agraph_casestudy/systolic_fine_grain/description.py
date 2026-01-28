@@ -1,5 +1,4 @@
 from archx.programming.graph.agraph import AGraph
-from agraph_casestudy.common.metric import init_metric
 
 
 def description(path):
@@ -51,7 +50,11 @@ def description(path):
     ##############################################
     ###############    Metric    #################
     ##############################################
-    init_metric(metric)
+    metric.add_metric(name='area',           unit='mm^2',   aggregation='module')
+    metric.add_metric(name='leakage_power',  unit='mW',     aggregation='module')
+    metric.add_metric(name='dynamic_energy', unit='nJ',     aggregation='summation')
+    metric.add_metric(name='cycle_count',    unit='cycles', aggregation='specified')
+    metric.add_metric(name='runtime',        unit='ms',     aggregation='specified')
 
     ##############################################
     ###############   Workload   #################
@@ -84,4 +87,3 @@ def description(path):
                         sum_mux=['instance'])
 
     agraph.generate()
-    return agraph

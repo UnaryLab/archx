@@ -1,5 +1,6 @@
 import pyfiglet, argparse, time, os, sys
 import pandas as pd
+import subprocess
 
 from loguru import logger
 
@@ -10,10 +11,7 @@ from archx.workload import create_workload_dict, save_workload_dict
 from archx.performance import simulate_performance_all_events
 from archx.utils import bcolors, write_yaml, read_yaml
 from archx.interface import register_interface, unregister_interface, copy_interface
-
-# archx -a -e -w -m -r : single run
-# archx -compile -<file>: sweeping generation
-# archx -sweep -<dir>: call multi-run script
+from archx.programming.graph.agraph import AGraph, _generate_runs, _gui
 
 def parse_commandline_args():
     """
@@ -43,12 +41,16 @@ def parse_commandline_args():
     parser.add_argument('-idir', '--interface_dir', type=str, default=None, help = 'Directory of the interface.')
 
     # frontend programming parse
-    parser.add_argument('-sweep', '--sweep', type=str, default=None,
+    parser.add_argument('-compile', '--compile', type=str, default=None,
                         help = 'Path to archx frontent python file for configuration sweeping.')
-    parser.add_argument('-filter', '--filter', action='store_true', default=False,
-                        help = 'Open GUI to filter configurations after sweeping generation.')
+    parser.add_argument('-extract', '--extract', type=str, default=None,
+                        help = 'Extract unfiltered configuration results from generated csv file.')
+    parser.add_argument('-filter', '--filter', type=str, default=None,
+                        help = 'Open GUI to filter configurations from generated csv file.')
     parser.add_argument('-tabular', '--tabular', action='store_true', default=False,
                         help = 'Add logger debug to terminal output.')
+    parser.add_argument('-execute', '--execute', type=str, default=None,
+                        help = 'Path to generated configuration runs text file for execution.')
 
     return parser.parse_args()
 
@@ -87,7 +89,8 @@ def main():
 
 
     # validate run dir exists and path is valid
-    assert args.run_dir is not None, logger.error(f'Run directory is required via <-r> or <-run_dir>.')
+    if args.compile is None and args.filter is None and args.execute is None:
+        assert args.run_dir is not None, logger.error(f'Run directory is required via <-r> or <-run_dir>.')
     # check if run directory exists, if not create it
     if not os.path.isdir(args.run_dir):
         os.makedirs(args.run_dir)
@@ -103,7 +106,9 @@ def main():
     if args.tabular:
         logger.add(sys.stdout, level=args.log_level)
 
-    if args.sweep is None:
+    archx_run = args.architecture_yaml is not None and args.metric_yaml is not None and args.workload_yaml is not None and args.event_yaml is not None and args.checkpoint is not None
+
+    if archx_run:
         # validate checkpoint
         assert args.checkpoint.endswith('.gt'), logger.error('Invalid event checkpoint format; requires <.gt>.')
 
@@ -136,27 +141,53 @@ def main():
             logger.success(f'Save dictionaries to <{args.run_dir}>.')
 
         logger.success(f'Save log to <{output_log}>.')
-    else:
-        # frontend programming sweep mode
-        sweep_path = args.sweep
-        assert os.path.isfile(sweep_path), logger.error(f'Invalid sweep file path <{sweep_path}>.')
+    if args.compile:
+        # frontend programming compile mode
+        compile_path = args.compile
+        assert os.path.isfile(compile_path), logger.error(f'Invalid compile file path <{compile_path}>.')
 
-        # import sweep file as module
+        # import compile file as module
         import importlib.util
-        spec = importlib.util.spec_from_file_location("sweep_module", sweep_path)
-        sweep_module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(sweep_module)
+        spec = importlib.util.spec_from_file_location("compile_module", compile_path)
+        compile_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(compile_module) 
+        # call compile function
+        assert hasattr(compile_module, 'description'), logger.error(f'Compile file <{compile_path}> does not contain <description()> function.')
+        compile_module.description(path=args.run_dir)
 
-        # call sweep function
-        assert hasattr(sweep_module, 'sweep'), logger.error(f'Sweep file <{sweep_path}> does not contain <sweep()> function.')
-        agraph = sweep_module.sweep(path=args.run_dir)
+        logger.success(f'Compile generation completed in <{args.run_dir}>.')
+    if args.extract:
+        # frontend programming extract mode
+        extract_path = args.extract
+        assert os.path.isfile(extract_path), logger.error(f'Invalid extract csv file <{extract_path}>.')
 
-        df = 
+        df = pd.read_csv(extract_path)
+        _generate_runs(df=df, path=args.run_dir + '/runs.txt')
+        
+        logger.success(f'Extract runs.txt file compiled in <{extract_path}>.')
 
-        if args.filter:
-            agraph.generate_runs()
+    if args.filter:
+        # frontend programming filter mode
+        filter_path = args.filter
+        assert os.path.isfile(filter_path), logger.error(f'Invalid filter csv file <{filter_path}>.')
 
-        logger.success(f'Sweep generation completed in <{args.run_dir}>.')
+        df = pd.read_csv(filter_path)
+        _gui(df=df, path=args.run_dir + '/runs.txt')
+        
+        logger.success(f'Filter runs.txt file compiled in <{filter_path}>.')
+
+    if args.execute:
+        # frontend programming execute mode
+        execute_path = args.execute
+        assert os.path.isfile(execute_path), logger.error(f'Invalid execute runs file <{execute_path}>.')
+
+        # call archx_simulator with runs file
+        command = f'run_archx {execute_path}'
+        logger.info(f'Executing command: {command}')
+        process = subprocess.Popen(command, shell=True)
+        process.communicate()
+
+        logger.success(f'Execution of runs in <{execute_path}> completed.')
 
 
 if __name__ == '__main__':
