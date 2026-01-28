@@ -108,8 +108,11 @@ def main():
 
     if args.tabular:
         logger.add(sys.stdout, level=args.log_level)
+        logger.info('Enable logger output to terminal.')
 
     archx_run = args.architecture_yaml is not None and args.metric_yaml is not None and args.workload_yaml is not None and args.event_yaml is not None and args.checkpoint is not None
+
+    tabular_mode = "-t" if args.tabular else ""
 
     if archx_run:
         # validate checkpoint
@@ -174,7 +177,7 @@ def main():
 
             # call run_archx.sh with runs file
             script_path = os.path.join(os.path.dirname(__file__), 'bin', 'run_archx.sh')
-            command = f'bash {script_path} {execute_path}'
+            command = f'bash {script_path} {execute_path} {tabular_mode}'
             logger.info(f'Executing command: {command}')
             process = subprocess.Popen(command, shell=True)
             process.communicate()
@@ -209,7 +212,7 @@ def main():
 
         # call run_archx.sh with runs file
         script_path = os.path.join(os.path.dirname(__file__), 'bin', 'run_archx.sh')
-        command = f'bash {script_path} {execute_path}'
+        command = f'bash {script_path} {execute_path} {tabular_mode}'
         logger.info(f'Executing command: {command}')
         process = subprocess.Popen(command, shell=True)
         process.communicate()

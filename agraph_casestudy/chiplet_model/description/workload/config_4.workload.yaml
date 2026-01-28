@@ -1,5 +1,0 @@
-workload:
-  gemm:
-    configuration:
-      bitwidth: 16
-      array_dim: 512

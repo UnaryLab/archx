@@ -1,4 +1,0 @@
-workload:
-  gemm:
-    configuration:
-      matrix_dim: 64

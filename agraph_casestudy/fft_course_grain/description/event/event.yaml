@@ -1,5 +1,0 @@
-event:
-  butterfly:
-    performance: agraph_casestudy/fft_course_grain/performance/performance.py
-    subevent:
-    - pe
