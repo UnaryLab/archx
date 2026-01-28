@@ -84,6 +84,8 @@ def description(path):
                         act_mux=['instance'],
                         weight_mux=['instance'],
                         add_mux=['instance'],
-                        sum_mux=['instance'])
+                        sum_mux=['instance'],
+                        gemm=['matrix_dim']
+                        )
 
     agraph.generate()

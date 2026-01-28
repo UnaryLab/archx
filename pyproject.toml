@@ -40,10 +40,3 @@ sources = ["src"]
 
 [tool.hatch.metadata]
 allow-direct-references = true
-
-[tool.setuptools]
-include-package-data = true
-scripts = ["src/archx/bin/run_archx.sh"]
-
-[tool.setuptools.package-data]
-"archx.bin" = ["run_archx.sh"]

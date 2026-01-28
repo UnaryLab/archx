@@ -89,8 +89,7 @@ def main():
 
 
     # validate run dir exists and path is valid
-    if args.compile is None and args.filter is None and args.execute is None:
-        assert args.run_dir is not None, logger.error(f'Run directory is required via <-r> or <-run_dir>.')
+    assert args.run_dir is not None, logger.error(f'Run directory is required via <-r> or <-run_dir>.')
     # check if run directory exists, if not create it
     if not os.path.isdir(args.run_dir):
         os.makedirs(args.run_dir)
@@ -181,8 +180,9 @@ def main():
         execute_path = args.execute
         assert os.path.isfile(execute_path), logger.error(f'Invalid execute runs file <{execute_path}>.')
 
-        # call archx_simulator with runs file
-        command = f'run_archx {execute_path}'
+        # call run_archx.sh with runs file
+        script_path = os.path.join(os.path.dirname(__file__), 'bin', 'run_archx.sh')
+        command = f'bash {script_path} {execute_path}'
         logger.info(f'Executing command: {command}')
         process = subprocess.Popen(command, shell=True)
         process.communicate()

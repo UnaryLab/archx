@@ -771,6 +771,7 @@ class AGraph:
         mixed_groups = []      # Groups where items have both arch and workload (direct constraints between them)
         
         for group in self.grouped_dicts:
+            print(group)
             has_arch = any(item['arch']['architecture'] for item in group)
             has_work = any(item['work']['workload'] for item in group)
             
