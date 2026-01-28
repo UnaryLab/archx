@@ -1,4 +1,5 @@
-import pyfiglet, argparse, time, os
+import pyfiglet, argparse, time, os, sys
+import pandas as pd
 
 from loguru import logger
 
@@ -40,6 +41,14 @@ def parse_commandline_args():
     parser.add_argument('-icopy', '--copy_interface', action='store_true', default=False, help = 'Copy an existing interface.')
     parser.add_argument('-iname', '--interface_name', type=str, default=None, help = 'Name of the interface.')
     parser.add_argument('-idir', '--interface_dir', type=str, default=None, help = 'Directory of the interface.')
+
+    # frontend programming parse
+    parser.add_argument('-sweep', '--sweep', type=str, default=None,
+                        help = 'Path to archx frontent python file for configuration sweeping.')
+    parser.add_argument('-filter', '--filter', action='store_true', default=False,
+                        help = 'Open GUI to filter configurations after sweeping generation.')
+    parser.add_argument('-tabular', '--tabular', action='store_true', default=False,
+                        help = 'Add logger debug to terminal output.')
 
     return parser.parse_args()
 
@@ -91,38 +100,63 @@ def main():
     output_log = args.run_dir + '/archx' + '-' + str(time.time()) + '.log'
     logger.add(output_log, level=args.log_level)
 
-    # validate checkpoint
-    assert args.checkpoint.endswith('.gt'), logger.error('Invalid event checkpoint format; requires <.gt>.')
+    if args.tabular:
+        logger.add(sys.stdout, level=args.log_level)
 
-    logger.success(f'\n----------------------------------------------\nStep 1: Create architectue dict\n----------------------------------------------')
-    architecture_dict = create_architecture_dict(args.architecture_yaml)
+    if args.sweep is None:
+        # validate checkpoint
+        assert args.checkpoint.endswith('.gt'), logger.error('Invalid event checkpoint format; requires <.gt>.')
 
-    logger.success(f'\n----------------------------------------------\nStep 2: Create metric dict\n----------------------------------------------')
-    metric_dict = create_metric_dict(args.metric_yaml)
+        logger.success(f'\n----------------------------------------------\nStep 1: Create architectue dict\n----------------------------------------------')
+        architecture_dict = create_architecture_dict(args.architecture_yaml)
 
-    logger.success(f'\n----------------------------------------------\nStep 3: Creat workload dict\n----------------------------------------------')
-    workload_dict = create_workload_dict(args.workload_yaml)
-    
-    logger.success(f'\n----------------------------------------------\nStep 4: Creat event graph\n----------------------------------------------')
-    event_graph = create_event_graph(args.event_yaml)
+        logger.success(f'\n----------------------------------------------\nStep 2: Create metric dict\n----------------------------------------------')
+        metric_dict = create_metric_dict(args.metric_yaml)
 
-    logger.success(f'\n----------------------------------------------\nStep 5: Create metrics for all events and modules\n----------------------------------------------')
-    event_graph = create_event_metrics(event_graph, architecture_dict, metric_dict, run_dir=args.run_dir)
-    
-    logger.success(f'\n----------------------------------------------\nStep 6: Simulate performance\n----------------------------------------------')
-    event_graph = simulate_performance_all_events(event_graph, architecture_dict, workload_dict)
-    
-    logger.success(f'\n----------------------------------------------\nStep 7: Save event graph and log\n----------------------------------------------')
-    save_event_graph(event_graph=event_graph, save_path=args.checkpoint)
+        logger.success(f'\n----------------------------------------------\nStep 3: Creat workload dict\n----------------------------------------------')
+        workload_dict = create_workload_dict(args.workload_yaml)
+        
+        logger.success(f'\n----------------------------------------------\nStep 4: Creat event graph\n----------------------------------------------')
+        event_graph = create_event_graph(args.event_yaml)
 
-    if args.save_yaml:
-        save_architecture_dict(architecture_dict=architecture_dict, save_path=args.run_dir + '/architecture.yaml')
-        save_metric_dict(metric_dict=metric_dict, save_path=args.run_dir + '/metric.yaml')
-        save_workload_dict(workload_dict=workload_dict, save_path=args.run_dir + '/workload.yaml')
-        write_yaml(args.run_dir + '/event.yaml', read_yaml(args.event_yaml))
-        logger.success(f'Save dictionaries to <{args.run_dir}>.')
+        logger.success(f'\n----------------------------------------------\nStep 5: Create metrics for all events and modules\n----------------------------------------------')
+        event_graph = create_event_metrics(event_graph, architecture_dict, metric_dict, run_dir=args.run_dir)
+        
+        logger.success(f'\n----------------------------------------------\nStep 6: Simulate performance\n----------------------------------------------')
+        event_graph = simulate_performance_all_events(event_graph, architecture_dict, workload_dict)
+        
+        logger.success(f'\n----------------------------------------------\nStep 7: Save event graph and log\n----------------------------------------------')
+        save_event_graph(event_graph=event_graph, save_path=args.checkpoint)
 
-    logger.success(f'Save log to <{output_log}>.')
+        if args.save_yaml:
+            save_architecture_dict(architecture_dict=architecture_dict, save_path=args.run_dir + '/architecture.yaml')
+            save_metric_dict(metric_dict=metric_dict, save_path=args.run_dir + '/metric.yaml')
+            save_workload_dict(workload_dict=workload_dict, save_path=args.run_dir + '/workload.yaml')
+            write_yaml(args.run_dir + '/event.yaml', read_yaml(args.event_yaml))
+            logger.success(f'Save dictionaries to <{args.run_dir}>.')
+
+        logger.success(f'Save log to <{output_log}>.')
+    else:
+        # frontend programming sweep mode
+        sweep_path = args.sweep
+        assert os.path.isfile(sweep_path), logger.error(f'Invalid sweep file path <{sweep_path}>.')
+
+        # import sweep file as module
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("sweep_module", sweep_path)
+        sweep_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(sweep_module)
+
+        # call sweep function
+        assert hasattr(sweep_module, 'sweep'), logger.error(f'Sweep file <{sweep_path}> does not contain <sweep()> function.')
+        agraph = sweep_module.sweep(path=args.run_dir)
+
+        df = 
+
+        if args.filter:
+            agraph.generate_runs()
+
+        logger.success(f'Sweep generation completed in <{args.run_dir}>.')
 
 
 if __name__ == '__main__':

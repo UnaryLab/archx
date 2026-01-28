@@ -5,8 +5,9 @@ from copy import deepcopy
 import os
 import pandas as pd
 import shutil
-import ipywidgets as widgets
-from IPython.display import display, clear_output
+import tkinter as tk
+from tkinter import ttk
+from PIL import Image, ImageTk
 
 # Helper functions
 # create graph
@@ -30,6 +31,30 @@ from archx.programming.object.metric import Metric
 from archx.programming.object.workload import Workload
 
 class AGraph:
+    def generate_runs(self, df, out_path=None):
+        """
+        Write a runs.txt file from a pandas DataFrame with config paths.
+        Each line: -a <arch_path> -e <event_path> -m <metric_path> -r <run_path> -w <work_path> -c <checkpoint_path> -s
+        Args:
+            df (pd.DataFrame): DataFrame with columns arch_path, event_path, metric_path, run_path, work_path, checkpoint_path
+            out_path (str, optional): Output file path. Defaults to self.path + 'runs.txt'.
+        """
+        if out_path is None:
+            out_path = os.path.join(self.path, 'runs.txt')
+        lines = []
+        for _, row in df.iterrows():
+            arch = str(row.get('arch_path', '') or '')
+            event = str(row.get('event_path', '') or '')
+            metric = str(row.get('metric_path', '') or '')
+            run = str(row.get('run_path', '') or '')
+            work = str(row.get('work_path', '') or '')
+            checkpoint = str(row.get('checkpoint_path', '') or '')
+            line = f"-a {arch} -e {event} -m {metric} -r {run} -w {work} -c {checkpoint} -s"
+            lines.append(line)
+        with open(out_path, 'w') as f:
+            for line in lines:
+                f.write(line + '\n')
+
     def __init__(self, path):
         self.path = path
         self._create_graph()
@@ -59,21 +84,13 @@ class AGraph:
                             self._add_edge(vertex_a, vertex_b, type='direct')
                             
     def generate(self):
-        print("Generating configuration constraints...")
         self._compute_constraint()
-        print("Splitting sweeping vertices...")
         self._split_vertices()
-        print("Grouping graph...")
         self._group_graph()
-        print("Grouping direct constraints...")
         self._group_direct_constraints()
-        print("Collapsing direct constraints...")
         self._collapse_direct_constraints()
-        print("Reducing anti constraints...")
         self._reduce_anti_constraints()
-        print(f"Generated {len(self.configurations)} configurations.")
         self._to_yaml()
-        print('Done!')
         self._gui()
         
 
@@ -387,9 +404,6 @@ class AGraph:
         else:
             mixed_configs = [()]
         
-
-        
-
         # Build unique arch and workload dictionaries
         # For arch-only groups, merge them into complete arch configs
         self.unique_arch_dicts = []
@@ -553,9 +567,9 @@ class AGraph:
             shutil.rmtree(self.path)
         os.makedirs(self.path)
 
-        config_path = self.path + 'configurations.csv'
-        event_path = self.path + 'event/event.yaml'
-        metric_path = self.path + f'metric/metric.yaml'
+        config_path = os.path.abspath(self.path + 'configurations.csv')
+        event_path = os.path.abspath(self.path + 'event/event.yaml')
+        metric_path = os.path.abspath(self.path + f'metric/metric.yaml')
         df = pd.DataFrame(columns=['arch_config', 'arch_path', 'work_config', 'work_path', 'event_path', 'metric_path', 'run_path', 'checkpoint_path'])
 
         if not os.path.exists(self.path + 'event/'):
@@ -581,31 +595,36 @@ class AGraph:
                 sort_keys=False
             )
 
+        # Write arch and work YAMLs and store absolute paths
+        arch_paths = []
         for i, arch in enumerate(self.unique_arch_dicts):
             arch_yaml = arch
-            arch_path = self.path + f'architecture/config_{i}.architecture.yaml'
+            arch_path = os.path.abspath(self.path + f'architecture/config_{i}.architecture.yaml')
             with open(arch_path, 'w') as f:
                 safe_dump(arch_yaml,
                         f,
                         sort_keys=False)
-                
+            arch_paths.append(arch_path)
+
+        work_paths = []
         for i, work in enumerate(self.unique_work_dicts):
             work_yaml = work
-            work_path = self.path + f'workload/config_{i}.workload.yaml'
+            work_path = os.path.abspath(self.path + f'workload/config_{i}.workload.yaml')
             with open(work_path, 'w') as f:
                 safe_dump(work_yaml,
                         f,
                         sort_keys=False)
+            work_paths.append(work_path)
 
         for i, config in enumerate(self.configurations):
             arch_yaml = self.unique_arch_dicts[config['arch_idx']]
             work_yaml = self.unique_work_dicts[config['work_idx']]
 
-            arch_path = self.path + f'architecture/config_{i}.architecture.yaml'
-            work_path = self.path + f'workload/config_{i}.workload.yaml'
-            run_path = self.path + f'runs/config_{i}'
-            checkpoint_path = self.path + f'runs/config_{i}/checkpoint.gt'
-                
+            arch_path = os.path.abspath(self.path + f'architecture/config_{config["arch_idx"]}.architecture.yaml')
+            work_path = os.path.abspath(self.path + f'workload/config_{config["work_idx"]}.workload.yaml')
+            run_path = os.path.abspath(self.path + f'runs/config_{i}')
+            checkpoint_path = os.path.abspath(self.path + f'runs/config_{i}/checkpoint.gt')
+
             row = {
                 'arch_config': config['arch_idx'],
                 'arch_path': arch_path,
@@ -621,8 +640,6 @@ class AGraph:
         df.to_csv(config_path, index=False)
             
     def _gui(self):
-        
-        
         # Read configurations from CSV
         config_path = self.path + 'configurations.csv'
         df = pd.read_csv(config_path)
@@ -635,64 +652,387 @@ class AGraph:
         arch_options = [str(x) for x in arch_configs]
         work_options = [str(x) for x in work_configs]
         
-        # Create header labels
-        header = widgets.HBox([
-            widgets.Label(value='Row', layout=widgets.Layout(width='50px', font_weight='bold')),
-            widgets.Label(value='Arch Config', layout=widgets.Layout(width='150px', font_weight='bold')),
-            widgets.Label(value='Work Config', layout=widgets.Layout(width='150px', font_weight='bold'))
-        ])
+        # Lists to store selected configs
+        selected_arch_configs = []
+        selected_work_configs = []
         
-        # Create rows with dropdowns
-        rows = []
-        arch_dropdowns = []
-        work_dropdowns = []
+        # Dark theme colors
+        BG_DARK = '#1e1e1e'
+        BG_SECONDARY = '#252526'
+        BG_TERTIARY = '#2d2d30'
+        FG_PRIMARY = '#d4d4d4'
+        FG_SECONDARY = '#808080'
+        ACCENT = '#0078d4'
+        ACCENT_HOVER = '#1c8ae6'
+        BORDER = '#3c3c3c'
         
-        for i, row in df.iterrows():
-            arch_dropdown = widgets.Dropdown(
-                options=arch_options,
-                value=str(row['arch_config']),
-                layout=widgets.Layout(width='150px')
-            )
-            work_dropdown = widgets.Dropdown(
-                options=work_options,
-                value=str(row['work_config']),
-                layout=widgets.Layout(width='150px')
-            )
+        # Create main window
+        root = tk.Tk()
+        root.title('Configuration Selection')
+        root.geometry('1600x1200')
+        root.configure(bg=BG_DARK)
+        
+        # Configure dark mode styles
+        style = ttk.Style()
+        style.theme_use('clam')
+        
+        # Frame styles
+        style.configure('Dark.TFrame', background=BG_DARK)
+        style.configure('Card.TFrame', background=BG_SECONDARY)
+        
+        # Label styles
+        style.configure('Dark.TLabel', background=BG_DARK, foreground=FG_PRIMARY, font=('Segoe UI', 10))
+        style.configure('Title.TLabel', background=BG_DARK, foreground=FG_PRIMARY, font=('Segoe UI', 16, 'bold'))
+        style.configure('Header.TLabel', background=BG_SECONDARY, foreground=FG_PRIMARY, font=('Segoe UI', 10, 'bold'))
+        style.configure('Card.TLabel', background=BG_SECONDARY, foreground=FG_PRIMARY, font=('Segoe UI', 10))
+        
+        # LabelFrame style
+        style.configure('Card.TLabelframe', background=BG_SECONDARY, borderwidth=1, relief='solid')
+        style.configure('Card.TLabelframe.Label', background=BG_SECONDARY, foreground=ACCENT, font=('Segoe UI', 11, 'bold'))
+        
+        # Button styles
+        style.configure('Accent.TButton', 
+                        background=ACCENT, 
+                        foreground='white', 
+                        font=('Segoe UI', 9, 'bold'),
+                        padding=(12, 6))
+        style.map('Accent.TButton',
+                  background=[('active', ACCENT_HOVER), ('pressed', ACCENT)],
+                  foreground=[('active', 'white')])
+        
+        style.configure('Secondary.TButton',
+                        background=BG_TERTIARY,
+                        foreground=FG_PRIMARY,
+                        font=('Segoe UI', 9),
+                        padding=(12, 6))
+        style.map('Secondary.TButton',
+                  background=[('active', BORDER), ('pressed', BG_TERTIARY)])
+        
+        # Combobox style
+        style.configure('Dark.TCombobox',
+                        fieldbackground=BG_TERTIARY,
+                        background=BG_TERTIARY,
+                        foreground=FG_PRIMARY,
+                        arrowcolor=FG_PRIMARY,
+                        padding=5)
+        style.map('Dark.TCombobox',
+                  fieldbackground=[('readonly', BG_TERTIARY)],
+                  selectbackground=[('readonly', ACCENT)])
+        
+        # Treeview style
+        style.configure('Dark.Treeview',
+                        background=BG_TERTIARY,
+                        foreground=FG_PRIMARY,
+                        fieldbackground=BG_TERTIARY,
+                        borderwidth=0,
+                        font=('Consolas', 10),
+                        rowheight=25)
+        style.configure('Dark.Treeview.Heading',
+                        background=BG_SECONDARY,
+                        foreground=FG_PRIMARY,
+                        font=('Segoe UI', 9, 'bold'),
+                        borderwidth=0,
+                        padding=5)
+        style.map('Dark.Treeview',
+                  background=[('selected', ACCENT)],
+                  foreground=[('selected', 'white')])
+        
+        # Scrollbar style
+        style.configure('Dark.Vertical.TScrollbar',
+                        background=BG_TERTIARY,
+                        troughcolor=BG_SECONDARY,
+                        borderwidth=0,
+                        arrowcolor=FG_PRIMARY)
+        
+        # Create main frame
+        main_frame = ttk.Frame(root, padding="20", style='Dark.TFrame')
+        main_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # Title frame with logo
+        title_frame = ttk.Frame(main_frame, style='Dark.TFrame')
+        title_frame.pack(pady=(0, 20))
+        
+        # Load and display logo
+        try:
+            logo_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'logo.png')
+            logo_img = Image.open(logo_path)
+            logo_img = logo_img.resize((40, 40), Image.Resampling.LANCZOS)
+            logo_photo = ImageTk.PhotoImage(logo_img)
+            logo_label = ttk.Label(title_frame, image=logo_photo, style='Dark.TLabel')
+            logo_label.image = logo_photo  # Keep a reference
+            logo_label.pack(side=tk.LEFT, padx=(0, 10))
+        except Exception as e:
+            print(f"Could not load logo: {e}")  # Print error for debugging
+        
+        # Title label
+        title_label = ttk.Label(title_frame, text='Configuration Selection', style='Title.TLabel')
+        title_label.pack(side=tk.LEFT)
+        
+        # Create a vertical frame for the two sections
+        sections_frame = ttk.Frame(main_frame, style='Dark.TFrame')
+        sections_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # ==================== ARCHITECTURE SECTION ====================
+        arch_section = ttk.LabelFrame(sections_frame, text="  Architecture Configs  ", padding="15", style='Card.TLabelframe')
+        arch_section.pack(side=tk.TOP, fill=tk.BOTH, expand=True, pady=(0, 10))
+        
+        # Top row: dropdown and add button
+        arch_top_frame = ttk.Frame(arch_section, style='Card.TFrame')
+        arch_top_frame.pack(fill=tk.X, pady=(0, 15))
+        
+        ttk.Label(arch_top_frame, text='Select Config:', style='Card.TLabel').pack(side=tk.LEFT, padx=(0, 10))
+        
+        # Multi-select popup for architecture configs
+        def open_arch_popup():
+            popup = tk.Toplevel(root)
+            popup.title('Select Architecture Configs')
+            popup.configure(bg=BG_DARK)
+            popup.geometry('300x400')
+            popup.transient(root)
+            popup.grab_set()
+            vars = {}
+            for i, cfg in enumerate(arch_options):
+                var = tk.BooleanVar(value=cfg in selected_arch_configs)
+                cb = tk.Checkbutton(popup, text=f'Config {cfg}', variable=var, bg=BG_DARK, fg=FG_PRIMARY, selectcolor=BG_TERTIARY, activebackground=BG_SECONDARY, anchor='w')
+                cb.pack(fill='x', padx=20, pady=2, anchor='w')
+                vars[cfg] = var
+            def on_ok():
+                selected_arch_configs.clear()
+                for cfg, var in vars.items():
+                    if var.get():
+                        selected_arch_configs.append(cfg)
+                selected_arch_configs.sort(key=lambda x: int(x))
+                arch_listbox.delete(0, tk.END)
+                for c in selected_arch_configs:
+                    arch_listbox.insert(tk.END, f'  Config {c}')
+                popup.destroy()
+            ok_btn = ttk.Button(popup, text='OK', command=on_ok, style='Accent.TButton')
+            ok_btn.pack(pady=10)
+        arch_add_btn = ttk.Button(arch_top_frame, text='Select Configs', command=open_arch_popup, style='Accent.TButton')
+        arch_add_btn.pack(side=tk.LEFT, padx=(0, 8))
+        arch_remove_btn = ttk.Button(arch_top_frame, text='Clear All', command=lambda: (selected_arch_configs.clear(), arch_listbox.delete(0, tk.END)), style='Secondary.TButton')
+        arch_remove_btn.pack(side=tk.LEFT)
+        
+        # Content area with preview and selected list
+        arch_content = ttk.Frame(arch_section, style='Card.TFrame')
+        arch_content.pack(fill=tk.BOTH, expand=True)
+        
+        # YAML preview area for architecture - with preview dropdown
+        arch_yaml_frame = ttk.Frame(arch_content, style='Card.TFrame')
+        arch_yaml_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 15))
+        ttk.Label(arch_yaml_frame, text='Config Preview', style='Header.TLabel').pack(anchor='w', pady=(0, 8))
+        # Dropdown for preview selection
+        arch_preview_var = tk.StringVar(value=arch_options[0] if arch_options else '')
+        arch_preview_dropdown = ttk.Combobox(arch_yaml_frame, textvariable=arch_preview_var, values=arch_options, width=12, state='readonly', style='Dark.TCombobox')
+        arch_preview_dropdown.pack(anchor='w', pady=(0, 8))
+        # Create Treeview with scrollbar
+        arch_tree_frame = ttk.Frame(arch_yaml_frame, style='Card.TFrame')
+        arch_tree_frame.pack(fill=tk.BOTH, expand=True)
+        arch_tree = ttk.Treeview(arch_tree_frame, columns=('value',), show='tree headings', height=8, style='Dark.Treeview')
+        arch_tree.heading('#0', text='Key', anchor='w')
+        arch_tree.heading('value', text='Value', anchor='w')
+        arch_tree.column('#0', width=180, stretch=True)
+        arch_tree.column('value', width=120, stretch=True)
+        arch_tree_scroll = ttk.Scrollbar(arch_tree_frame, orient='vertical', command=arch_tree.yview, style='Dark.Vertical.TScrollbar')
+        arch_tree.configure(yscrollcommand=arch_tree_scroll.set)
+        arch_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        arch_tree_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Listbox to show selected arch configs
+        arch_selected_frame = ttk.Frame(arch_content, style='Card.TFrame')
+        arch_selected_frame.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        ttk.Label(arch_selected_frame, text='Selected', style='Header.TLabel').pack(anchor='w', pady=(0, 8))
+        arch_listbox = tk.Listbox(arch_selected_frame, width=12, height=8,
+                                   font=('Consolas', 10), bg=BG_TERTIARY, fg=FG_PRIMARY,
+                                   selectbackground=ACCENT, selectforeground='white',
+                                   borderwidth=0, highlightthickness=0, relief='flat')
+        arch_listbox.pack(fill=tk.Y, expand=True)
+        
+        # No longer needed: add_arch_config and remove_arch_config
+        
+        def populate_tree(tree, parent, data, prefix=''):
+            """Recursively populate treeview with dict/list data."""
+            if isinstance(data, dict):
+                for key, value in data.items():
+                    if isinstance(value, (dict, list)):
+                        node = tree.insert(parent, 'end', text=str(key), values=('',), open=False)
+                        populate_tree(tree, node, value, prefix + '  ')
+                    else:
+                        tree.insert(parent, 'end', text=str(key), values=(str(value),))
+            elif isinstance(data, list):
+                for i, item in enumerate(data):
+                    if isinstance(item, (dict, list)):
+                        node = tree.insert(parent, 'end', text=f'[{i}]', values=('',), open=False)
+                        populate_tree(tree, node, item, prefix + '  ')
+                    else:
+                        tree.insert(parent, 'end', text=f'[{i}]', values=(str(item),))
+        
+        def update_arch_preview(*args):
+            # Show preview for the selected config in the dropdown
+            for item in arch_tree.get_children():
+                arch_tree.delete(item)
+            cfg = arch_preview_var.get()
+            if cfg:
+                row = df[df['arch_config'] == int(cfg)].iloc[0]
+                arch_path = row['arch_path']
+                try:
+                    import yaml
+                    with open(arch_path, 'r') as f:
+                        data = yaml.safe_load(f)
+                    if data:
+                        populate_tree(arch_tree, '', data)
+                except Exception as e:
+                    arch_tree.insert('', 'end', text='Error', values=(str(e),))
+        arch_preview_var.trace('w', update_arch_preview)
+        update_arch_preview()
+        
+        # ==================== WORKLOAD SECTION ====================
+        work_section = ttk.LabelFrame(sections_frame, text="  Workload Configs  ", padding="15", style='Card.TLabelframe')
+        work_section.pack(side=tk.TOP, fill=tk.BOTH, expand=True, pady=(10, 0))
+        
+        # Top row: dropdown and add button
+        work_top_frame = ttk.Frame(work_section, style='Card.TFrame')
+        work_top_frame.pack(fill=tk.X, pady=(0, 15))
+        
+        ttk.Label(work_top_frame, text='Select Config:', style='Card.TLabel').pack(side=tk.LEFT, padx=(0, 10))
+        
+        # Multi-select popup for workload configs
+        def open_work_popup():
+            popup = tk.Toplevel(root)
+            popup.title('Select Workload Configs')
+            popup.configure(bg=BG_DARK)
+            popup.geometry('300x400')
+            popup.transient(root)
+            popup.grab_set()
+            vars = {}
+            for i, cfg in enumerate(work_options):
+                var = tk.BooleanVar(value=cfg in selected_work_configs)
+                cb = tk.Checkbutton(popup, text=f'Config {cfg}', variable=var, bg=BG_DARK, fg=FG_PRIMARY, selectcolor=BG_TERTIARY, activebackground=BG_SECONDARY, anchor='w')
+                cb.pack(fill='x', padx=20, pady=2, anchor='w')
+                vars[cfg] = var
+            def on_ok():
+                selected_work_configs.clear()
+                for cfg, var in vars.items():
+                    if var.get():
+                        selected_work_configs.append(cfg)
+                selected_work_configs.sort(key=lambda x: int(x))
+                work_listbox.delete(0, tk.END)
+                for c in selected_work_configs:
+                    work_listbox.insert(tk.END, f'  Config {c}')
+                popup.destroy()
+            ok_btn = ttk.Button(popup, text='OK', command=on_ok, style='Accent.TButton')
+            ok_btn.pack(pady=10)
+        work_add_btn = ttk.Button(work_top_frame, text='Select Configs', command=open_work_popup, style='Accent.TButton')
+        work_add_btn.pack(side=tk.LEFT, padx=(0, 8))
+        work_remove_btn = ttk.Button(work_top_frame, text='Clear All', command=lambda: (selected_work_configs.clear(), work_listbox.delete(0, tk.END)), style='Secondary.TButton')
+        work_remove_btn.pack(side=tk.LEFT)
+        
+        # Content area with preview and selected list
+        work_content = ttk.Frame(work_section, style='Card.TFrame')
+        work_content.pack(fill=tk.BOTH, expand=True)
+        
+        # YAML preview area for workload - with preview dropdown
+        work_yaml_frame = ttk.Frame(work_content, style='Card.TFrame')
+        work_yaml_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 15))
+        ttk.Label(work_yaml_frame, text='Config Preview', style='Header.TLabel').pack(anchor='w', pady=(0, 8))
+        # Dropdown for preview selection
+        work_preview_var = tk.StringVar(value=work_options[0] if work_options else '')
+        work_preview_dropdown = ttk.Combobox(work_yaml_frame, textvariable=work_preview_var, values=work_options, width=12, state='readonly', style='Dark.TCombobox')
+        work_preview_dropdown.pack(anchor='w', pady=(0, 8))
+        # Create Treeview with scrollbar
+        work_tree_frame = ttk.Frame(work_yaml_frame, style='Card.TFrame')
+        work_tree_frame.pack(fill=tk.BOTH, expand=True)
+        work_tree = ttk.Treeview(work_tree_frame, columns=('value',), show='tree headings', height=8, style='Dark.Treeview')
+        work_tree.heading('#0', text='Key', anchor='w')
+        work_tree.heading('value', text='Value', anchor='w')
+        work_tree.column('#0', width=180, stretch=True)
+        work_tree.column('value', width=120, stretch=True)
+        work_tree_scroll = ttk.Scrollbar(work_tree_frame, orient='vertical', command=work_tree.yview, style='Dark.Vertical.TScrollbar')
+        work_tree.configure(yscrollcommand=work_tree_scroll.set)
+        work_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        work_tree_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Listbox to show selected work configs
+        work_selected_frame = ttk.Frame(work_content, style='Card.TFrame')
+        work_selected_frame.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        ttk.Label(work_selected_frame, text='Selected', style='Header.TLabel').pack(anchor='w', pady=(0, 8))
+        work_listbox = tk.Listbox(work_selected_frame, width=12, height=8,
+                                   font=('Consolas', 10), bg=BG_TERTIARY, fg=FG_PRIMARY,
+                                   selectbackground=ACCENT, selectforeground='white',
+                                   borderwidth=0, highlightthickness=0, relief='flat')
+        work_listbox.pack(fill=tk.Y, expand=True)
+        
+        # No longer needed: add_work_config and remove_work_config
+        
+        def update_work_preview(*args):
+            # Show preview for the selected config in the dropdown
+            for item in work_tree.get_children():
+                work_tree.delete(item)
+            cfg = work_preview_var.get()
+            if cfg:
+                row = df[df['work_config'] == int(cfg)].iloc[0]
+                work_path = row['work_path']
+                try:
+                    import yaml
+                    with open(work_path, 'r') as f:
+                        data = yaml.safe_load(f)
+                    if data:
+                        populate_tree(work_tree, '', data)
+                except Exception as e:
+                    work_tree.insert('', 'end', text='Error', values=(str(e),))
+        work_preview_var.trace('w', update_work_preview)
+        update_work_preview()
+        
+        # ==================== BUTTONS ====================
+        button_frame = ttk.Frame(root, padding="20", style='Dark.TFrame')
+        button_frame.pack(fill=tk.X)
+        
+        # Center the buttons
+        button_container = ttk.Frame(button_frame, style='Dark.TFrame')
+        button_container.pack()
+        
+        def on_confirm():
+            # Convert selected configs to integers for comparison
+            selected_arch_ints = [int(x) for x in selected_arch_configs]
+            selected_work_ints = [int(x) for x in selected_work_configs]
             
-            arch_dropdowns.append(arch_dropdown)
-            work_dropdowns.append(work_dropdown)
+            # Filter df to get rows with both arch and work config in selected lists
+            filtered_df = df[
+                (df['arch_config'].isin(selected_arch_ints)) & 
+                (df['work_config'].isin(selected_work_ints))
+            ]
             
-            row_widget = widgets.HBox([
-                widgets.Label(value=str(i), layout=widgets.Layout(width='50px')),
-                arch_dropdown,
-                work_dropdown
-            ])
-            rows.append(row_widget)
+            from tkinter import messagebox
+            if len(filtered_df) == 0:
+                # Show confirmation dialog for no valid configs
+                result = messagebox.askyesno(
+                    "No Valid Configurations",
+                    "Are you sure you want to exit?\nNo valid configurations found with the selected options."
+                )
+                if not result:
+                    return  # Don't close if user clicks "No"
+            else:
+                # Show confirmation dialog for valid configs
+                result = messagebox.askyesno(
+                    "Confirm Selection",
+                    f"{len(filtered_df)} valid configuration(s) selected.\nAre you sure you want to exit?"
+                )
+                if not result:
+                    return
+                
+            self.generate_runs(filtered_df)
+            root.destroy()
         
-        # Output area for displaying selections
-        output = widgets.Output()
+        confirm_button = ttk.Button(button_container, text='Confirm Selection', command=on_confirm, style='Accent.TButton')
+        confirm_button.pack(side=tk.LEFT, padx=10)
         
-        # Button to get current selections
-        def on_get_selections(b):
-            with output:
-                clear_output()
-                print("Current Selections:")
-                print("-" * 40)
-                for i, (arch_dd, work_dd) in enumerate(zip(arch_dropdowns, work_dropdowns)):
-                    print(f"Row {i}: arch_config={arch_dd.value}, work_config={work_dd.value}")
+        close_button = ttk.Button(button_container, text='Cancel', command=root.destroy, style='Secondary.TButton')
+        close_button.pack(side=tk.LEFT, padx=10)
         
-        get_button = widgets.Button(description='Get Selections', button_style='primary')
-        get_button.on_click(on_get_selections)
+
+        # Run the main loop
+        root.mainloop()
+
         
-        # Assemble the GUI
-        table = widgets.VBox([header] + rows)
-        gui_layout = widgets.VBox([
-            widgets.Label(value='Configuration Selection Table', style={'font_weight': 'bold', 'font_size': '16px'}),
-            table,
-            get_button,
-            output
-        ])
-        
-        display(gui_layout)
-        
-        return arch_dropdowns, work_dropdowns
