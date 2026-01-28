@@ -47,6 +47,8 @@ def parse_commandline_args():
                         help = 'Extract unfiltered configuration results from generated csv file.')
     parser.add_argument('-f', '--filter', type=str, default=None,
                         help = 'Open GUI to filter configurations from generated csv file.')
+    parser.add_argument('-ff', '--filter_full', action='store_true', default=False,
+                        help = 'Enable full mode for frontend programming filtering (filter + execute).')
     parser.add_argument('-t', '--tabular', action='store_true', default=False,
                         help = 'Add logger debug to terminal output.')
     parser.add_argument('-x', '--execute', type=str, default=None,
@@ -167,8 +169,8 @@ def main():
             df = pd.read_csv(extract_path)
             _generate_runs(df=df, path=args.run_dir + '/runs.txt')
 
-            if args.filter:
-                filter_path = args.run_dir + '/runs.txt'
+            if args.filter_full:
+                filter_path = args.run_dir + '/configurations.csv'
                 df = pd.read_csv(filter_path)
                 _gui(df=df, path=args.run_dir + '/runs.txt')
             else:

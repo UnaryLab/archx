@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-version = "2025.08.09"
+version = "2026.01.27"
 name = "archx"
 authors = [
   { name="Di Wu", email="di.wu@ucf.edu" },
@@ -23,7 +23,11 @@ dependencies = [
     "pyyaml",
     "yamlordereddictloader",
     "pyfiglet",
-    "loguru"
+    "loguru",
+    "pandas",
+    "numpy",
+    "matplotlib",
+    "Pillow"
 ]
 
 # Map script name to the main entry point (archx/main.py -> main())
