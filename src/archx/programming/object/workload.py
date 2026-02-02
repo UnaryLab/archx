@@ -1,11 +1,5 @@
 from archx.programming.object.parameter import Parameter
-
-# TODO:
-#   - Finalize method signitures
-#   - Finalize assertion messages
-#   - How do we structure workload?
-#   - Allow sweeping objects to be passed.
-#     - Do we return the configuration to add directly to that or take in str of name?
+from loguru import logger
 
 class Workload(Parameter):
     def __init__(self, graph):
@@ -17,6 +11,7 @@ class Workload(Parameter):
         assert name not in self.configurations, f"Configuration '{name}' already exists in workload."
 
         self.configurations[name] = []
+        logger.info(f"Added configuration '{name}'.")
 
     def add_parameter(self, configuration: str, parameter_name: str, parameter_value, sweep: bool = None):
         assert isinstance(configuration, str), "'configuration' parameter must be of type 'str'."
@@ -35,3 +30,7 @@ class Workload(Parameter):
                                           desc='workload')
         
         self.configurations[configuration].append(parameter_vertex)
+
+        logger.info(f"Added parameter '{parameter_name}' to configuration '{configuration}'.")
+        logger.debug(f"\tValue: {parameter_value}")
+        logger.debug(f"\tSweep: {sweep}")

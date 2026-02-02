@@ -1,4 +1,5 @@
 from archx.programming.object.parameter import Parameter
+from loguru import logger
 
 # TODO:
 #   - Finalize method signitures
@@ -25,6 +26,9 @@ class Architecture(Parameter):
                                          sweep=sweep,
                                          desc='architecture')
             self.attributes.append(attr_vertex)
+
+            logger.info(f"Added attribute: {key}")
+            logger.debug(f"\tValue: {value}")
 
     def add_module(self, name, instance, tag, query):
         assert isinstance(name, str) or isinstance(name, list), "Module name must be a string or list of strings."
@@ -68,6 +72,10 @@ class Architecture(Parameter):
                                     desc='architecture')
 
         self.tags.append(tag_vertex)
+
+        logger.info(f"Added module: {name}")
+        logger.debug(f"\tInstance: {instance}")
+        logger.debug(f"\tTag: {tag}")
         
         for key, value in query.items():
             sweep = isinstance(value, list)
@@ -79,3 +87,5 @@ class Architecture(Parameter):
                                           desc='architecture')
             
             self.modules.append(query_vertex)
+            logger.debug(f"\tQuery - {key}: {value}")
+        
