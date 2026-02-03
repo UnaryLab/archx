@@ -27,7 +27,8 @@ dependencies = [
     "pandas",
     "numpy",
     "matplotlib",
-    "Pillow"
+    "Pillow",
+    "ortools"
 ]
 
 # Map script name to the main entry point (archx/main.py -> main())
