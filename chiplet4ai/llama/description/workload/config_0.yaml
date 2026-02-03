@@ -1,0 +1,5 @@
+workload:
+  llama_2_7b:
+    configuration:
+      batch_size: 1
+      dim: 4096
