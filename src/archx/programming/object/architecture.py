@@ -1,5 +1,5 @@
 from loguru import logger
-from ortools.sat.python import cp_model
+from copy import deepcopy
 
 # TODO:
 #   - Finalize method signitures
@@ -76,9 +76,9 @@ class Architecture():
         logger.debug(f"\tInstance: {instance}")
         logger.debug(f"\tTag: {tag}")
         
+        query_param_dict = {}
         for key, value in query.items():
             sweep = isinstance(value, list)
-            query_param_dict = {}
             query_param = self.parameter_enumerator.add_parameter(name=name, 
                                                               param_name=key,
                                                               value=value,
@@ -86,9 +86,8 @@ class Architecture():
                                                               sweep=sweep,
                                                               desc='architecture')
             query_param_dict[key] = query_param
-            
             logger.debug(f"\tQuery - {key}: {value}")
-
+            
         param_dict = {
             'instance': inst_param,
             'tag': tag_param,
@@ -106,20 +105,21 @@ class Architecture():
             type_ = param_info['type']
             name = param_info['name']
             param_name = param_info['param_name']
-            
+            copy_value = deepcopy(value)
+
             if type_ == 'attribute':
-                architecture_dict['architecture']['attribute'][param_name] = value
+                architecture_dict['architecture']['attribute'][param_name] = copy_value
             elif type_ == 'module':
                 if name not in architecture_dict['architecture']['module']:
                     architecture_dict['architecture']['module'][name] = {}
                 
                 if param_name in ['instance', 'tag']:
-                    architecture_dict['architecture']['module'][name][param_name] = value
+                    architecture_dict['architecture']['module'][name][param_name] = copy_value
                 else:
                     # Query parameters
                     if 'query' not in architecture_dict['architecture']['module'][name]:
                         architecture_dict['architecture']['module'][name]['query'] = {}
-                    architecture_dict['architecture']['module'][name]['query'][param_name] = value
+                    architecture_dict['architecture']['module'][name]['query'][param_name] = copy_value
         
         return architecture_dict
         

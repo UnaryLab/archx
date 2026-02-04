@@ -1,4 +1,5 @@
 from loguru import logger
+from copy import deepcopy
 
 class Workload():
     def __init__(self, parameter_enumerator):
@@ -21,10 +22,11 @@ class Workload():
             param_info = self.parameter_enumerator.get_parameters_from_name(var_name)
             config_name = param_info['name']
             param_name = param_info['param_name']
+            copy_value = deepcopy(value)
             
             if config_name not in workload_dict['workload']:
                 workload_dict['workload'][config_name] = {'configuration': {}}
-            workload_dict['workload'][config_name]['configuration'][param_name] = value
+            workload_dict['workload'][config_name]['configuration'][param_name] = copy_value
         
         return workload_dict
             

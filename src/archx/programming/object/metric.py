@@ -17,3 +17,6 @@ class Metric:
         logger.info(f"Added metric '{name}'.")
         logger.debug(f"\tUnit: {unit}")
         logger.debug(f"\tAggregation: {aggregation}")
+
+    def to_yaml(self):
+        return self.metrics

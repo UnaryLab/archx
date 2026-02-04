@@ -16,3 +16,6 @@ class Event:
         for sub in subevent:
             logger.debug(f"\tSubevent: {sub}")
         logger.debug(f"\tPerformance: {performance}")
+
+    def to_yaml(self):
+        return self.events

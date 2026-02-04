@@ -15,13 +15,15 @@ def description(path):
     # array and memory shapes
     act_sram_bank = weight_sram_bank = 2
 
-    #array_shapes = [[128, 128], [256, 256], [512, 64], [512, 128], [512, 512]]
-    array_shapes = [[128, 128], [256, 256], [512, 512]]
-    fifo_shapes = [[128], [256]]
-    chiplet_shape = 64
+    array_shapes = [[128, 128], [256, 256], [512, 64], [512, 128], [512, 512]]
+    fifo_shapes = [[128], [256], [512]]
+    chiplet_shape = [16, 32, 64]
     act_sram_width = [1024, 2048, 4096]
     weight_sram_width = [1024, 2048, 4096]
     memory_size = 153 * 1024 * 1024
+
+    act_sram_depth = [memory_size // (width * act_sram_bank) for width in act_sram_width]
+    weight_sram_depth = [memory_size // (width * weight_sram_bank) for width in weight_sram_width]
 
     # chiplet_shape = condition_sweep(value=16, funct=lambda x: x*2, condition=lambda x: x <= 256)
 
@@ -32,27 +34,24 @@ def description(path):
     # weight_sram_depth = list_sweep(values=weight_sram_width, funct=lambda x: memory_size / (x * weight_sram_bank))
 
     # # SRAM
-    # architecture.add_module(name='isram', instance=[1], tag=['memory'], query={'class': 'sram', 'interface': 'cacti7', 'bank': act_sram_bank, 'width': act_sram_width, 'depth': act_sram_depth})
-    # architecture.add_module(name='wsram', instance=[1], tag=['memory'], query={'class': 'sram', 'interface': 'cacti7', 'bank': weight_sram_bank, 'width': weight_sram_width, 'depth': weight_sram_depth})
-    # architecture.add_module(name='osram', instance=[1], tag=['memory'], query={'class': 'sram', 'interface': 'cacti7', 'bank': act_sram_bank, 'width': act_sram_width, 'depth': act_sram_depth})
+    act_sram = architecture.add_module(name=['isram', 'osram'], instance=[1], tag=['memory'], query={'class': 'sram', 'interface': 'cacti7', 'bank': act_sram_bank, 'width': act_sram_width, 'depth': act_sram_depth})
+    wsram = architecture.add_module(name='wsram', instance=[1], tag=['memory'], query={'class': 'sram', 'interface': 'cacti7', 'bank': weight_sram_bank, 'width': weight_sram_width, 'depth': weight_sram_depth})
 
     # # FIFO
-    # architecture.add_module(name=['ififo', 'wfifo', 'ofifo'], instance=fifo_shapes, tag=['fifo', 'array'], query={'class': 'fifo', 'width': bitwidth, 'depth': chiplet_shape})
-    fifos = architecture.add_module(name=['ififo', 'ofifo'], instance=fifo_shapes, tag=['fifo', 'array'], query={'class': 'fifo', 'width': bitwidth, 'depth': chiplet_shape})
+    fifos = architecture.add_module(name=['ififo', 'wfifo', 'ofifo'], instance=fifo_shapes, tag=['fifo', 'array'], query={'class': 'fifo', 'width': bitwidth, 'depth': chiplet_shape})
 
     # Output Accumulator
-    # architecture.add_module(name='output_adder', instance=fifo_shapes, tag=['output_adder', 'array'], query={'class': 'adder_bfloat16'})
+    output_adder = architecture.add_module(name='output_adder', instance=fifo_shapes, tag=['output_adder', 'array'], query={'class': 'adder_bfloat16'})
 
     # operations
-    # architecture.add_module(name=['multiplier'], instance=array_shapes, tag=['pe', 'mac', 'array'], query={'class': 'multiplier_bfloat16'})
-    # architecture.add_module(name=['adder'], instance=array_shapes, tag=['pe', 'mac', 'array'], query={'class': 'adder_bfloat16'})
+    multiplier = architecture.add_module(name='multiplier', instance=array_shapes, tag=['pe', 'mac', 'array'], query={'class': 'multiplier_bfloat16'})
+    adder = architecture.add_module(name='adder', instance=array_shapes, tag=['pe', 'mac', 'array'], query={'class': 'adder_bfloat16'})
 
     # data registers
-    # architecture.add_module(name=['act_en_reg', 'mult_en_reg', 'acc_en_reg', 'weight_path_en_reg', 'weight_en_reg', 'sum_en_reg'], instance=array_shapes, tag=['pe', 'control', 'array'], query={'class': 'register', 'width': 1})
-    # architecture.add_module(name=['act_reg', 'weight_path_reg', 'sum_reg', 'weight_reg'], instance=array_shapes, tag=['pe', 'data', 'array'], query={'class': 'register', 'width': bitwidth})
+    control_regs = architecture.add_module(name=['act_en_reg', 'mult_en_reg', 'acc_en_reg', 'weight_path_en_reg', 'weight_en_reg', 'sum_en_reg'], instance=array_shapes, tag=['pe', 'control', 'array'], query={'class': 'register', 'width': 1})
+    data_regs = architecture.add_module(name=['act_reg', 'weight_path_reg', 'sum_reg', 'weight_reg'], instance=array_shapes, tag=['pe', 'data', 'array'], query={'class': 'register', 'width': bitwidth})
 
-    # architecture.add_module(name=['act_mux', 'weight_mux', 'add_mux', 'sum_mux'], instance=array_shapes, tag=['pe', 'array'], query={'class': 'and_gate', 'width': bitwidth})
-    muxes = architecture.add_module(name=['act_mux', 'weight_mux'], instance=array_shapes, tag=['pe', 'array'], query={'class': 'and_gate', 'width': bitwidth})
+    muxes = architecture.add_module(name=['act_mux', 'weight_mux', 'add_mux', 'sum_mux'], instance=array_shapes, tag=['pe', 'array'], query={'class': 'and_gate', 'width': bitwidth})
 
     ##############################################
     ###############    Event    ##################
@@ -117,23 +116,57 @@ def description(path):
     ##############################################
     ###############   Workload   #################
     ##############################################
-    batch_size = [1, 2, 3]
+    batch_size = [128, 256, 512]
 
     llama_2_7b_config = workload.add_configuration(name='llama_2_7b')
-    llama_2_7b_config.add_parameter(parameter_name='batch_size', parameter_value=batch_size, sweep=True)
+    batch_size_obj = llama_2_7b_config.add_parameter(parameter_name='batch_size', parameter_value=batch_size, sweep=True)
     llama_2_7b_config.add_parameter(parameter_name='dim', parameter_value=4096)
-    # llama_2_7b_config.add_parameter(parameter_name='heads',  parameter_value=32)
-    # llama_2_7b_config.add_parameter(parameter_name='hidden_dim', parameter_value=11008)
-    # llama_2_7b_config.add_parameter(parameter_name='layers', parameter_value=32)
-    # llama_2_7b_config.add_parameter(parameter_name='max_sequence_length', parameter_value=4096)
-    # llama_2_7b_config.add_parameter(parameter_name='prefill_seq_len', parameter_value=64)
-    # llama_2_7b_config.add_parameter(parameter_name='vocab_size', parameter_value=32000)
+    llama_2_7b_config.add_parameter(parameter_name='heads',  parameter_value=32)
+    llama_2_7b_config.add_parameter(parameter_name='hidden_dim', parameter_value=11008)
+    llama_2_7b_config.add_parameter(parameter_name='layers', parameter_value=32)
+    llama_2_7b_config.add_parameter(parameter_name='max_sequence_length', parameter_value=4096)
+    llama_2_7b_config.add_parameter(parameter_name='prefill_seq_len', parameter_value=64)
+    llama_2_7b_config.add_parameter(parameter_name='vocab_size', parameter_value=32000)
+
+    ##############################################
+    ###########   Constraints   ##################
+    ##############################################
+
     # direct constraint with no condition
-    agraph.direct_constraint(parameters = [muxes['act_mux']['instance'],
-                                           muxes['weight_mux']['instance']])
-    
+    agraph.direct_constraint(parameters = [multiplier['instance'],
+                                           adder['instance'],
+                                           control_regs['act_en_reg']['instance'],
+                                           control_regs['mult_en_reg']['instance'],
+                                           control_regs['acc_en_reg']['instance'],
+                                           control_regs['weight_path_en_reg']['instance'],
+                                           control_regs['weight_en_reg']['instance'],
+                                           control_regs['sum_en_reg']['instance'],
+                                           data_regs['act_reg']['instance'],
+                                           data_regs['weight_path_reg']['instance'],
+                                           data_regs['sum_reg']['instance'],
+                                           data_regs['weight_reg']['instance'],
+                                           muxes['act_mux']['instance'],
+                                           muxes['weight_mux']['instance'],
+                                           muxes['add_mux']['instance'],
+                                           muxes['sum_mux']['instance']
+                                          ])
+
     agraph.direct_constraint(parameters = [fifos['ififo']['instance'],
-                                           fifos['ofifo']['instance']])
+                                           fifos['ofifo']['instance'],
+                                           output_adder['instance'],
+                                           act_sram['isram']['query']['width'],
+                                           act_sram['osram']['query']['width'],
+                                           wsram['query']['width'],
+                                           act_sram['isram']['query']['depth'],
+                                           act_sram['osram']['query']['depth'],
+                                           wsram['query']['depth'],
+                                           batch_size_obj['batch_size']
+                                         ])
+    
+    agraph.direct_constraint(parameters = [fifos['ififo']['query']['depth'],
+                                           fifos['wfifo']['query']['depth'],
+                                           fifos['ofifo']['query']['depth']
+                                         ])
 
     # direct constraint with condition (functional, only works for two parameters)
     # agraph.direct_constraint_conditional()
@@ -148,9 +181,11 @@ def description(path):
     # true = direct, false = anti
     agraph.conditional_constraint(a = fifos['ififo']['instance'],
                                   b = muxes['act_mux']['instance'],
-                                  condition = lambda a, b: a[0] <= b[0])
-
-    sol = agraph.generate()
+                                  condition = lambda a, b: a[0] == b[0])
     
-    exit()
+    agraph.conditional_constraint(a = fifos['wfifo']['instance'],
+                                  b = fifos['wfifo']['query']['depth'],
+                                  condition = lambda a, b: a[0] >= b)
+
+    agraph.generate()
     return agraph
