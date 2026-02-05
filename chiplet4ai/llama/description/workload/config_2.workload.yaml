@@ -1,0 +1,27 @@
+workload:
+  llama_3_70b:
+    configuration:
+      activation_bitwidth: 16
+      batch_size: 128
+      dim: 8192
+      heads: 64
+      hidden_dim: 28672
+      kv_heads: 8
+      layers: 80
+      max_sequence_length: 4096
+      prefill_seq_len: 64
+      vocab_size: 128256
+      weight_bitwidth: 16
+  llama_3_8b:
+    configuration:
+      activation_bitwidth: 16
+      batch_size: 128
+      dim: 4096
+      heads: 32
+      hidden_dim: 14336
+      kv_heads: 8
+      layers: 32
+      max_sequence_length: 4096
+      prefill_seq_len: 64
+      vocab_size: 128256
+      weight_bitwidth: 16

@@ -3,26 +3,26 @@ import sys
 
 
 def llama_2_7b(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
-    performance_dict = llama_2(architecture_dict=architecture_dict,
+    performance_dict = llama(architecture_dict=architecture_dict,
                                workload_dict=workload_dict)
     return performance_dict
 
 def llama_2_13b(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
-    performance_dict = llama_2(architecture_dict=architecture_dict,
+    performance_dict = llama(architecture_dict=architecture_dict,
                                workload_dict=workload_dict)
     return performance_dict
 
 def llama_2_70b(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
-    performance_dict = llama_2(architecture_dict=architecture_dict,
+    performance_dict = llama(architecture_dict=architecture_dict,
                                workload_dict=workload_dict)
     return performance_dict
 
 def llama_2_70b_GQA(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
-    performance_dict = llama_2(architecture_dict=architecture_dict,
+    performance_dict = llama(architecture_dict=architecture_dict,
                                workload_dict=workload_dict)
     return performance_dict
 
-def llama_2(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
+def llama(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
 
     gemm_dict = OrderedDict({'count': 1, 'aggregation': 'sequential'})
@@ -33,4 +33,14 @@ def llama_2(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> 
         #'nonlinear': nonlinear_dict
     })
 
+    return performance_dict
+
+def llama_3_70b(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
+    performance_dict = llama(architecture_dict=architecture_dict,
+                               workload_dict=workload_dict)
+    return performance_dict
+
+def llama_3_8b(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
+    performance_dict = llama(architecture_dict=architecture_dict,
+                               workload_dict=workload_dict)
     return performance_dict

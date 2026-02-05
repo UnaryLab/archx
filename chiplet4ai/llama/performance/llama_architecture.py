@@ -1,6 +1,10 @@
 from collections import OrderedDict
-from zoo.llm.common.performance.mapping.mapping_performance import mapping
-from zoo.llm.common.performance.utils import sum_subevents
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+from chiplet4ai.common.performance.scheduling import mapping, sum_subevents
+import math
+
 
 # region functions
 def gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
@@ -246,9 +250,6 @@ def proj_q_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=No
     performance_dict = OrderedDict()
     workload_config = next(iter(workload_dict.values()))['configuration']
 
-    if workload_config['architecture'].lower() == 'mugi':
-        workload_config.update({'early_termination_cycles_cycles': workload_config['proj_avg_early_termination_cycles']})
-
     # attn_shape = (batch_size, prefill_seq_len, dim)
     # weight_shape = (dim, dim)
     # output_shape = (batch_size, prefill_seq_len, dim)
@@ -273,9 +274,6 @@ def proj_q_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=Non
     performance_dict = OrderedDict()
     workload_config = next(iter(workload_dict.values()))['configuration']
 
-    if workload_config['architecture'].lower() == 'mugi':
-        workload_config.update({'early_termination_cycles': workload_config['proj_avg_early_termination_cycles']})
-
     # attn_shape = (batch_size, 1, dim)
     # weight_shape = (dim, dim)
     # output_shape = (batch_size, 1, dim)
@@ -298,9 +296,6 @@ def proj_q_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=Non
 def proj_k_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
     workload_config = next(iter(workload_dict.values()))['configuration']
-
-    if workload_config['architecture'].lower() == 'mugi':
-        workload_config.update({'early_termination_cycles': workload_config['proj_avg_early_termination_cycles']})
 
     # attn_shape = (batch_size, prefill_seq_len, dim)
     # weight_shape = (dim, dim * kv_heads / heads)
@@ -327,9 +322,6 @@ def proj_k_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=Non
     performance_dict = OrderedDict()
     workload_config = next(iter(workload_dict.values()))['configuration']
 
-    if workload_config['architecture'].lower() == 'mugi':
-        workload_config.update({'early_termination_cycles': workload_config['proj_avg_early_termination_cycles']})
-
     # attn_shape = (batch_size, 1, dim)
     # weight_shape = (dim, dim * kv_heads / heads)
     # output_shape = (batch_size, 1, dim * kv_heads / heads)
@@ -353,9 +345,6 @@ def proj_k_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=Non
 def proj_v_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
     workload_config = next(iter(workload_dict.values()))['configuration']
-
-    if workload_config['architecture'].lower() == 'mugi':
-        workload_config.update({'early_termination_cycles': workload_config['proj_avg_early_termination_cycles']})
 
     # attn_shape = (batch_size, prefill_seq_len, dim)
     # weight_shape = (dim, dim * kv_heads / heads)
@@ -382,9 +371,6 @@ def proj_v_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=Non
     performance_dict = OrderedDict()
     workload_config = next(iter(workload_dict.values()))['configuration']
 
-    if workload_config['architecture'].lower() == 'mugi':
-        workload_config.update({'early_termination_cycles': workload_config['proj_avg_early_termination_cycles']})
-
     # attn_shape = (batch_size, 1, dim)
     # weight_shape = (dim, dim * kv_heads / heads)
     # output_shape = (batch_size, 1, dim * kv_heads / heads)
@@ -407,9 +393,6 @@ def proj_v_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=Non
 def proj_a_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
     workload_config = next(iter(workload_dict.values()))['configuration']
-
-    if workload_config['architecture'].lower() == 'mugi':
-        workload_config.update({'early_termination_cycles': workload_config['proj_avg_early_termination_cycles']})
 
     # attn_shape = (batch_size, prefill_seq_len, dim)
     # weight_shape = (dim, dim)
@@ -434,9 +417,6 @@ def proj_a_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=Non
     performance_dict = OrderedDict()
     workload_config = next(iter(workload_dict.values()))['configuration']
 
-    if workload_config['architecture'].lower() == 'mugi':
-        workload_config.update({'early_termination_cycles': workload_config['proj_avg_early_termination_cycles']})
-
     # attn_shape = (batch_size, 1, dim)
     # weight_shape = (dim, dim)
     # output_shape = (batch_size, 1, dim)
@@ -458,9 +438,6 @@ def proj_a_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=Non
 def qkt_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
     workload_config = next(iter(workload_dict.values()))['configuration']
-
-    if workload_config['architecture'].lower() == 'mugi':
-        workload_config.update({'early_termination_cycles': workload_config['k_avg_early_termination_cycles']})
 
     # attn_shape = (batch_size, heads, prefill_seq_len, dim/heads)
     # weight_shape = (batch_size, heads, dim/heads, prefill_seq_len)
@@ -492,9 +469,6 @@ def qkt_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) 
     performance_dict = OrderedDict()
     workload_config = next(iter(workload_dict.values()))['configuration']
 
-    if workload_config['architecture'].lower() == 'mugi':
-        workload_config.update({'early_termination_cycles': workload_config['k_avg_early_termination_cycles']})
-
     # attn_shape = (batch_size, heads, 1, dim/heads)
     # weight_shape = (batch_size, heads, dim/heads, cur_seq_len)
     # output_shape = (batch_size, heads, 1, cur_seq_len)
@@ -507,7 +481,7 @@ def qkt_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) 
     batch_size = workload_config['batch_size']
     heads = workload_config['heads']
     prefill_seq_len = workload_config['prefill_seq_len']
-    max_seq_len = workload_config['max_seq_len']
+    max_seq_len = workload_config['max_sequence_length']
     dim = workload_config['dim']
     kv_heads = workload_config['kv_heads']
 
@@ -529,9 +503,6 @@ def qkt_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) 
 def av_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
     workload_config = next(iter(workload_dict.values()))['configuration']
-
-    if workload_config['architecture'].lower() == 'mugi':
-        workload_config.update({'early_termination_cycles': workload_config['v_avg_early_termination_cycles']})
 
     # attn_shape = (batch_size, heads, 1, prefill_seq_len)
     # weight_shape = (batch_size, heads, prefill_seq_len, dim/heads)
@@ -564,8 +535,6 @@ def av_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) 
 def av_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
     workload_config = next(iter(workload_dict.values()))['configuration']
-    if workload_config['architecture'].lower() == 'mugi':
-        workload_config.update({'early_termination_cycles': workload_config['v_avg_early_termination_cycles']})
 
     # attn_shape = (batch_size, heads, 1, cur_seq_len)
     # weight_shape = (batch_size, heads, cur_seq_len, dim/heads)
@@ -579,7 +548,7 @@ def av_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -
     batch_size = workload_config['batch_size']
     heads = workload_config['heads']
     kv_heads = workload_config['kv_heads']
-    max_seq_len = workload_config['max_seq_len']
+    max_seq_len = workload_config['max_sequence_length']
     prefill_seq_len = workload_config['prefill_seq_len']
     dim = workload_config['dim']
 
@@ -603,9 +572,6 @@ def av_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -
 def proj_up_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
     workload_config = next(iter(workload_dict.values()))['configuration']
-
-    if workload_config['architecture'].lower() == 'mugi':
-        workload_config.update({'early_termination_cycles': workload_config['ffn_avg_early_termination_cycles']})
 
     # attn_shape = (batch_size, prefill_seq_len, dim)
     # weight_shape = (dim, hidden_dim)
@@ -631,9 +597,6 @@ def proj_up_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=No
     performance_dict = OrderedDict()
     workload_config = next(iter(workload_dict.values()))['configuration']
 
-    if workload_config['architecture'].lower() == 'mugi':
-        workload_config.update({'early_termination_cycles': workload_config['ffn_avg_early_termination_cycles']})
-
     # attn_shape = (batch_size, 1, dim)
     # weight_shape = (dim, hidden_dim)
     # output_shape = (batch_size, 1, hidden_dim)
@@ -656,9 +619,6 @@ def proj_up_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=No
 def proj_gate_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
     workload_config = next(iter(workload_dict.values()))['configuration']
-
-    if workload_config['architecture'].lower() == 'mugi':
-        workload_config.update({'early_termination_cycles': workload_config['ffn_avg_early_termination_cycles']})
 
     # attn_shape = (batch_size, prefill_seq_len, dim)
     # weight_shape = (dim, hidden_dim)
@@ -684,9 +644,6 @@ def proj_gate_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=
     performance_dict = OrderedDict()
     workload_config = next(iter(workload_dict.values()))['configuration']
 
-    if workload_config['architecture'].lower() == 'mugi':
-        workload_config.update({'early_termination_cycles': workload_config['ffn_avg_early_termination_cycles']})
-
     # attn_shape = (batch_size, 1, dim)
     # weight_shape = (dim, hidden_dim)
     # output_shape = (batch_size, 1, hidden_dim)
@@ -709,9 +666,6 @@ def proj_gate_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=
 def proj_down_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
     workload_config = next(iter(workload_dict.values()))['configuration']
-
-    if workload_config['architecture'].lower() == 'mugi':
-        workload_config.update({'early_termination_cycles': workload_config['ffn_avg_early_termination_cycles']})
 
     # attn_shape = (batch_size, prefill_seq_len, hidden_dim)
     # weight_shape = (hidden_dim, dim)
@@ -736,9 +690,6 @@ def proj_down_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict
 def proj_down_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
     workload_config = next(iter(workload_dict.values()))['configuration']
-
-    if workload_config['architecture'].lower() == 'mugi':
-        workload_config.update({'early_termination_cycles': workload_config['ffn_avg_early_termination_cycles']})
 
     # attn_shape = (batch_size, 1, hidden_dim)
     # weight_shape = (hidden_dim, dim)
@@ -805,7 +756,7 @@ def proj_down_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=
 #     batch_size = workload_config['batch_size']
 #     kv_heads = workload_config['kv_heads']
 #     heads = workload_config['heads']
-#     max_seq_len = workload_config['max_seq_len']
+#     max_seq_len = workload_config['max_sequence_length']
 #     prefill_seq_len = workload_config['prefill_seq_len']
 
 #     test = batch_size * heads * prefill_seq_len
@@ -880,9 +831,6 @@ def output_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=No
     performance_dict = OrderedDict()
     workload_config = next(iter(workload_dict.values()))['configuration']
 
-    if workload_config['architecture'].lower() == 'mugi':
-        workload_config.update({'early_termination_cycles': workload_config['default_avg_early_termination_cycles']})
-
     # attn_shape = (batch_size, prefill_seq_len, dim)
     # weight_shape = (dim, vocab_size)
     # output_shape = (batch_size, prefill_seq_len, vocab_size)
@@ -906,9 +854,6 @@ def output_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=No
 def output_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
     workload_config = next(iter(workload_dict.values()))['configuration']
-
-    if workload_config['architecture'].lower() == 'mugi':
-        workload_config.update({'early_termination_cycles': workload_config['default_avg_early_termination_cycles']})
 
     # attn_shape = (batch_size, 1, dim)
     # weight_shape = (dim, vocab_size)

@@ -13,14 +13,14 @@ def description(path):
     bitwidth = 16
 
     # array and memory shapes
-    act_sram_bank = weight_sram_bank = 2
+    act_sram_bank = weight_sram_bank = 64
 
-    array_shapes = [[128, 128], [256, 256], [512, 64], [512, 128], [512, 512]]
-    fifo_shapes = [[128], [256], [512]]
+    array_shapes = [[32, 32], [64, 64], [64, 128], [64, 256], [64, 512], [128, 128], [128, 256], [128, 512], [256, 256], [256, 512], [512, 512]]
+    fifo_shapes = [[32], [64], [128], [256], [512]]
     chiplet_shape = [16, 32, 64]
-    act_sram_width = [1024, 2048, 4096]
-    weight_sram_width = [1024, 2048, 4096]
-    memory_size = 153 * 1024 * 1024
+    act_sram_width = [256, 512, 1024, 2048, 4096]
+    weight_sram_width = [256, 512, 1024, 2048, 4096]
+    memory_size = 500 * 1024 * 1024
 
     act_sram_depth = [memory_size // (width * act_sram_bank) for width in act_sram_width]
     weight_sram_depth = [memory_size // (width * weight_sram_bank) for width in weight_sram_width]
@@ -38,30 +38,31 @@ def description(path):
     wsram = architecture.add_module(name='wsram', instance=[1], tag=['memory'], query={'class': 'sram', 'interface': 'cacti7', 'bank': weight_sram_bank, 'width': weight_sram_width, 'depth': weight_sram_depth})
 
     # # FIFO
-    fifos = architecture.add_module(name=['ififo', 'wfifo', 'ofifo'], instance=fifo_shapes, tag=['fifo', 'array'], query={'class': 'fifo', 'width': bitwidth, 'depth': chiplet_shape})
+    fifos = architecture.add_module(name=['ififo', 'wfifo', 'ofifo'], instance=fifo_shapes, tag=['onchip', 'fifo', 'array'], query={'class': 'fifo', 'width': bitwidth, 'depth': chiplet_shape})
 
     # Output Accumulator
-    output_adder = architecture.add_module(name='output_adder', instance=fifo_shapes, tag=['output_adder', 'array'], query={'class': 'adder_bfloat16'})
+    output_adder = architecture.add_module(name='output_adder', instance=fifo_shapes, tag=['onchip', 'output_adder', 'array'], query={'class': 'adder_bfloat16'})
 
     # operations
-    multiplier = architecture.add_module(name='multiplier', instance=array_shapes, tag=['pe', 'mac', 'array'], query={'class': 'multiplier_bfloat16'})
-    adder = architecture.add_module(name='adder', instance=array_shapes, tag=['pe', 'mac', 'array'], query={'class': 'adder_bfloat16'})
+    multiplier = architecture.add_module(name='multiplier', instance=array_shapes, tag=['onchip', 'pe', 'mac', 'array'], query={'class': 'multiplier_bfloat16'})
+    adder = architecture.add_module(name='adder', instance=array_shapes, tag=['onchip', 'pe', 'mac', 'array'], query={'class': 'adder_bfloat16'})
 
     # data registers
-    control_regs = architecture.add_module(name=['act_en_reg', 'mult_en_reg', 'acc_en_reg', 'weight_path_en_reg', 'weight_en_reg', 'sum_en_reg'], instance=array_shapes, tag=['pe', 'control', 'array'], query={'class': 'register', 'width': 1})
-    data_regs = architecture.add_module(name=['act_reg', 'weight_path_reg', 'sum_reg', 'weight_reg'], instance=array_shapes, tag=['pe', 'data', 'array'], query={'class': 'register', 'width': bitwidth})
+    control_regs = architecture.add_module(name=['act_en_reg', 'mult_en_reg', 'acc_en_reg', 'weight_path_en_reg', 'weight_en_reg', 'sum_en_reg'], instance=array_shapes, tag=['tag', 'pe', 'control', 'array'], query={'class': 'register', 'width': 1})
+    data_regs = architecture.add_module(name=['act_reg', 'weight_path_reg', 'sum_reg', 'weight_reg'], instance=array_shapes, tag=['tag', 'pe', 'data', 'array'], query={'class': 'register', 'width': bitwidth})
 
-    muxes = architecture.add_module(name=['act_mux', 'weight_mux', 'add_mux', 'sum_mux'], instance=array_shapes, tag=['pe', 'array'], query={'class': 'and_gate', 'width': bitwidth})
+    muxes = architecture.add_module(name=['act_mux', 'weight_mux', 'add_mux', 'sum_mux'], instance=array_shapes, tag=['tag', 'pe', 'array'], query={'class': 'and_gate', 'width': bitwidth})
 
     ##############################################
     ###############    Event    ##################
     ##############################################
-    array_events = ['input_reads', 'weight_reads', 'output_writes', 'array_mapping']
-    input_mapping_events = ['ififo', 'wfifo', 'ofifo', 'output_adder', 'multiplier', 'adder', 'act_en_reg', 'mult_en_reg',
+    array_events = ['input_reads', 'weight_reads', 'output_writes', 'output_reads', 'array_mapping', 'weight_mapping']
+    array_mapping_events = ['ififo', 'ofifo', 'output_adder', 'multiplier', 'adder', 'act_en_reg', 'mult_en_reg',
                             'acc_en_reg', 'sum_en_reg', 'act_reg', 'sum_reg', 'act_mux', 'weight_mux', 'add_mux', 'sum_mux']
-    weight_mapping_events = ['weight_path_en_reg', 'weight_en_reg', 'weight_path_reg', 'weight_reg']
+    weight_mapping_events = ['wfifo', 'weight_path_en_reg', 'weight_en_reg', 'weight_path_reg', 'weight_reg']
 
-    event.add_event(name='llama_2_7b', subevent=['gemm'], performance='chiplet4ai/llama/performance/llama_model.py')
+    event.add_event(name='llama_3_8b', subevent=['gemm'], performance='chiplet4ai/llama/performance/llama_model.py')
+    event.add_event(name='llama_3_70b', subevent=['gemm'], performance='chiplet4ai/llama/performance/llama_model.py')
     event.add_event(name='gemm', subevent=['projection', 'attention', 'ffn', 'output'], performance='chiplet4ai/llama/performance/llama_architecture.py')
     event.add_event(name='projection', subevent=['proj_q', 'proj_k', 'proj_v', 'proj_a'], performance='chiplet4ai/llama/performance/llama_architecture.py')
     event.add_event(name='attention', subevent=['qkt', 'av'], performance='chiplet4ai/llama/performance/llama_architecture.py')
@@ -99,8 +100,8 @@ def description(path):
     event.add_event(name='input_reads', subevent=['isram'], performance='chiplet4ai/common/performance/chiplet_memory.py')
     event.add_event(name='weight_reads', subevent=['wsram'], performance='chiplet4ai/common/performance/chiplet_memory.py')
     event.add_event(name='output_writes', subevent=['osram'], performance='chiplet4ai/common/performance/chiplet_memory.py')
-    event.add_event(name='array_mapping', subevent=['input_mapping', 'weight_mapping'], performance='chiplet4ai/common/performance/chiplet_mapping.py')
-    event.add_event(name='input_mapping', subevent=input_mapping_events, performance='chiplet4ai/common/performance/chiplet_mapping.py')
+    event.add_event(name='output_reads', subevent=['osram'], performance='chiplet4ai/common/performance/chiplet_memory.py')
+    event.add_event(name='array_mapping', subevent=array_mapping_events, performance='chiplet4ai/common/performance/chiplet_mapping.py')
     event.add_event(name='weight_mapping', subevent=weight_mapping_events, performance='chiplet4ai/common/performance/chiplet_mapping.py')
     
 
@@ -116,17 +117,33 @@ def description(path):
     ##############################################
     ###############   Workload   #################
     ##############################################
-    batch_size = [128, 256, 512]
+    batch_size = [32, 64, 128]
 
-    llama_2_7b_config = workload.add_configuration(name='llama_2_7b')
-    batch_size_obj = llama_2_7b_config.add_parameter(parameter_name='batch_size', parameter_value=batch_size, sweep=True)
-    llama_2_7b_config.add_parameter(parameter_name='dim', parameter_value=4096)
-    llama_2_7b_config.add_parameter(parameter_name='heads',  parameter_value=32)
-    llama_2_7b_config.add_parameter(parameter_name='hidden_dim', parameter_value=11008)
-    llama_2_7b_config.add_parameter(parameter_name='layers', parameter_value=32)
-    llama_2_7b_config.add_parameter(parameter_name='max_sequence_length', parameter_value=4096)
-    llama_2_7b_config.add_parameter(parameter_name='prefill_seq_len', parameter_value=64)
-    llama_2_7b_config.add_parameter(parameter_name='vocab_size', parameter_value=32000)
+    llama_3_8b_config = workload.add_configuration(name='llama_3_8b')
+    llama_3_8b_batch_size = llama_3_8b_config.add_parameter(parameter_name='batch_size', parameter_value=batch_size, sweep=True)
+    llama_3_8b_config.add_parameter(parameter_name='dim', parameter_value=4096)
+    llama_3_8b_config.add_parameter(parameter_name='heads',  parameter_value=32)
+    llama_3_8b_config.add_parameter(parameter_name='kv_heads', parameter_value=8)
+    llama_3_8b_config.add_parameter(parameter_name='hidden_dim', parameter_value=14336)
+    llama_3_8b_config.add_parameter(parameter_name='layers', parameter_value=32)
+    llama_3_8b_config.add_parameter(parameter_name='activation_bitwidth', parameter_value=bitwidth)
+    llama_3_8b_config.add_parameter(parameter_name='weight_bitwidth', parameter_value=bitwidth)
+    llama_3_8b_config.add_parameter(parameter_name='max_sequence_length', parameter_value=4096)
+    llama_3_8b_config.add_parameter(parameter_name='prefill_seq_len', parameter_value=64)
+    llama_3_8b_config.add_parameter(parameter_name='vocab_size', parameter_value=128256)
+
+    llama_3_70b_config = workload.add_configuration(name='llama_3_70b')
+    llama_3_70b_batch_size = llama_3_70b_config.add_parameter(parameter_name='batch_size', parameter_value=batch_size, sweep=True)
+    llama_3_70b_config.add_parameter(parameter_name='dim', parameter_value=8192)
+    llama_3_70b_config.add_parameter(parameter_name='heads',  parameter_value=64)
+    llama_3_70b_config.add_parameter(parameter_name='kv_heads', parameter_value=8)
+    llama_3_70b_config.add_parameter(parameter_name='hidden_dim', parameter_value=28672)
+    llama_3_70b_config.add_parameter(parameter_name='layers', parameter_value=80)
+    llama_3_70b_config.add_parameter(parameter_name='activation_bitwidth', parameter_value=bitwidth)
+    llama_3_70b_config.add_parameter(parameter_name='weight_bitwidth', parameter_value=bitwidth)
+    llama_3_70b_config.add_parameter(parameter_name='max_sequence_length', parameter_value=4096)
+    llama_3_70b_config.add_parameter(parameter_name='prefill_seq_len', parameter_value=64)
+    llama_3_70b_config.add_parameter(parameter_name='vocab_size', parameter_value=128256)
 
     ##############################################
     ###########   Constraints   ##################
@@ -153,20 +170,22 @@ def description(path):
 
     agraph.direct_constraint(parameters = [fifos['ififo']['instance'],
                                            fifos['ofifo']['instance'],
+                                           fifos['wfifo']['instance'],
                                            output_adder['instance'],
                                            act_sram['isram']['query']['width'],
                                            act_sram['osram']['query']['width'],
                                            wsram['query']['width'],
                                            act_sram['isram']['query']['depth'],
                                            act_sram['osram']['query']['depth'],
-                                           wsram['query']['depth'],
-                                           batch_size_obj['batch_size']
+                                           wsram['query']['depth']
                                          ])
     
     agraph.direct_constraint(parameters = [fifos['ififo']['query']['depth'],
                                            fifos['wfifo']['query']['depth'],
                                            fifos['ofifo']['query']['depth']
                                          ])
+
+    agraph.direct_constraint(parameters = [llama_3_70b_batch_size['batch_size'], llama_3_8b_batch_size['batch_size']])
 
     # direct constraint with condition (functional, only works for two parameters)
     # agraph.direct_constraint_conditional()
@@ -181,7 +200,7 @@ def description(path):
     # true = direct, false = anti
     agraph.conditional_constraint(a = fifos['ififo']['instance'],
                                   b = muxes['act_mux']['instance'],
-                                  condition = lambda a, b: a[0] == b[0])
+                                  condition = lambda a, b: a[0] == b[1])
     
     agraph.conditional_constraint(a = fifos['wfifo']['instance'],
                                   b = fifos['wfifo']['query']['depth'],
