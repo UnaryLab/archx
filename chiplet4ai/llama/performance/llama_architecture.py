@@ -3,14 +3,13 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from chiplet4ai.common.performance.scheduling import mapping, sum_subevents
-import math
-
+import inspect
 
 # region functions
 def gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
     layers = next(iter(workload_dict.values()))['configuration']['layers']
-
+    
     projection_dict = OrderedDict({'count': layers, 'aggregation': 'sequential'})
     attention_dict = OrderedDict({'count': layers, 'aggregation': 'sequential'})
     ffn_dict = OrderedDict({'count': layers, 'aggregation': 'sequential'})

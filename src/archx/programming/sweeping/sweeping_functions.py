@@ -1,121 +1,33 @@
-from typing import Callable, Optional, Union
-from frontend.sweeping import Sweeping
+from typing import Callable
 
-class SingleSweep(Sweeping):
-    """Single value sweeping using a specified funct."""
-    def __init__(self, value, funct: Callable, condition: Optional[Callable] = None):
-        super().__init__(funct=funct)
-        self.value = value
-
-    def _apply(self):
-        return [self.funct(self.value)]
-
-class ConditionSweep(Sweeping):
+def condition_sweep(value, funct: Callable, condition: Callable):
     """Sweeping from a lower to upper range using a specified funct."""
-    def __init__(self, value, funct: Callable, condition: Callable):
-        super().__init__(funct=funct)
-        self.value = value
-        self.condition = condition
+    sweep_values = [value]
+    new_value = funct(value)
+    condition_met = condition(value)
+    while condition_met:
+        sweep_values.append(new_value)
+        new_value = funct(new_value)
+        condition_met = condition(new_value)
+    return sweep_values
 
-    # def _apply(self):
-    #     sweep_values = []
-    #     condition = True
-    #     value = self.value if isinstance(self.value, list) else [self.value]
-    #     while condition:
-    #         values = []
-    #         for i in range(len(value)):
-    #             values.append(value[i])
-    #             value[i] = self.funct(value[i])
-    #             if self.condition(value[i]) == False:
-    #                 condition = False
-    #                 break
-    #         sweep_values.append(values)
-    #     return sweep_values
-
-    def _apply(self):
-        sweep_values = [self.value]
-        new_value = self.funct(self.value)
-        condition_met = self.condition(self.value)
-        while condition_met:
-            sweep_values.append(new_value)
-            new_value = self.funct(new_value)
-            condition_met = self.condition(new_value)
-            
-        return sweep_values
-        
-class IterationSweep(Sweeping):
+def iteration_sweep(value, iter: int, funct: Callable):
     """Sweeping through an explicit number of iterations using a specified funct."""
-    def __init__(self, value, iter, funct: Callable):
-        super().__init__(funct=funct)
-        self.value = value
-        self.iter = iter
+    is_single = not isinstance(value, list)
+    values = [value] if is_single else list(value)
+    sweep_values = []
 
-    def _apply(self):
-        is_single = not isinstance(self.value, list)
-        values = [self.value] if is_single else list(self.value)
-        sweep_values = []
+    for _ in range(iter):
+        sweep_values.append(values.copy())
+        values = [funct(v) for v in values]
 
-        for _ in range(self.iter):
-            sweep_values.append(values.copy())
-            values = [self.funct(v) for v in values]
+    if is_single:
+        return [v[0] for v in sweep_values]
+    return sweep_values
 
-        if is_single:
-            return [v[0] for v in sweep_values]
-        return sweep_values
-
-class CombinationalSweep(Sweeping):
-    """List of sweeping functions, including ConditionSweep and NumSweep"""
-    def __init__(self, sweeps: list[Sweeping]):
-        super().__init__(funct=None)
-        self.sweeps = sweeps
-
-    def _apply(self):
-        sweep_results = [sweep._apply() for sweep in self.sweeps]
-
-        
-        lengths = [len(r) for r in sweep_results]
-        assert len(set(lengths)) == 1, "All sweeps must have the same length."
-
-        normalized = []
-        for sweep in sweep_results:
-            if not isinstance(sweep[0], list):
-                normalized.append([[value] for value in sweep])
-            else:
-                normalized.append(sweep)
-
-        combined = [
-            [value for group in step for value in group]
-            for step in zip(*normalized)
-        ]
-        return combined
-
-# class ListSweep(Sweeping):
-#     def __init__(self, sweeping ):
-#         super().__init__(funct=None)
-#         self.sweeping = sweeping
-#         self.default = isinstance(sweeping, Sweeping)
-
-#     def _apply(self, values):
-#         sweeping_values = []
-#         if self.default:
-#             for v in values:
-#                 sweeping_values.extend(self.sweeping._apply(v))
-#         else:
-#             for sweep, v in zip(self.sweeping, values):
-#                 sweeping_values.extend(sweep._apply(v))
-#         return sweeping_values
-
-
-
-# class ListSweep(Sweeping):
-#     def __init__(self, funct: Callable, condition: Optional[Callable] = None):
-#         super().__init__(funct=funct)
-#         self.condition = condition
-
-#     def _apply(self, input_values: list):
-#         output_values = []
-#         for value in input_values:
-#             condition_met = self.condition(value) if self.condition else True
-#             if condition_met:
-#                 output_values.append(self.funct(value))
-#         return output_values
+def list_sweep(value, funct: Callable):
+    """Sweeping through a list of values using a specified funct."""
+    sweep_values = []
+    for v in value:
+        sweep_values.append(funct(v))
+    return sweep_values

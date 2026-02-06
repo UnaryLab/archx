@@ -88,6 +88,50 @@ class AGraph:
         
         # Table constraint handled efficiently in C++ by OR-Tools
         self.model.AddAllowedAssignments([a, b], allowed_tuples)
+
+    def conditional_constraint_equation(self, a: cp_model.IntVar, b: cp_model.IntVar, c: cp_model.IntVar, condition):
+        """
+        Add a constraint where three parameter combinations must satisfy a condition on actual values.
+        
+        Args:
+            a: IntVar
+            b: IntVar
+            c: IntVar
+            condition: Lambda that takes actual values and returns bool
+                       e.g., lambda a, b, c: a * b == c
+        
+        Example:
+            sram_width values: [256, 512, 1024]     (indices 0, 1, 2)
+            sram_depth values: [128, 256, 512]     (indices 0, 1, 2)
+            memory_size values: [32768, 65536]     (indices 0, 1)
+            condition: lambda a, b, c: a * b * bank == c
+            
+            Valid triples: only those where width * depth * bank == memory_size
+        """
+        assert isinstance(a, cp_model.IntVar), "'a' must be a cp_model.IntVar."
+        assert isinstance(b, cp_model.IntVar), "'b' must be a cp_model.IntVar."
+        assert isinstance(c, cp_model.IntVar), "'c' must be a cp_model.IntVar."
+        assert callable(condition), "'condition' must be a callable (lambda or function)."
+        
+        # Get the actual values from the enumerator
+        values_a = self.parameter_enumerator.get_values_for_var(a)
+        values_b = self.parameter_enumerator.get_values_for_var(b)
+        values_c = self.parameter_enumerator.get_values_for_var(c)
+        
+        # Pre-compute valid (index_a, index_b, index_c) triples where condition is True
+        allowed_tuples = [
+            (idx_a, idx_b, idx_c)
+            for idx_a, val_a in enumerate(values_a)
+            for idx_b, val_b in enumerate(values_b)
+            for idx_c, val_c in enumerate(values_c)
+            if condition(val_a, val_b, val_c)
+        ]
+        
+        assert len(allowed_tuples) > 0, "No valid combinations found for the given condition."
+        
+        # Table constraint handled efficiently in C++ by OR-Tools
+        self.model.AddAllowedAssignments([a, b, c], allowed_tuples)
+
         
     def generate(self):
         solutions = self.solve()

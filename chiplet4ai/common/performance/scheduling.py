@@ -35,7 +35,7 @@ def gemm_mapping(mapping_dict: OrderedDict, architecture_dict: OrderedDict, work
     offchip_memory_events_dict = memory_scheduling.offchip_gemm_events(tiles=offchip_tiles,
                                                                             architecture_dict=architecture_dict,
                                                                             workload_dict=workload_dict)
-    #performance_dict['subevent'].update(offchip_memory_events_dict['subevent'])
+    performance_dict['subevent'].update(offchip_memory_events_dict['subevent'])
     
     # only compute router events if multinode configuration
     # average router events, returns dictionary containing average router events for input, weight, and output memory events

@@ -136,10 +136,10 @@ def offchip_gemm_events(tiles: TiledGEMM, architecture_dict: OrderedDict, worklo
     performance_dict = OrderedDict()
 
     performance_dict['subevent'] = OrderedDict({
-        'isram_offchip_writes': isram_offchip_writes_dict,
-        'wsram_offchip_writes': wsram_offchip_writes_dict,
-        'osram_offchip_reads': osram_offchip_reads_dict,
-        'osram_offchip_writes': osram_offchip_writes_dict,
+        'input_offchip_writes': isram_offchip_writes_dict,
+        'weight_offchip_writes': wsram_offchip_writes_dict,
+        'output_offchip_reads': osram_offchip_reads_dict,
+        'output_offchip_writes': osram_offchip_writes_dict,
         'dram_input_reads': dram_input_reads_dict,
         'dram_weight_reads': dram_weight_reads_dict,
         'dram_output_reads': dram_output_reads_dict,

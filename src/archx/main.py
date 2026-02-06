@@ -63,12 +63,6 @@ def parse_commandline_args():
 
 
 def main():
-    if args.delete:
-        # delete run directory if it exists
-        if os.path.isdir(args.run_dir):
-            shutil.rmtree(args.run_dir)
-            logger.info(f'Delete existing run directory <{args.run_dir}>.')
-
     args = parse_commandline_args()
     
     # set up banner
@@ -82,6 +76,12 @@ def main():
     # check not all interface options are selected
     assert (args.register_interface + args.unregister_interface + args.copy_interface <= 1), logger.error('Only one interface option can be selected at a time: <-regi>, <-uregi>, or <-copyi>.')
     
+    if args.delete:
+        # delete run directory if it exists
+        if os.path.isdir(args.run_dir):
+            shutil.rmtree(args.run_dir)
+            logger.info(f'Delete existing run directory <{args.run_dir}>.')
+
     # register interface
     if args.register_interface:
         assert args.interface_name is not None, logger.error(f'Interface name is required for registration via <-iname>.')
