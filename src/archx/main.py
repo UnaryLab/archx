@@ -1,6 +1,7 @@
 import pyfiglet, argparse, time, os, sys
 import pandas as pd
 import subprocess
+import shutil
 
 from loguru import logger
 
@@ -33,6 +34,8 @@ def parse_commandline_args():
                         help = 'Path to checkpoint, which requires <.gt> format.')
     parser.add_argument('-l', '--log_level', type=str, default='INFO',
                         help = 'Level of logger.')
+    parser.add_argument('-d', '--delete', action='store_true', default=False,
+                        help = 'Delete run directory if it exists.')
     parser.add_argument('-s', '--save_yaml', action='store_true', default=False, help = 'Save yaml files in run directory.')
     parser.add_argument('-ireg', '--register_interface', action='store_true', default=False, help = 'Register a new interface.')
     parser.add_argument('-iureg', '--unregister_interface', action='store_true', default=False, help = 'Unregister a new interface.')
@@ -73,6 +76,12 @@ def main():
     # check not all interface options are selected
     assert (args.register_interface + args.unregister_interface + args.copy_interface <= 1), logger.error('Only one interface option can be selected at a time: <-regi>, <-uregi>, or <-copyi>.')
     
+    if args.delete:
+        # delete run directory if it exists
+        if os.path.isdir(args.run_dir):
+            shutil.rmtree(args.run_dir)
+            logger.info(f'Delete existing run directory <{args.run_dir}>.')
+
     # register interface
     if args.register_interface:
         assert args.interface_name is not None, logger.error(f'Interface name is required for registration via <-iname>.')

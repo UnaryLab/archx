@@ -1,6 +1,4 @@
-# TODO:
-#   - Finalize method signitures
-#   - Finalize assertion messages
+from loguru import logger
 
 class Metric:
     def __init__(self):
@@ -15,3 +13,10 @@ class Metric:
             "unit": unit,
             "aggregation": aggregation
         }
+
+        logger.info(f"Added metric '{name}'.")
+        logger.debug(f"\tUnit: {unit}")
+        logger.debug(f"\tAggregation: {aggregation}")
+
+    def to_yaml(self):
+        return self.metrics

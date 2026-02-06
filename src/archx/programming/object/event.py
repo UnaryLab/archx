@@ -1,7 +1,4 @@
-# TODO:
-#   - How to increase flexibility with performance path?
-#   - Finalize method signitures
-#   - Finalize assertion messages
+from loguru import logger
 
 class Event:
     def __init__(self):
@@ -14,3 +11,11 @@ class Event:
         assert isinstance(performance, str), "'performance' parameter must be of type 'str' or not provided."
 
         self.events['event'][name] = {'subevent': subevent, 'performance': performance}
+
+        logger.info(f"Added event: {name}")
+        for sub in subevent:
+            logger.debug(f"\tSubevent: {sub}")
+        logger.debug(f"\tPerformance: {performance}")
+
+    def to_yaml(self):
+        return self.events

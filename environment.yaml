@@ -16,3 +16,4 @@ dependencies:
   - numpy
   - matplotlib
   - Pillow
+  - ortools
