@@ -13,26 +13,26 @@ def description(path):
     architecture.add_attributes(technology=45, frequency=400, interface='csv_cmos')
 
     # SRAM
-    architecture.add_module(name='isram', instance=[1], tag=['memory'], query={'class': 'sram', 'interface': 'cacti7', 'bank': 2, 'width': [32, 64, 128, 256], 'depth': [32, 64, 128, 256]})
-    architecture.add_module(name='wsram', instance=[1], tag=['memory'], query={'class': 'sram', 'interface': 'cacti7', 'bank': 2, 'width': [32, 64, 128, 256], 'depth': [32, 64, 128, 256]})
-    architecture.add_module(name='osram', instance=[1], tag=['memory'], query={'class': 'sram', 'interface': 'cacti7', 'bank': 2, 'width': [32, 64, 128, 256], 'depth': [32, 64, 128, 256]})
+    isram = architecture.add_module(name='isram', instance=[1], tag=['memory'], query={'class': 'sram', 'interface': 'cacti7', 'bank': 2, 'width': [32, 64, 128, 256], 'depth': [32, 64, 128, 256]})
+    wsram = architecture.add_module(name='wsram', instance=[1], tag=['memory'], query={'class': 'sram', 'interface': 'cacti7', 'bank': 2, 'width': [32, 64, 128, 256], 'depth': [32, 64, 128, 256]})
+    osram = architecture.add_module(name='osram', instance=[1], tag=['memory'], query={'class': 'sram', 'interface': 'cacti7', 'bank': 2, 'width': [32, 64, 128, 256], 'depth': [32, 64, 128, 256]})
 
     # FIFO
-    architecture.add_module(name=['ififo', 'wfifo', 'ofifo'], instance=[[4], [8], [16], [32]], tag=['fifo', 'array'], query={'class': 'fifo', 'width': 16, 'depth': [4, 8, 16, 32]})
+    fifos = architecture.add_module(name=['ififo', 'wfifo', 'ofifo'], instance=[[4], [8], [16], [32]], tag=['fifo', 'array'], query={'class': 'fifo', 'width': 16, 'depth': [4, 8, 16, 32]})
 
     # Output Accumulator
-    architecture.add_module(name='output_adder', instance=[[4], [8], [16], [32]], tag=['output_adder', 'array'], query={'class': 'adder_bfloat16'})
+    output_adder = architecture.add_module(name='output_adder', instance=[[4], [8], [16], [32]], tag=['output_adder', 'array'], query={'class': 'adder_bfloat16'})
 
     gemm_list = [[4, 4], [8, 8], [16, 16], [32, 32]]
     # operations
-    architecture.add_module(name=['multiplier'], instance=gemm_list, tag=['pe', 'mac', 'array'], query={'class': 'multiplier_bfloat16'})
-    architecture.add_module(name=['adder'], instance=gemm_list, tag=['pe', 'mac', 'array'], query={'class': 'adder_bfloat16'})
+    multiplier = architecture.add_module(name=['multiplier'], instance=gemm_list, tag=['pe', 'mac', 'array'], query={'class': 'multiplier_bfloat16'})
+    adder = architecture.add_module(name=['adder'], instance=gemm_list, tag=['pe', 'mac', 'array'], query={'class': 'adder_bfloat16'})
 
     # data registers
-    architecture.add_module(name=['act_en_reg', 'mult_en_reg', 'acc_en_reg', 'weight_path_en_reg', 'weight_en_reg', 'sum_en_reg'], instance=gemm_list, tag=['pe', 'control', 'array'], query={'class': 'register', 'width': 1})
-    architecture.add_module(name=['act_reg', 'weight_path_reg', 'sum_reg', 'weight_reg'], instance=gemm_list, tag=['pe', 'data', 'array'], query={'class': 'register', 'width': 16})
+    control_regs = architecture.add_module(name=['act_en_reg', 'mult_en_reg', 'acc_en_reg', 'weight_path_en_reg', 'weight_en_reg', 'sum_en_reg'], instance=gemm_list, tag=['pe', 'control', 'array'], query={'class': 'register', 'width': 1})
+    data_regs = architecture.add_module(name=['act_reg', 'weight_path_reg', 'sum_reg', 'weight_reg'], instance=gemm_list, tag=['pe', 'data', 'array'], query={'class': 'register', 'width': 16})
 
-    architecture.add_module(name=['act_mux', 'weight_mux', 'add_mux', 'sum_mux'], instance=gemm_list, tag=['pe', 'array'], query={'class': 'and_gate', 'width': 16})
+    muxes = architecture.add_module(name=['act_mux', 'weight_mux', 'add_mux', 'sum_mux'], instance=gemm_list, tag=['pe', 'array'], query={'class': 'and_gate', 'width': 16})
 
     ##############################################
     ###############    Event    ##################
@@ -59,34 +59,37 @@ def description(path):
     ##############################################
     ###############   Workload   #################
     ##############################################
-    workload.add_configuration(name='gemm')
-    workload.add_parameter(configuration='gemm', parameter_name='matrix_dim', parameter_value=[16, 32, 64, 128], sweep=True)
+    configuration = workload.add_configuration(name='gemm')
+    matrix_dim = configuration.add_parameter(configuration='gemm', parameter_name='matrix_dim', parameter_value=[16, 32, 64, 128], sweep=True)
 
-    agraph.add_constraint(multiplier=['instance'],
-                        adder=['instance'],
-                        act_en_reg=['instance'],
-                        mult_en_reg=['instance'],
-                        acc_en_reg=['instance'],
-                        weight_path_en_reg=['instance'],
-                        weight_en_reg=['instance'],
-                        sum_en_reg=['instance'],
-                        act_reg=['instance'],
-                        weight_path_reg=['instance'],
-                        sum_reg=['instance'],
-                        weight_reg=['instance'],
-                        ififo=['instance', 'depth'],
-                        wfifo=['instance', 'depth'],
-                        ofifo=['instance', 'depth'],
-                        output_adder=['instance'],
-                        isram=['width', 'depth'],
-                        wsram=['width', 'depth'],
-                        osram=['width', 'depth'],
-                        act_mux=['instance'],
-                        weight_mux=['instance'],
-                        add_mux=['instance'],
-                        sum_mux=['instance'],
-                        gemm=['matrix_dim']
-                        )
+    agraph.direct_constraint(parameters = [adder['instance'],
+                                           control_regs['act_en_reg']['instance'],
+                                           control_regs['mult_en_reg']['instance'],
+                                           control_regs['acc_en_reg']['instance'],
+                                           control_regs['weight_path_en_reg']['instance'],
+                                           control_regs['weight_en_reg']['instance'],
+                                           control_regs['sum_en_reg']['instance'],
+                                           data_regs['act_reg']['instance'],
+                                           data_regs['weight_path_reg']['instance'],
+                                           data_regs['sum_reg']['instance'],
+                                           data_regs['weight_reg']['instance'],
+                                           fifos['ififo']['depth'],
+                                           fifos['wfifo']['depth'],
+                                           fifos['ofifo']['depth'],
+                                           output_adder['instance'],
+                                           isram['width'],
+                                           isram['depth'],
+                                           wsram['width'],
+                                           wsram['depth'],
+                                           osram['width'],
+                                           osram['depth'],
+                                           muxes['act_mux']['instance'],
+                                           muxes['weight_mux']['instance'],
+                                           muxes['add_mux']['instance'],
+                                           muxes['sum_mux']['instance'],
+                                           multiplier['instance'],
+                                           matrix_dim['matrix_dim']
+                                        ])
 
     agraph.generate()
     return agraph
