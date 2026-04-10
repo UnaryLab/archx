@@ -31,7 +31,7 @@ def parse_commandline_args():
     parser.add_argument('-e', '--event_yaml', type=str, default=None,
                         help = 'Path to event yaml.')
     parser.add_argument('-c', '--checkpoint', type=str, default=None,
-                        help = 'Path to checkpoint, which requires <.gt> format.')
+                        help = 'Path to checkpoint, which requires <.json> format.')
     parser.add_argument('-l', '--log_level', type=str, default='INFO',
                         help = 'Level of logger.')
     parser.add_argument('-d', '--delete', action='store_true', default=False,
@@ -127,7 +127,7 @@ def main():
 
     if archx_run:
         # validate checkpoint
-        assert args.checkpoint.endswith('.gt'), logger.error('Invalid event checkpoint format; requires <.gt>.')
+        assert args.checkpoint.endswith('.json'), logger.error('Invalid event checkpoint format; requires <.json>.')
 
         logger.success(f'\n----------------------------------------------\nStep 1: Create architectue dict\n----------------------------------------------')
         architecture_dict = create_architecture_dict(args.architecture_yaml)

@@ -124,6 +124,58 @@ def clean_file_list(file_list: list) -> None:
             os.remove(file)
 
 
+def draw_event_graph(event_graph, output: str, fmt: str = None) -> None:
+    """
+    Render an ArchxGraph to a file using Graphviz.
+
+    Parameters
+    ----------
+    event_graph : ArchxGraph
+        The Rust-backed graph object.
+    output : str
+        Output file path. The extension determines the format unless `fmt`
+        is given explicitly (e.g. 'pdf', 'png', 'svg').
+    fmt : str, optional
+        Override the output format. When omitted the format is inferred
+        from the file extension; defaults to 'pdf' if there is no extension.
+    """
+    try:
+        import graphviz
+    except ImportError:
+        logger.error(
+            "graphviz package is not installed. "
+            "Install it with:  conda install graphviz python-graphviz  "
+            "or:  pip install graphviz  (also requires the graphviz system package)."
+        )
+        return
+
+    output = os.path.abspath(output)
+    root, ext = os.path.splitext(output)
+    if fmt is None:
+        fmt = ext.lstrip('.') if ext else 'pdf'
+
+    # Graphviz renders to `root.fmt`; passing `output` can duplicate suffixes.
+    dot = graphviz.Digraph(format=fmt)
+    dot.attr(rankdir='TB', size='10,10')
+
+    # Node styling: events (non-leaf) vs modules (leaf)
+    for name in event_graph.get_all_node_names():
+        if event_graph.is_leaf(name):
+            dot.node(name, label=name, shape='box', style='filled', fillcolor='#AED6F1')
+        else:
+            dot.node(name, label=name, shape='ellipse', style='filled', fillcolor='#A9DFBF')
+
+    # Edges: label with count, penwidth proportional to count
+    for src in event_graph.get_all_node_names():
+        for tgt in event_graph.get_out_neighbors(src):
+            count = event_graph.get_edge_count(src, tgt)
+            penwidth = max(0.5, min(count, 8.0))
+            dot.edge(src, tgt, label=f'{count:g}', penwidth=str(penwidth))
+
+    dot.render(root, cleanup=True)
+    logger.success(f'Draw event graph to <{root}.{fmt}>.')
+
+
 def create_dir(directory: str) -> None:
     """
     Checks the existence of a directory, if does not exist, create a new one

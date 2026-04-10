@@ -5,15 +5,18 @@ channels:
   - defaults
 dependencies:
   - python>=3.9
-  - graph-tool
-  - cmake
+  - graphviz
+  - python-graphviz
+  - loguru
+  - matplotlib
+  - numpy
+  - ortools
+  - pandas
+  - Pillow
+  - pyfiglet
   - pyyaml
   - yamlordereddictloader
-  - pyfiglet
-  - loguru
+  - pytest
+  - pytest-cov
+  - maturin>=1.5
   - pip
-  - pandas
-  - numpy
-  - matplotlib
-  - Pillow
-  - ortools

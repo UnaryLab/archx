@@ -2,23 +2,43 @@
 A cost modeling framework to explore the system design space based on A-Graph.
 
 ## Installation
-All provided installation methods allow running ```archx``` in the command line and ```import archx``` as a python module.
+All installation methods provide the `archx` CLI command and the `import archx` Python module.
 
-Make sure you have [Anaconda](https://www.anaconda.com/) installed before the steps below.
+### Prerequisites
+- Python >= 3.9
+- [Rust toolchain](https://rustup.rs/) — required to compile the Rust extension via [Maturin](https://www.maturin.rs/)
+  ```bash
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+  rustc --version  # verify
+  ```
+- (Recommended) [Anaconda](https://www.anaconda.com/) for managing the full environment
 
-### Option 1: pip installation
-1. ```git clone``` [this repo](https://github.com/UnaryLab/archx) and ```cd``` to the repo dir
-2. ```conda env create -f environment.yaml```
-   - The ```name: archx``` in ```evironment.yaml``` can be updated to a preferred one.
-3. ```conda activate archx```
-4. ```pip install archx```
-5. Validate installation via ```archx -h``` in the command line or ```import archx``` in python code
+### Option 1: conda + pip install from PyPI (recommended)
+Installs core dependencies via conda and the Archx package from PyPI.
 
-### Option 2: source installation
-This is the developer mode, where you can edit the source code with live changes reflected for simulation.
-1. ```git clone``` [this repo](https://github.com/UnaryLab/archx) and ```cd``` to the repo dir
-2. ```conda env create -f environment.yaml```
-   - The ```name: archx``` in ```evironment.yaml``` can be updated to a preferred one.
-3. ```conda activate archx```
-4. ```python3 -m pip install -e . --no-deps```
-5. Validate installation via ```archx -h``` in the command line or ```import archx``` in python code
+```bash
+conda env create -f environment.yaml   # edit `name: archx` to rename
+conda activate archx
+pip install archx
+```
+
+### Option 2: source installation (developer mode)
+Editable install from source — live code changes are reflected without reinstalling.
+
+```bash
+git clone https://github.com/UnaryLab/archx.git && cd archx
+conda env create -f environment.yaml   # edit `name: archx` to rename
+conda activate archx
+pip install -e . --no-deps             # editable install; Rust extension is compiled here
+```
+
+### Validate
+```bash
+archx -h
+python -c "import archx"
+```
+
+### Running tests
+```bash
+pytest
+```

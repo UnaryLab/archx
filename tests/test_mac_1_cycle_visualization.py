@@ -3,17 +3,17 @@ import sys, os, shutil
 from loguru import logger
 
 from archx.architecture import create_architecture_dict, save_architecture_dict
-from archx.event import create_event_graph, save_event_graph
+from archx.event import create_event_graph, save_event_graph, load_event_graph
 from archx.metric import create_metric_dict, save_metric_dict, aggregate_event_metric, create_event_metrics, query_module_metric, aggregate_tag_metric
 from archx.workload import create_workload_dict, save_workload_dict
 from archx.performance import simulate_performance_all_events
-from archx.utils import get_path
+from archx.utils import get_path, draw_event_graph
 
 
 run_name = 'mac_1_cycle'
 
 input_root = 'examples/' + run_name + '/input/'
-output_root = 'tests/' + run_name + '/'
+output_root = 'tests/' + run_name + '_visualization' + '/'
 
 arch_input_file = input_root + 'architecture/example.architecture.yaml'
 arch_dict_output_file = output_root + 'example.architecture_dict.yaml'
@@ -345,6 +345,22 @@ def test_tag():
     logger.success(f'result <{result}>.')
 
 
+def test_draw_event_graph_pdf():
+    fixture_file = os.path.join('tests', run_name+'_visualization', 'example.event_graph_w_perf.json')
+    event_graph = load_event_graph(fixture_file)
+
+    output = os.path.join('tests', run_name+'_visualization', 'example.event_graph_w_perf.pdf')
+    draw_event_graph(event_graph, output)
+
+    assert os.path.exists(output), f'PDF not created at {output}'
+    assert os.path.getsize(output) > 0, 'PDF file is empty'
+    # os.remove(output)
+
+
+if __name__ == '__main__':
+    test_draw_event_graph_pdf()
+
+
 def test_cleanup():
     path = get_path(output_root)
     shutil.rmtree(path)
@@ -358,4 +374,5 @@ if __name__ == '__main__':
     test_runtime()
     test_module()
     test_tag()
+    test_draw_event_graph_pdf()
     test_cleanup()

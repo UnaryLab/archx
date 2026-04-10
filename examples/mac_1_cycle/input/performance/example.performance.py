@@ -26,7 +26,7 @@ def gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict=None):
 
     # number of memory accesses
     # no data reuse is considered
-    word_size = architecture_dict['multiplier']['query']['bitwidth']
+    word_size = architecture_dict['multiplier']['query']['width']
     sram_rd_num = word_size * 2 * mac_total / architecture_dict['sram']['query']['width']
     sram_wr_num = sram_rd_num / 2
 
