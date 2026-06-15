@@ -117,6 +117,11 @@ def main():
     output_log = args.run_dir + '/archx' + '-' + str(time.time()) + '.log'
     logger.add(output_log, level=args.log_level)
 
+    # Gate Rust(-bridged) logs at the same threshold so disabled levels are skipped
+    # in Rust (no formatting / GIL crossing) rather than forwarded then dropped.
+    from archx import set_log_level
+    set_log_level(args.log_level)
+
     if args.tabular:
         logger.add(sys.stdout, level=args.log_level)
         logger.info('Enable logger output to terminal.')

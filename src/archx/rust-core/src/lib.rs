@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use indexmap::IndexMap;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
+use log::{debug, warn};
 
 mod graph;
 mod metric;
@@ -38,10 +39,12 @@ impl ArchxGraph {
         Ok(())
     }
 
-    fn add_edge(&mut self, source: &str, target: &str) -> PyResult<()> {
-        self.inner.add_edge(source, target)
+    /// Add a directed edge. Returns True if an edge for this (source, target)
+    /// already existed and was merged (no parallel edge created), else False.
+    fn add_edge(&mut self, source: &str, target: &str) -> PyResult<bool> {
+        let (_, merged) = self.inner.add_edge(source, target)
             .map_err(|e| pyo3::exceptions::PyValueError::new_err(e))?;
-        Ok(())
+        Ok(merged)
     }
 
     fn has_node(&self, name: &str) -> bool {
@@ -262,6 +265,10 @@ impl ArchxGraph {
         let result = PyDict::new(py);
         match mv {
             MetricValue::Single(s) => {
+                if operation.is_some() {
+                    warn!("Ignore operation <{}> for metric <{}> in module <{}>; this module requires no specified operation.",
+                          operation.unwrap(), metric, module);
+                }
                 result.set_item("value", s.value)?;
                 result.set_item("unit", &s.unit)?;
             }
@@ -306,6 +313,15 @@ impl ArchxGraph {
             _ => None,
         };
 
+        // Mirrors Python's path-existence assertion: the event must be reachable from
+        // the workload (otherwise the query is ill-posed; do not silently return 0).
+        if let Some(w_idx) = workload_idx {
+            if crate::paths::all_paths(&self.inner.graph, w_idx, event_idx).is_empty() {
+                return Err(pyo3::exceptions::PyValueError::new_err(
+                    format!("Invalid event '{}' in workload '{}'", event, workload.unwrap())));
+            }
+        }
+
         // Reset all non-leaf metric values to 0.0
         let non_leaf_ids: Vec<_> = self.inner.graph.node_indices()
             .filter(|&idx| !self.inner.is_leaf(idx))
@@ -314,14 +330,26 @@ impl ArchxGraph {
             if let Some(m) = self.inner.graph[idx].metrics.get_mut(metric) {
                 if m.is_single() {
                     m.as_single_mut().value = 0.0;
+                    debug!("  Reset metric <{}> in event <{}> to 0.", metric, self.inner.graph[idx].name);
                 }
             }
         }
 
+        // Final per-mode "Total value" traces mirror the Python wording exactly,
+        // including the "= single value X * count Y" suffix where main emits it.
         let result_value = match metric_aggregation {
             "module" => {
+                if workload.is_some() {
+                    warn!("Ignore workload <{}> in aggregation <module>.", workload.unwrap());
+                }
                 let mut evaluated = std::collections::HashSet::new();
-                aggregate_module(&self.inner.graph, event_idx, metric, &mut evaluated)
+                let v = aggregate_module(&self.inner.graph, event_idx, event, metric, &mut evaluated)
+                    .map_err(pyo3::exceptions::PyValueError::new_err)?;
+                match workload {
+                    Some(w) => debug!("  Total value (<{}> -> <{}>) = <{}> <{}>.", w, event, v, metric_unit),
+                    None => debug!("  Total value (<{}>) = <{}> <{}>.", event, v, metric_unit),
+                }
+                v
             }
             "summation" => {
                 let is_leaf = self.inner.is_leaf(event_idx);
@@ -332,20 +360,40 @@ impl ArchxGraph {
 
                 match workload_idx {
                     Some(w_idx) => {
+                        let w = workload.unwrap();
                         if is_leaf && is_multi_op {
-                            aggregate_summation_multiop(
-                                &self.inner.graph, w_idx, event_idx, metric)
+                            let v = aggregate_summation_multiop(
+                                &self.inner.graph, w_idx, event_idx, metric);
+                            debug!("  Total value (<{}> -> <{}>) = <{}> <{}>.", w, event, v, metric_unit);
+                            v
                         } else {
                             let total_count = compute_path_count(
                                 &self.inner.graph, w_idx, event_idx, metric);
-                            aggregate_summation(&mut self.inner.graph, event_idx, metric);
-                            self.inner.graph[event_idx].metrics[metric].as_single().value
-                                * total_count
+                            aggregate_summation(&mut self.inner.graph, event_idx, metric)
+                                .map_err(pyo3::exceptions::PyValueError::new_err)?;
+                            let pre = self.inner.graph[event_idx].metrics[metric].as_single().value;
+                            let v = pre * total_count;
+                            debug!("  Total value (<{}> -> <{}>) = <{}> <{}> = single value <{}> * count <{}>.",
+                                   w, event, v, metric_unit, pre, total_count);
+                            v
                         }
                     }
                     None => {
-                        aggregate_summation(&mut self.inner.graph, event_idx, metric);
-                        self.inner.graph[event_idx].metrics[metric].as_single().value
+                        // Mirrors Python L280: with no workload, a leaf event must be a
+                        // single-operation module (no operation is specified to disambiguate).
+                        if is_leaf && is_multi_op {
+                            return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                                "Invalid module '{}' for aggregation 'summation'; this aggregation does not support multi-operation module",
+                                event)));
+                        }
+                        aggregate_summation(&mut self.inner.graph, event_idx, metric)
+                            .map_err(pyo3::exceptions::PyValueError::new_err)?;
+                        let v = self.inner.graph[event_idx].metrics[metric].as_single().value;
+                        match workload {
+                            Some(w) => debug!("  Total value (<{}> -> <{}>) = <{}> <{}>.", w, event, v, metric_unit),
+                            None => debug!("  Total value (<{}>) = <{}> <{}>.", event, v, metric_unit),
+                        }
+                        v
                     }
                 }
             }
@@ -360,8 +408,17 @@ impl ArchxGraph {
                         &self.inner.graph, w_idx, event_idx, metric),
                     None => 1.0,
                 };
-                aggregate_specified(&mut self.inner.graph, event_idx, metric);
-                self.inner.graph[event_idx].metrics[metric].as_single().value * total_count
+                aggregate_specified(&mut self.inner.graph, event_idx, metric)
+                    .map_err(pyo3::exceptions::PyValueError::new_err)?;
+                let pre = self.inner.graph[event_idx].metrics[metric].as_single().value;
+                let v = pre * total_count;
+                match workload {
+                    None => debug!("  Total value (<{}>) = <{}> <{}> = single value <{}>.",
+                                   event, v, metric_unit, pre),
+                    Some(w) => debug!("  Total value (<{}> -> <{}>) = <{}> <{}> = single value <{}> * count <{}>.",
+                                      w, event, v, metric_unit, pre, total_count),
+                }
+                v
             }
             other => {
                 return Err(pyo3::exceptions::PyValueError::new_err(
@@ -415,7 +472,9 @@ impl ArchxGraph {
             let d: &PyDict = res.downcast(py)?;
             let v: f64 = d.get_item("value").unwrap().unwrap().extract()?;
             total_value += v;
+            debug!("  Total value (module <{}>) = <{}> <{}>.", module_name, v, metric_unit);
         }
+        debug!("  Total value (tag <{}>) = <{}> <{}>.", tag, total_value, metric_unit);
 
         let result = PyDict::new(py);
         result.set_item("value", total_value)?;
@@ -436,8 +495,14 @@ impl ArchxGraph {
 
         // If no workload or workload == event, count is 1.0
         match workload {
-            None => Ok(1.0),
-            Some(w) if w == event => Ok(1.0),
+            None => {
+                debug!("  Total value (<{}>) = <{}>.", event, 1.0);
+                Ok(1.0)
+            }
+            Some(w) if w == event => {
+                debug!("  Total value (<{}>) = <{}>.", event, 1.0);
+                Ok(1.0)
+            }
             Some(w) => {
                 let w_idx = self.inner.get_index(w)
                     .ok_or_else(|| pyo3::exceptions::PyValueError::new_err(
@@ -445,7 +510,14 @@ impl ArchxGraph {
                 let e_idx = self.inner.get_index(event)
                     .ok_or_else(|| pyo3::exceptions::PyValueError::new_err(
                         format!("Event '{}' not found", event)))?;
-                Ok(aggregate_event_count(&self.inner.graph, w_idx, e_idx))
+                // Mirrors Python's path-existence assertion: event must be reachable.
+                if crate::paths::all_paths(&self.inner.graph, w_idx, e_idx).is_empty() {
+                    return Err(pyo3::exceptions::PyValueError::new_err(
+                        format!("Invalid event '{}' in workload '{}'", event, w)));
+                }
+                let total = aggregate_event_count(&self.inner.graph, w_idx, e_idx);
+                debug!("  Total value (<{}> -> <{}>) = <{}>.", w, event, total);
+                Ok(total)
             }
         }
     }
@@ -516,7 +588,7 @@ impl ArchxGraph {
         for edge in doc["edges"].as_array().unwrap_or(&vec![]) {
             let src = edge["source"].as_str().unwrap();
             let tgt = edge["target"].as_str().unwrap();
-            let eidx = inner.add_edge(src, tgt)
+            let (eidx, _) = inner.add_edge(src, tgt)
                 .map_err(|e| pyo3::exceptions::PyValueError::new_err(e))?;
             inner.graph[eidx].count = edge["count"].as_f64().unwrap_or(1.0);
             inner.graph[eidx].aggregation = edge["aggregation"]
@@ -606,6 +678,11 @@ fn deserialize_specified(v: &serde_json::Value) -> IndexMap<String, SingleMetric
 
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    // Bridge Rust `log` records into Python's logging (and thence loguru, via the
+    // intercept handler installed in archx/__init__.py). Level filtering is left to
+    // Python: pyo3-log caches the effective Python logging level, so disabled levels
+    // (e.g. debug! when running at INFO) cost nothing on the Rust hot path.
+    let _ = pyo3_log::try_init();
     m.add_class::<ArchxGraph>()?;
     Ok(())
 }

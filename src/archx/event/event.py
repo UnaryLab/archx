@@ -29,7 +29,10 @@ def create_event_graph(event_file: str) -> ArchxGraph:
     # Defaults set by Rust: count=1.0, aggregation='parallel', operation={}, factor={}
     for event, properties in event_dict.items():
         for subevent in properties.get('subevent', []):
-            graph.add_edge(event, subevent)
+            merged = graph.add_edge(event, subevent)
+            if merged:
+                logger.warning(f'Duplicate subevent <{subevent}> under event <{event}>; '
+                               f'merging into a single edge.')
 
     logger.success(f'Create event graph from <{event_file_full_path}>.')
     return graph

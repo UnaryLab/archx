@@ -73,14 +73,21 @@ impl ArchxGraphInner {
         self.name_to_index.get(name).copied()
     }
 
-    pub fn add_edge(&mut self, source: &str, target: &str) -> Result<EdgeIndex, String> {
+    /// Returns (edge_index, merged) where `merged` is true if an edge for this
+    /// (source, target) pair already existed and was reused instead of duplicated.
+    pub fn add_edge(&mut self, source: &str, target: &str) -> Result<(EdgeIndex, bool), String> {
         let src = self.name_to_index.get(source)
             .copied()
             .ok_or_else(|| format!("Node '{}' not found", source))?;
         let tgt = self.name_to_index.get(target)
             .copied()
             .ok_or_else(|| format!("Node '{}' not found", target))?;
-        Ok(self.graph.add_edge(src, tgt, EdgeData::default()))
+        // One edge per (source, target): matches main's set-based edge construction.
+        // A subevent listed twice under one event must not create a parallel edge.
+        if let Some(existing) = self.graph.find_edge(src, tgt) {
+            return Ok((existing, true));
+        }
+        Ok((self.graph.add_edge(src, tgt, EdgeData::default()), false))
     }
 
     pub fn find_edge(&self, source: &str, target: &str) -> Option<EdgeIndex> {

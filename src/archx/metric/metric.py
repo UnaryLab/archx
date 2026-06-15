@@ -125,6 +125,8 @@ def query_module_metric(
     Query the metric value of a single architecture module.
     """
     assert metric in metric_dict, logger.error(f'Invalid metric <{metric}>.')
+    assert key_aggregation in metric_dict[metric], \
+        logger.error(f'Missing aggregation in metric <{metric}>.')
     assert metric_dict[metric][key_aggregation] in legal_aggregation, \
         logger.error(f'Invalid aggregation for metric <{metric}>.')
 
@@ -151,6 +153,8 @@ def aggregate_event_metric(
     """
     assert metric in metric_dict, logger.error(f'Invalid metric <{metric}>.')
     cfg = metric_dict[metric]
+    assert key_aggregation in cfg, \
+        logger.error(f'Missing aggregation in metric <{metric}>.')
     assert cfg[key_aggregation] in legal_aggregation, \
         logger.error(f'Invalid aggregation <{cfg[key_aggregation]}> for metric <{metric}>.')
 
@@ -185,6 +189,8 @@ def aggregate_tag_metric(
     assert tag is not None, logger.error(f'Missing tag in aggregation of metric <{metric}>.')
     assert metric in metric_dict, logger.error(f'Invalid metric <{metric}>.')
     cfg = metric_dict[metric]
+    assert key_aggregation in cfg, \
+        logger.error(f'Missing aggregation in metric <{metric}>.')
     assert cfg[key_aggregation] != 'specified', \
         logger.error(f'Invalid aggregation <specified> for tag query; '
                      f'legal values: {legal_aggregation_tag}.')

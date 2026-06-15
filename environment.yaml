@@ -10,7 +10,6 @@ dependencies:
   - loguru
   - matplotlib
   - numpy
-  - ortools
   - pandas
   - Pillow
   - pyfiglet
@@ -20,3 +19,7 @@ dependencies:
   - pytest-cov
   - maturin>=1.5
   - pip
+  - pip:
+    # ortools is not on conda-forge/defaults under this name (the conda package
+    # is `ortools-python`); install the canonical wheel via pip instead.
+    - ortools

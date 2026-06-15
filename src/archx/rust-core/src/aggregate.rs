@@ -2,6 +2,7 @@ use std::collections::HashSet;
 use petgraph::graph::{DiGraph, NodeIndex};
 use petgraph::visit::EdgeRef;
 use petgraph::Direction;
+use log::{debug, info};
 
 use crate::graph::{NodeData, EdgeData};
 use crate::metric::MetricValue;
@@ -15,26 +16,40 @@ fn is_leaf(graph: &DiGraph<NodeData, EdgeData>, idx: NodeIndex) -> bool {
     graph.neighbors_directed(idx, Direction::Outgoing).next().is_none()
 }
 
+/// Unit string of a node's metric (every node carries the metric unit after init).
+fn metric_unit(graph: &DiGraph<NodeData, EdgeData>, idx: NodeIndex, metric: &str) -> String {
+    match graph[idx].metrics.get(metric) {
+        Some(MetricValue::Single(s)) => s.unit.clone(),
+        Some(MetricValue::MultiOp(ops)) => ops.values().next().map(|s| s.unit.clone()).unwrap_or_default(),
+        None => String::new(),
+    }
+}
+
 /// Get the metric value from a target node, resolving multi-op via the edge's operation map.
+/// Mirrors the Python `get_metric_value`, including its operation-legality assertion.
 fn get_metric_value(
     graph: &DiGraph<NodeData, EdgeData>,
     edge_src: NodeIndex,
     edge_tgt: NodeIndex,
     metric: &str,
-) -> f64 {
+) -> Result<f64, String> {
     let node = &graph[edge_tgt];
     match node.metrics.get(metric) {
-        Some(MetricValue::Single(s)) => s.value,
-        Some(MetricValue::MultiOp(_)) => {
+        Some(MetricValue::Single(s)) => Ok(s.value),
+        Some(MetricValue::MultiOp(ops)) => {
             // look up which operation this edge specifies
             let edge_idx = graph.find_edge(edge_src, edge_tgt)
-                .expect("edge must exist");
+                .ok_or_else(|| format!("Edge '{}' -> '{}' not found", graph[edge_src].name, node.name))?;
             let op = graph[edge_idx].operation.get(metric)
-                .expect("multi-op metric requires operation on edge");
-            node.metrics[metric].get_op_value(op)
-                .unwrap_or_else(|| panic!("operation '{}' not found in metric '{}'", op, metric))
+                .ok_or_else(|| format!(
+                    "Invalid operation for metric '{}' in module '{}'; multi-operation module requires an operation",
+                    metric, node.name))?
+                .to_lowercase();
+            ops.get(&op).map(|s| s.value).ok_or_else(|| format!(
+                "Invalid operation '{}' for metric '{}' in module '{}'; legal values: {:?}",
+                op, metric, node.name, ops.keys().collect::<Vec<_>>()))
         }
-        None => 0.0,
+        None => Ok(0.0),
     }
 }
 
@@ -50,14 +65,19 @@ pub fn compute_path_count(
     for path in &paths {
         let mut path_count = 1.0;
         let mut path_factor = 1.0;
-        for w in path.windows(2) {
-            let edge_idx = graph.find_edge(w[0], w[1]).expect("edge must exist");
-            path_count *= graph[edge_idx].count;
-            if let Some(&f) = graph[edge_idx].factor.get(metric) {
+        for &eidx in path {
+            path_count *= graph[eidx].count;
+            if let Some(&f) = graph[eidx].factor.get(metric) {
                 path_factor *= f;
             }
+            let (s, t) = graph.edge_endpoints(eidx).unwrap();
+            debug!("  Path (<{}> -> <{}>) updates event count to <{}> and event factor to <{}>.",
+                   graph[s].name, graph[t].name, path_count, path_factor);
         }
-        total += path_count * path_factor;
+        let delta = path_count * path_factor;
+        total += delta;
+        debug!("  Total event count (<{}> -> <{}>) is increased by <{}> = count <{}> * factor <{}>.",
+               graph[workload_idx].name, graph[event_idx].name, delta, path_count, path_factor);
     }
     total
 }
@@ -68,27 +88,45 @@ pub fn compute_path_count(
 
 /// Recursively sum all leaf nodes reachable from `current`, multiplied by instance count.
 /// Already-visited leaves are skipped to avoid double-counting shared modules.
+/// `top_event` is the name of `current`'s parent (the start event for the first call),
+/// reproducing the Python trace messages.
 pub fn aggregate_module(
     graph: &DiGraph<NodeData, EdgeData>,
     current: NodeIndex,
+    top_event: &str,
     metric: &str,
     evaluated: &mut HashSet<NodeIndex>,
-) -> f64 {
+) -> Result<f64, String> {
     if is_leaf(graph, current) {
         if !evaluated.insert(current) {
-            return 0.0; // already counted
+            info!("Ignore repeated module <{}>.", graph[current].name);
+            return Ok(0.0); // already counted
         }
         let node = &graph[current];
-        let val = match node.metrics.get(metric) {
-            Some(MetricValue::Single(s)) => s.value,
-            _ => panic!("module '{}' metric '{}' must be Single for 'module' aggregation",
-                        node.name, metric),
+        // Mirrors Python's `key_list == [value, unit]` assertion: a module's metric
+        // must be single-operation for 'module' aggregation.
+        let s = match node.metrics.get(metric) {
+            Some(MetricValue::Single(s)) => s,
+            _ => return Err(format!(
+                "Invalid metric '{}' for module '{}'; this aggregation requires a single-operation module",
+                metric, node.name)),
         };
-        val * node.instance
+        info!("Aggregate metric <{}> for module <{}> in event <{}>.", metric, node.name, top_event);
+        let total = s.value * node.instance;
+        debug!("  Total value (<{}> -> <{}>) = <{}> <{}> = single value <{}> * instance <{}>.",
+               top_event, node.name, total, s.unit, s.value, node.instance);
+        Ok(total)
     } else {
-        graph.neighbors_directed(current, Direction::Outgoing)
-            .map(|child| aggregate_module(graph, child, metric, evaluated))
-            .sum()
+        let mut total = 0.0;
+        // Borrow the name (no clone): it is both the log subject and the children's top_event.
+        let name: &str = &graph[current].name;
+        let children: Vec<NodeIndex> =
+            graph.neighbors_directed(current, Direction::Outgoing).collect();
+        for child in children {
+            debug!("  Check subevent <{}> -> <{}>.", name, graph[child].name);
+            total += aggregate_module(graph, child, name, metric, evaluated)?;
+        }
+        Ok(total)
     }
 }
 
@@ -102,31 +140,41 @@ pub fn aggregate_summation(
     graph: &mut DiGraph<NodeData, EdgeData>,
     start: NodeIndex,
     metric: &str,
-) {
+) -> Result<(), String> {
     let topo = topological_sort_subgraph(graph, start); // leaves first
     let topo_set: HashSet<NodeIndex> = topo.iter().copied().collect();
 
     for &v in &topo {
-        // Collect contributions this node makes to its parents (in-edges).
-        // We must collect first because we cannot borrow graph mutably and immutably at once.
-        let contributions: Vec<(NodeIndex, f64)> = graph
+        if is_leaf(graph, v) {
+            info!("Aggregate metric <{}> for module <{}>.", metric, graph[v].name);
+        } else {
+            info!("Aggregate metric <{}> for event <{}>.", metric, graph[v].name);
+        }
+
+        // Collect in-edge data first (cannot borrow graph mutably and immutably at once).
+        let in_edges: Vec<(NodeIndex, f64, f64)> = graph
             .edges_directed(v, Direction::Incoming)
             .filter(|e| topo_set.contains(&e.source()))
             .map(|e| {
-                let src = e.source();
-                let count = e.weight().count;
                 let factor = e.weight().factor.get(metric).copied().unwrap_or(1.0);
-                let child_val = get_metric_value(graph, src, v, metric);
-                (src, count * child_val * factor)
+                (e.source(), e.weight().count, factor)
             })
             .collect();
 
-        for (src, contrib) in contributions {
+        for (src, count, factor) in in_edges {
+            let child_val = get_metric_value(graph, src, v, metric)?;
+            let contrib = count * child_val * factor;
             if let Some(m) = graph[src].metrics.get_mut(metric) {
                 m.as_single_mut().value += contrib;
             }
+            // metric_unit() is inlined into the args so the String clone happens
+            // only when DEBUG is actually enabled.
+            debug!("  Total value (<{}> -> <{}>) = <{}> <{}> = single value <{}> * count <{}> * factor <{}>.",
+                   graph[src].name, graph[v].name, contrib, metric_unit(graph, src, metric),
+                   child_val, count, factor);
         }
     }
+    Ok(())
 }
 
 /// Special case: multi-op leaf with workload specified.
@@ -148,17 +196,18 @@ pub fn aggregate_summation_multiop(
         let mut path_count = 1.0;
         let mut path_factor = 1.0;
 
-        for w in path.windows(2) {
-            let edge_idx = graph.find_edge(w[0], w[1]).expect("edge must exist");
-            path_count *= graph[edge_idx].count;
-            if let Some(&f) = graph[edge_idx].factor.get(metric) {
+        for &eidx in path {
+            path_count *= graph[eidx].count;
+            if let Some(&f) = graph[eidx].factor.get(metric) {
                 path_factor *= f;
             }
+            let (s, t) = graph.edge_endpoints(eidx).unwrap();
+            debug!("  Path (<{}> -> <{}>) updates event count to <{}> and event factor to <{}>.",
+                   graph[s].name, graph[t].name, path_count, path_factor);
         }
 
         // Operation is on the last edge (parent → module)
-        if let Some(w) = path.windows(2).last() {
-            let edge_idx = graph.find_edge(w[0], w[1]).expect("edge must exist");
+        if let Some(&edge_idx) = path.last() {
             let op = graph[edge_idx].operation.get(metric)
                 .cloned()
                 .unwrap_or_default()
@@ -168,17 +217,26 @@ pub fn aggregate_summation_multiop(
             let node = &graph[event_idx];
             let mval = node.metrics[metric].get_op_value(&op).unwrap_or(0.0);
             op_metric.insert(op.clone(), mval);
-            *op_count.entry(op).or_insert(0.0) += path_count * path_factor;
+            let delta = path_count * path_factor;
+            *op_count.entry(op.clone()).or_insert(0.0) += delta;
+            debug!("  Total event count (<{}> : <{}>) is increased by <{}> = count <{}> * factor <{}>.",
+                   graph[event_idx].name, op, delta, path_count, path_factor);
         }
     }
 
-    op_metric.iter()
-        .map(|(op, &val)| val * op_count.get(op).copied().unwrap_or(0.0))
-        .sum()
+    let mut total = 0.0;
+    for (op, &val) in &op_metric {
+        let cnt = op_count.get(op).copied().unwrap_or(0.0);
+        let contrib = val * cnt;
+        total += contrib;
+        debug!("  Total value (<{}> : <{}>) = <{}> <{}> = single value <{}> * count <{}>.",
+               graph[event_idx].name, op, contrib, metric_unit(graph, event_idx, metric), val, cnt);
+    }
+    total
 }
 
 // ---------------------------------------------------------------------------
-// aggregate_event_count — DFS path count using edge counts only (no factor)
+// aggregate_event_count — path count using edge counts only (no factor)
 // ---------------------------------------------------------------------------
 
 /// Count how many times `event` executes under `workload` by summing the
@@ -188,19 +246,19 @@ pub fn aggregate_event_count(
     workload_idx: NodeIndex,
     event_idx: NodeIndex,
 ) -> f64 {
+    let paths = all_paths(graph, workload_idx, event_idx);
     let mut total = 0.0;
-    // Stack: (current_node, accumulated_count)
-    let mut stack: Vec<(NodeIndex, f64)> = vec![(workload_idx, 1.0)];
-    while let Some((current, acc)) = stack.pop() {
-        if current == event_idx {
-            total += acc;
-            continue;
+    for path in &paths {
+        let mut path_count = 1.0;
+        for &eidx in path {
+            path_count *= graph[eidx].count;
+            let (s, t) = graph.edge_endpoints(eidx).unwrap();
+            debug!("  Path (<{}> -> <{}>) updates event count to <{}>.",
+                   graph[s].name, graph[t].name, path_count);
         }
-        for neighbor in graph.neighbors_directed(current, Direction::Outgoing) {
-            let edge_idx = graph.find_edge(current, neighbor).expect("edge must exist");
-            let count = graph[edge_idx].count;
-            stack.push((neighbor, acc * count));
-        }
+        total += path_count;
+        debug!("  Total event count (<{}> -> <{}>) is increased by <{}>.",
+               graph[workload_idx].name, graph[event_idx].name, path_count);
     }
     total
 }
@@ -215,13 +273,15 @@ pub fn aggregate_specified(
     graph: &mut DiGraph<NodeData, EdgeData>,
     start: NodeIndex,
     metric: &str,
-) {
+) -> Result<(), String> {
     let topo = topological_sort_subgraph(graph, start); // leaves first
 
     for &v in &topo {
         if is_leaf(graph, v) {
+            info!("Ignore module <{}>.", graph[v].name);
             continue;
         }
+        info!("Aggregate metric <{}> for event <{}>.", metric, graph[v].name);
 
         // Collect out-edge data before mutating
         let out_data: Vec<(NodeIndex, f64, f64, String, bool)> = graph
@@ -243,7 +303,15 @@ pub fn aggregate_specified(
 
         for (tgt, count, factor, agg, tgt_is_leaf) in &out_data {
             if *tgt_is_leaf {
+                // Mirrors Python L460: a module under 'specified' must be single-operation.
+                match graph[*tgt].metrics.get(metric) {
+                    Some(MetricValue::Single(_)) => {}
+                    _ => return Err(format!(
+                        "Invalid metric '{}' for event '{}'; a module under this aggregation must be single-operation",
+                        metric, graph[*tgt].name)),
+                }
                 connect_leaf_any = true;
+                debug!("  Ignore module <{}>.", graph[*tgt].name);
             } else {
                 connect_leaf_only = false;
                 let child_val = match graph[*tgt].metrics.get(metric) {
@@ -251,21 +319,39 @@ pub fn aggregate_specified(
                     None => 0.0,
                 };
                 let contribution = child_val * count * factor;
+                debug!("  Total value (<{}>) = <{}> <{}> = single value <{}> * count <{}> * factor <{}>.",
+                       graph[*tgt].name, contribution, metric_unit(graph, *tgt, metric),
+                       child_val, count, factor);
                 if agg == "parallel" {
                     if contribution > parallel_max {
+                        debug!("  Update parallel maximum metric value to <{}>, based on event <{}>.",
+                               contribution, graph[*tgt].name);
                         parallel_max = contribution;
                     }
                 } else {
+                    debug!("  Update sequential accumulated metric value by <{}>, based on event <{}>.",
+                           contribution, graph[*tgt].name);
                     sequential_acc += contribution;
                 }
             }
         }
 
+        // Mirrors Python case2 (L493): a node connected to no modules must not carry an injected metric.
+        if !connect_leaf_any && graph[v].specified_metrics.contains_key(metric) {
+            return Err(format!(
+                "Invalid metric '{}' in event '{}'; it is connected to no modules, so the performance model must not define it",
+                metric, graph[v].name));
+        }
+
         let result = if connect_leaf_only {
-            // Fall back to value injected by performance model
-            graph[v].specified_metrics.get(metric)
-                .map(|s| s.value)
-                .unwrap_or(0.0)
+            // Mirrors Python case1 (L488): a node connected only to modules must have a
+            // value injected by its performance model.
+            match graph[v].specified_metrics.get(metric) {
+                Some(s) => s.value,
+                None => return Err(format!(
+                    "Missing metric '{}' in event '{}'; it is connected only to modules, so the performance model must define it",
+                    metric, graph[v].name)),
+            }
         } else {
             sequential_acc + parallel_max
         };
@@ -273,5 +359,7 @@ pub fn aggregate_specified(
         if let Some(m) = graph[v].metrics.get_mut(metric) {
             m.as_single_mut().value = result;
         }
+        debug!("  Total value (<{}>) = <{}> <{}>.", graph[v].name, result, metric_unit(graph, v, metric));
     }
+    Ok(())
 }

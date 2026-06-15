@@ -1,43 +1,53 @@
 use std::collections::HashSet;
-use petgraph::graph::{DiGraph, NodeIndex};
+use petgraph::graph::{DiGraph, NodeIndex, EdgeIndex};
+use petgraph::visit::EdgeRef;
 use petgraph::Direction;
 use petgraph::algo::toposort;
 
 use crate::graph::{NodeData, EdgeData};
 
-/// All simple paths from src to dst via iterative DFS.
-/// Replaces graph_tool's gt.all_paths().
+/// All simple paths from src to dst, each returned as the sequence of EdgeIndex
+/// traversed. Replaces graph_tool's gt.all_paths().
+///
+/// Backtracking DFS over a single shared buffer + visited set (a path Vec is
+/// allocated only when a complete path is found, not cloned at every branch).
+/// Returning edge indices lets callers index edge weights directly and avoids
+/// re-resolving each (src,tgt) with the O(out-degree) `find_edge`, which would be
+/// O(N^2) across all paths through a high-fanout node.
 pub fn all_paths(
     graph: &DiGraph<NodeData, EdgeData>,
     src: NodeIndex,
     dst: NodeIndex,
-) -> Vec<Vec<NodeIndex>> {
+) -> Vec<Vec<EdgeIndex>> {
     let mut results = Vec::new();
-    let mut stack: Vec<(NodeIndex, Vec<NodeIndex>, HashSet<NodeIndex>)> = vec![
-        (src, vec![src], {
-            let mut s = HashSet::new();
-            s.insert(src);
-            s
-        }),
-    ];
+    let mut edge_path = Vec::new();
+    let mut visited = HashSet::new();
+    visited.insert(src);
+    all_paths_dfs(graph, src, dst, &mut edge_path, &mut visited, &mut results);
+    results
+}
 
-    while let Some((current, path, visited)) = stack.pop() {
-        if current == dst {
-            results.push(path);
-            continue;
-        }
-        for neighbor in graph.neighbors_directed(current, Direction::Outgoing) {
-            if !visited.contains(&neighbor) {
-                let mut new_path = path.clone();
-                new_path.push(neighbor);
-                let mut new_visited = visited.clone();
-                new_visited.insert(neighbor);
-                stack.push((neighbor, new_path, new_visited));
-            }
+fn all_paths_dfs(
+    graph: &DiGraph<NodeData, EdgeData>,
+    current: NodeIndex,
+    dst: NodeIndex,
+    edge_path: &mut Vec<EdgeIndex>,
+    visited: &mut HashSet<NodeIndex>,
+    results: &mut Vec<Vec<EdgeIndex>>,
+) {
+    if current == dst {
+        results.push(edge_path.clone());
+        return;
+    }
+    for e in graph.edges_directed(current, Direction::Outgoing) {
+        let neighbor = e.target();
+        if visited.insert(neighbor) {
+            edge_path.push(e.id());
+            all_paths_dfs(graph, neighbor, dst, edge_path, visited, results);
+            edge_path.pop();
+            visited.remove(&neighbor);
         }
     }
-
-    results
 }
 
 /// Returns nodes reachable from `start` in bottom-up order (leaves first, start last).
