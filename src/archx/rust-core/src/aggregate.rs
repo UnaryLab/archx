@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use petgraph::graph::{DiGraph, NodeIndex};
 use petgraph::visit::EdgeRef;
 use petgraph::Direction;
-use log::{debug, info};
+use log::{debug, info, error};
 
 use crate::graph::{NodeData, EdgeData};
 use crate::metric::{MetricValue, fmt_py};
@@ -45,9 +45,16 @@ fn get_metric_value(
                     "Invalid operation for metric '{}' in module '{}'; multi-operation module requires an operation",
                     metric, node.name))?
                 .to_lowercase();
-            ops.get(&op).map(|s| s.value).ok_or_else(|| format!(
-                "Invalid operation '{}' for metric '{}' in module '{}'; legal values: {:?}",
-                op, metric, node.name, ops.keys().collect::<Vec<_>>()))
+            match ops.get(&op) {
+                Some(s) => Ok(s.value),
+                None => {
+                    let msg = format!(
+                        "Invalid operation <{}> for metric <{}> in module <{}>; legal values: {:?}.",
+                        op, metric, node.name, ops.keys().collect::<Vec<_>>());
+                    error!("{}", msg);
+                    Err(msg)
+                }
+            }
         }
         None => Ok(0.0),
     }
@@ -107,9 +114,11 @@ pub fn aggregate_module(
         // must be single-operation for 'module' aggregation.
         let s = match node.metrics.get(metric) {
             Some(MetricValue::Single(s)) => s,
-            _ => return Err(format!(
-                "Invalid metric '{}' for module '{}'; this aggregation requires a single-operation module",
-                metric, node.name)),
+            _ => {
+                let msg = format!("Invalid metric <{}> for module <{}>.", metric, node.name);
+                error!("{}", msg);
+                return Err(msg);
+            }
         };
         info!("Aggregate metric <{}> for module <{}> in event <{}>.", metric, node.name, top_event);
         let total = s.value * node.instance;
@@ -188,9 +197,11 @@ pub fn aggregate_summation_multiop(
 ) -> f64 {
     let paths = all_paths(graph, workload_idx, event_idx);
 
-    // op → (metric_value, accumulated_count)
+    // op → (metric_value, accumulated_count). `op_order` preserves first-seen order
+    // so the final per-op trace is deterministic rather than hash-ordered.
     let mut op_metric: std::collections::HashMap<String, f64> = std::collections::HashMap::new();
     let mut op_count: std::collections::HashMap<String, f64> = std::collections::HashMap::new();
+    let mut op_order: Vec<String> = Vec::new();
 
     for path in &paths {
         let mut path_count = 1.0;
@@ -216,6 +227,9 @@ pub fn aggregate_summation_multiop(
             // Record metric value for this op
             let node = &graph[event_idx];
             let mval = node.metrics[metric].get_op_value(&op).unwrap_or(0.0);
+            if !op_metric.contains_key(&op) {
+                op_order.push(op.clone());
+            }
             op_metric.insert(op.clone(), mval);
             let delta = path_count * path_factor;
             *op_count.entry(op.clone()).or_insert(0.0) += delta;
@@ -225,7 +239,8 @@ pub fn aggregate_summation_multiop(
     }
 
     let mut total = 0.0;
-    for (op, &val) in &op_metric {
+    for op in &op_order {
+        let val = op_metric[op];
         let cnt = op_count.get(op).copied().unwrap_or(0.0);
         let contrib = val * cnt;
         total += contrib;
@@ -306,9 +321,13 @@ pub fn aggregate_specified(
                 // Mirrors Python L460: a module under 'specified' must be single-operation.
                 match graph[*tgt].metrics.get(metric) {
                     Some(MetricValue::Single(_)) => {}
-                    _ => return Err(format!(
-                        "Invalid metric '{}' for event '{}'; a module under this aggregation must be single-operation",
-                        metric, graph[*tgt].name)),
+                    _ => {
+                        let msg = format!(
+                            "Invalid metric <{}> for event <{}>; legal metric: {{'value': float, 'unit': str}}.",
+                            metric, graph[*tgt].name);
+                        error!("{}", msg);
+                        return Err(msg);
+                    }
                 }
                 connect_leaf_any = true;
                 debug!("  Ignore module <{}>.", graph[*tgt].name);
@@ -338,9 +357,11 @@ pub fn aggregate_specified(
 
         // Mirrors Python case2 (L493): a node connected to no modules must not carry an injected metric.
         if !connect_leaf_any && graph[v].specified_metrics.contains_key(metric) {
-            return Err(format!(
-                "Invalid metric '{}' in event '{}'; it is connected to no modules, so the performance model must not define it",
-                metric, graph[v].name));
+            let msg = format!(
+                "  Invalid metric <{}> in event <{}>, since it is connected to no modules; check the performance model.",
+                metric, graph[v].name);
+            error!("{}", msg);
+            return Err(msg);
         }
 
         let result = if connect_leaf_only {
@@ -348,9 +369,13 @@ pub fn aggregate_specified(
             // value injected by its performance model.
             match graph[v].specified_metrics.get(metric) {
                 Some(s) => s.value,
-                None => return Err(format!(
-                    "Missing metric '{}' in event '{}'; it is connected only to modules, so the performance model must define it",
-                    metric, graph[v].name)),
+                None => {
+                    let msg = format!(
+                        "  Missing metric <{}> in event <{}>, since it is only connected to modules; check the performance model.",
+                        metric, graph[v].name);
+                    error!("{}", msg);
+                    return Err(msg);
+                }
             }
         } else {
             sequential_acc + parallel_max

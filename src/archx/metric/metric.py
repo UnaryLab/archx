@@ -128,7 +128,8 @@ def query_module_metric(
     assert key_aggregation in metric_dict[metric], \
         logger.error(f'Missing aggregation in metric <{metric}>.')
     assert metric_dict[metric][key_aggregation] in legal_aggregation, \
-        logger.error(f'Invalid aggregation for metric <{metric}>.')
+        logger.error(f'Invalid aggregation <{metric_dict[metric][key_aggregation]}> for metric <{metric}>; '
+                     f'legal values: {legal_aggregation}.')
 
     result = event_graph.query_module_metric(metric, module, operation)
 
@@ -156,7 +157,8 @@ def aggregate_event_metric(
     assert key_aggregation in cfg, \
         logger.error(f'Missing aggregation in metric <{metric}>.')
     assert cfg[key_aggregation] in legal_aggregation, \
-        logger.error(f'Invalid aggregation <{cfg[key_aggregation]}> for metric <{metric}>.')
+        logger.error(f'Invalid aggregation <{cfg[key_aggregation]}> for metric <{metric}>; '
+                     f'legal values: {legal_aggregation}.')
 
     result = event_graph.aggregate_event_metric(
         metric,
@@ -192,7 +194,7 @@ def aggregate_tag_metric(
     assert key_aggregation in cfg, \
         logger.error(f'Missing aggregation in metric <{metric}>.')
     assert cfg[key_aggregation] != 'specified', \
-        logger.error(f'Invalid aggregation <specified> for tag query; '
+        logger.error(f'Invalid aggregation <{cfg[key_aggregation]}> for tag <{tag}>; '
                      f'legal values: {legal_aggregation_tag}.')
 
     result = event_graph.aggregate_tag_metric(

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use indexmap::IndexMap;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
-use log::{debug, warn};
+use log::{debug, warn, error};
 
 mod graph;
 mod metric;
@@ -249,12 +249,16 @@ impl ArchxGraph {
             "module argument is required"))?;
 
         let idx = self.inner.get_index(module)
-            .ok_or_else(|| pyo3::exceptions::PyValueError::new_err(
-                format!("Module '{}' not found", module)))?;
+            .ok_or_else(|| {
+                let msg = format!("Invalid module <{}>.", module);
+                error!("{}", msg);
+                pyo3::exceptions::PyValueError::new_err(msg)
+            })?;
 
         if !self.inner.is_leaf(idx) {
-            return Err(pyo3::exceptions::PyValueError::new_err(
-                format!("'{}' is not a module (has children)", module)));
+            let msg = format!("Invalid event <{}>; this function requires a module.", module);
+            error!("{}", msg);
+            return Err(pyo3::exceptions::PyValueError::new_err(msg));
         }
 
         let node = &self.inner.graph[idx];
@@ -275,9 +279,13 @@ impl ArchxGraph {
             MetricValue::MultiOp(ops) => {
                 let op = operation.ok_or_else(|| pyo3::exceptions::PyValueError::new_err(
                     format!("Metric '{}' on module '{}' requires an operation", metric, module)))?;
-                let s = ops.get(op).ok_or_else(|| pyo3::exceptions::PyValueError::new_err(
-                    format!("Operation '{}' not found in metric '{}' on module '{}'",
-                            op, metric, module)))?;
+                let s = ops.get(op).ok_or_else(|| {
+                    let msg = format!(
+                        "Invalid operation <{}> for metric <{}> in module <{}>; legal values: {:?}.",
+                        op, metric, module, ops.keys().collect::<Vec<_>>());
+                    error!("{}", msg);
+                    pyo3::exceptions::PyValueError::new_err(msg)
+                })?;
                 result.set_item("value", s.value)?;
                 result.set_item("unit", &s.unit)?;
             }
@@ -301,14 +309,20 @@ impl ArchxGraph {
             "event argument is required"))?;
 
         let event_idx = self.inner.get_index(event)
-            .ok_or_else(|| pyo3::exceptions::PyValueError::new_err(
-                format!("Event '{}' not found", event)))?;
+            .ok_or_else(|| {
+                let msg = format!("Invalid event <{}>.", event);
+                error!("{}", msg);
+                pyo3::exceptions::PyValueError::new_err(msg)
+            })?;
 
         let workload_idx = match workload {
             Some(w) if w != event => Some(
                 self.inner.get_index(w)
-                    .ok_or_else(|| pyo3::exceptions::PyValueError::new_err(
-                        format!("Workload '{}' not found", w)))?
+                    .ok_or_else(|| {
+                        let msg = format!("Invalid workload <{}>.", w);
+                        error!("{}", msg);
+                        pyo3::exceptions::PyValueError::new_err(msg)
+                    })?
             ),
             _ => None,
         };
@@ -317,8 +331,9 @@ impl ArchxGraph {
         // the workload (otherwise the query is ill-posed; do not silently return 0).
         if let Some(w_idx) = workload_idx {
             if crate::paths::all_paths(&self.inner.graph, w_idx, event_idx).is_empty() {
-                return Err(pyo3::exceptions::PyValueError::new_err(
-                    format!("Invalid event '{}' in workload '{}'", event, workload.unwrap())));
+                let msg = format!("Invalid event <{}> in workload <{}>.", event, workload.unwrap());
+                error!("{}", msg);
+                return Err(pyo3::exceptions::PyValueError::new_err(msg));
             }
         }
 
@@ -382,9 +397,11 @@ impl ArchxGraph {
                         // Mirrors Python L280: with no workload, a leaf event must be a
                         // single-operation module (no operation is specified to disambiguate).
                         if is_leaf && is_multi_op {
-                            return Err(pyo3::exceptions::PyValueError::new_err(format!(
-                                "Invalid module '{}' for aggregation 'summation'; this aggregation does not support multi-operation module",
-                                event)));
+                            let msg = format!(
+                                "Invalid module <{}> for aggregation <summation>; this aggregation does not support multi-operation module.",
+                                event);
+                            error!("{}", msg);
+                            return Err(pyo3::exceptions::PyValueError::new_err(msg));
                         }
                         aggregate_summation(&mut self.inner.graph, event_idx, metric)
                             .map_err(pyo3::exceptions::PyValueError::new_err)?;
@@ -399,9 +416,11 @@ impl ArchxGraph {
             }
             "specified" => {
                 if self.inner.is_leaf(event_idx) {
-                    return Err(pyo3::exceptions::PyValueError::new_err(
-                        format!("'specified' aggregation requires an event node, not a module ('{}')",
-                                event)));
+                    let msg = format!(
+                        "Invalid module <{}> for aggregation <specified>; this aggregation requires an event.",
+                        event);
+                    error!("{}", msg);
+                    return Err(pyo3::exceptions::PyValueError::new_err(msg));
                 }
                 let total_count = match workload_idx {
                     Some(w_idx) => compute_path_count(
@@ -458,8 +477,9 @@ impl ArchxGraph {
             .collect();
 
         if tag_nodes.is_empty() {
-            return Err(pyo3::exceptions::PyValueError::new_err(
-                format!("No modules found with tag '{}'", tag)));
+            let msg = format!("Invalid tag <{}>.", tag);
+            error!("{}", msg);
+            return Err(pyo3::exceptions::PyValueError::new_err(msg));
         }
 
         let mut total_value = 0.0;
@@ -505,15 +525,22 @@ impl ArchxGraph {
             }
             Some(w) => {
                 let w_idx = self.inner.get_index(w)
-                    .ok_or_else(|| pyo3::exceptions::PyValueError::new_err(
-                        format!("Workload '{}' not found", w)))?;
+                    .ok_or_else(|| {
+                        let msg = format!("Invalid workload <{}>.", w);
+                        error!("{}", msg);
+                        pyo3::exceptions::PyValueError::new_err(msg)
+                    })?;
                 let e_idx = self.inner.get_index(event)
-                    .ok_or_else(|| pyo3::exceptions::PyValueError::new_err(
-                        format!("Event '{}' not found", event)))?;
+                    .ok_or_else(|| {
+                        let msg = format!("Invalid event <{}>.", event);
+                        error!("{}", msg);
+                        pyo3::exceptions::PyValueError::new_err(msg)
+                    })?;
                 // Mirrors Python's path-existence assertion: event must be reachable.
                 if crate::paths::all_paths(&self.inner.graph, w_idx, e_idx).is_empty() {
-                    return Err(pyo3::exceptions::PyValueError::new_err(
-                        format!("Invalid event '{}' in workload '{}'", event, w)));
+                    let msg = format!("Invalid event <{}> in workload <{}>.", event, w);
+                    error!("{}", msg);
+                    return Err(pyo3::exceptions::PyValueError::new_err(msg));
                 }
                 let total = aggregate_event_count(&self.inner.graph, w_idx, e_idx);
                 debug!("  Total value (<{}> -> <{}>) = <{}>.", w, event, fmt_py(total));
