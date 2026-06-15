@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "archx"
-version = "2026.04.10"
+version = "2026.06.15"
 authors = [
   { name="Di Wu", email="di.wu@ucf.edu" },
   { name="Daniel Price", email="daniel.price@ucf.edu" },
