@@ -10,7 +10,7 @@ mod aggregate;
 mod paths;
 
 use graph::ArchxGraphInner;
-use metric::{MetricValue, SingleMetric};
+use metric::{MetricValue, SingleMetric, fmt_py};
 use aggregate::{
     aggregate_module, aggregate_summation, aggregate_summation_multiop,
     aggregate_specified, compute_path_count, aggregate_event_count,
@@ -346,8 +346,8 @@ impl ArchxGraph {
                 let v = aggregate_module(&self.inner.graph, event_idx, event, metric, &mut evaluated)
                     .map_err(pyo3::exceptions::PyValueError::new_err)?;
                 match workload {
-                    Some(w) => debug!("  Total value (<{}> -> <{}>) = <{}> <{}>.", w, event, v, metric_unit),
-                    None => debug!("  Total value (<{}>) = <{}> <{}>.", event, v, metric_unit),
+                    Some(w) => debug!("  Total value (<{}> -> <{}>) = <{}> <{}>.", w, event, fmt_py(v), metric_unit),
+                    None => debug!("  Total value (<{}>) = <{}> <{}>.", event, fmt_py(v), metric_unit),
                 }
                 v
             }
@@ -364,7 +364,7 @@ impl ArchxGraph {
                         if is_leaf && is_multi_op {
                             let v = aggregate_summation_multiop(
                                 &self.inner.graph, w_idx, event_idx, metric);
-                            debug!("  Total value (<{}> -> <{}>) = <{}> <{}>.", w, event, v, metric_unit);
+                            debug!("  Total value (<{}> -> <{}>) = <{}> <{}>.", w, event, fmt_py(v), metric_unit);
                             v
                         } else {
                             let total_count = compute_path_count(
@@ -374,7 +374,7 @@ impl ArchxGraph {
                             let pre = self.inner.graph[event_idx].metrics[metric].as_single().value;
                             let v = pre * total_count;
                             debug!("  Total value (<{}> -> <{}>) = <{}> <{}> = single value <{}> * count <{}>.",
-                                   w, event, v, metric_unit, pre, total_count);
+                                   w, event, fmt_py(v), metric_unit, fmt_py(pre), fmt_py(total_count));
                             v
                         }
                     }
@@ -390,8 +390,8 @@ impl ArchxGraph {
                             .map_err(pyo3::exceptions::PyValueError::new_err)?;
                         let v = self.inner.graph[event_idx].metrics[metric].as_single().value;
                         match workload {
-                            Some(w) => debug!("  Total value (<{}> -> <{}>) = <{}> <{}>.", w, event, v, metric_unit),
-                            None => debug!("  Total value (<{}>) = <{}> <{}>.", event, v, metric_unit),
+                            Some(w) => debug!("  Total value (<{}> -> <{}>) = <{}> <{}>.", w, event, fmt_py(v), metric_unit),
+                            None => debug!("  Total value (<{}>) = <{}> <{}>.", event, fmt_py(v), metric_unit),
                         }
                         v
                     }
@@ -414,9 +414,9 @@ impl ArchxGraph {
                 let v = pre * total_count;
                 match workload {
                     None => debug!("  Total value (<{}>) = <{}> <{}> = single value <{}>.",
-                                   event, v, metric_unit, pre),
+                                   event, fmt_py(v), metric_unit, fmt_py(pre)),
                     Some(w) => debug!("  Total value (<{}> -> <{}>) = <{}> <{}> = single value <{}> * count <{}>.",
-                                      w, event, v, metric_unit, pre, total_count),
+                                      w, event, fmt_py(v), metric_unit, fmt_py(pre), fmt_py(total_count)),
                 }
                 v
             }
@@ -472,9 +472,9 @@ impl ArchxGraph {
             let d: &PyDict = res.downcast(py)?;
             let v: f64 = d.get_item("value").unwrap().unwrap().extract()?;
             total_value += v;
-            debug!("  Total value (module <{}>) = <{}> <{}>.", module_name, v, metric_unit);
+            debug!("  Total value (module <{}>) = <{}> <{}>.", module_name, fmt_py(v), metric_unit);
         }
-        debug!("  Total value (tag <{}>) = <{}> <{}>.", tag, total_value, metric_unit);
+        debug!("  Total value (tag <{}>) = <{}> <{}>.", tag, fmt_py(total_value), metric_unit);
 
         let result = PyDict::new(py);
         result.set_item("value", total_value)?;
@@ -496,11 +496,11 @@ impl ArchxGraph {
         // If no workload or workload == event, count is 1.0
         match workload {
             None => {
-                debug!("  Total value (<{}>) = <{}>.", event, 1.0);
+                debug!("  Total value (<{}>) = <{}>.", event, fmt_py(1.0));
                 Ok(1.0)
             }
             Some(w) if w == event => {
-                debug!("  Total value (<{}>) = <{}>.", event, 1.0);
+                debug!("  Total value (<{}>) = <{}>.", event, fmt_py(1.0));
                 Ok(1.0)
             }
             Some(w) => {
@@ -516,7 +516,7 @@ impl ArchxGraph {
                         format!("Invalid event '{}' in workload '{}'", event, w)));
                 }
                 let total = aggregate_event_count(&self.inner.graph, w_idx, e_idx);
-                debug!("  Total value (<{}> -> <{}>) = <{}>.", w, event, total);
+                debug!("  Total value (<{}> -> <{}>) = <{}>.", w, event, fmt_py(total));
                 Ok(total)
             }
         }

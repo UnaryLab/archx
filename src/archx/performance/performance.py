@@ -93,7 +93,7 @@ def simulate_performance_one_event(
         if key_aggregation in subevent_cfg:
             agg = subevent_cfg[key_aggregation].lower()
             assert agg in legal_specified, \
-                logger.error(f'  Invalid aggregation <{agg}> in performance model of '
+                logger.error(f'  Invalid aggregation <{subevent_cfg[key_aggregation]}> in the performance model of '
                              f'event <{event_name}> at <{performance_path}>; '
                              f'legal values: {legal_specified}.')
             event_graph.set_edge_aggregation(event_name, target_name, agg)
@@ -119,7 +119,7 @@ def simulate_performance_one_event(
         if key_factor in subevent_cfg:
             factor = subevent_cfg[key_factor]
             assert isinstance(factor, dict), \
-                logger.error(f'  Invalid factor between event <{event_name}> '
+                logger.error(f'  Invalid factor <{factor}> between event <{event_name}> '
                              f'and module <{target_name}>; factor should be a dict.')
             event_graph.set_edge_factor(event_name, target_name,
                                         {k: float(v) for k, v in factor.items()})

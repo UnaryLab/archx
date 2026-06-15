@@ -222,8 +222,8 @@ def aggregate_event_count(
     Delegates to Rust for performance.
     """
     result = event_graph.aggregate_event_count(workload=workload, event=event)
-    if workload is None or workload == event:
-        logger.success(f'Aggregate event count for event <{event}>.')
-    else:
+    if workload is not None:
         logger.success(f'Aggregate event count for event <{event}> in workload <{workload}>.')
+    else:
+        logger.success(f'Aggregate event count for event <{event}>.')
     return result

@@ -5,7 +5,7 @@ use petgraph::Direction;
 use log::{debug, info};
 
 use crate::graph::{NodeData, EdgeData};
-use crate::metric::MetricValue;
+use crate::metric::{MetricValue, fmt_py};
 use crate::paths::{all_paths, topological_sort_subgraph};
 
 // ---------------------------------------------------------------------------
@@ -72,12 +72,12 @@ pub fn compute_path_count(
             }
             let (s, t) = graph.edge_endpoints(eidx).unwrap();
             debug!("  Path (<{}> -> <{}>) updates event count to <{}> and event factor to <{}>.",
-                   graph[s].name, graph[t].name, path_count, path_factor);
+                   graph[s].name, graph[t].name, fmt_py(path_count), fmt_py(path_factor));
         }
         let delta = path_count * path_factor;
         total += delta;
         debug!("  Total event count (<{}> -> <{}>) is increased by <{}> = count <{}> * factor <{}>.",
-               graph[workload_idx].name, graph[event_idx].name, delta, path_count, path_factor);
+               graph[workload_idx].name, graph[event_idx].name, fmt_py(delta), fmt_py(path_count), fmt_py(path_factor));
     }
     total
 }
@@ -114,7 +114,7 @@ pub fn aggregate_module(
         info!("Aggregate metric <{}> for module <{}> in event <{}>.", metric, node.name, top_event);
         let total = s.value * node.instance;
         debug!("  Total value (<{}> -> <{}>) = <{}> <{}> = single value <{}> * instance <{}>.",
-               top_event, node.name, total, s.unit, s.value, node.instance);
+               top_event, node.name, fmt_py(total), s.unit, fmt_py(s.value), fmt_py(node.instance));
         Ok(total)
     } else {
         let mut total = 0.0;
@@ -170,8 +170,8 @@ pub fn aggregate_summation(
             // metric_unit() is inlined into the args so the String clone happens
             // only when DEBUG is actually enabled.
             debug!("  Total value (<{}> -> <{}>) = <{}> <{}> = single value <{}> * count <{}> * factor <{}>.",
-                   graph[src].name, graph[v].name, contrib, metric_unit(graph, src, metric),
-                   child_val, count, factor);
+                   graph[src].name, graph[v].name, fmt_py(contrib), metric_unit(graph, src, metric),
+                   fmt_py(child_val), fmt_py(count), fmt_py(factor));
         }
     }
     Ok(())
@@ -203,7 +203,7 @@ pub fn aggregate_summation_multiop(
             }
             let (s, t) = graph.edge_endpoints(eidx).unwrap();
             debug!("  Path (<{}> -> <{}>) updates event count to <{}> and event factor to <{}>.",
-                   graph[s].name, graph[t].name, path_count, path_factor);
+                   graph[s].name, graph[t].name, fmt_py(path_count), fmt_py(path_factor));
         }
 
         // Operation is on the last edge (parent → module)
@@ -220,7 +220,7 @@ pub fn aggregate_summation_multiop(
             let delta = path_count * path_factor;
             *op_count.entry(op.clone()).or_insert(0.0) += delta;
             debug!("  Total event count (<{}> : <{}>) is increased by <{}> = count <{}> * factor <{}>.",
-                   graph[event_idx].name, op, delta, path_count, path_factor);
+                   graph[event_idx].name, op, fmt_py(delta), fmt_py(path_count), fmt_py(path_factor));
         }
     }
 
@@ -230,7 +230,7 @@ pub fn aggregate_summation_multiop(
         let contrib = val * cnt;
         total += contrib;
         debug!("  Total value (<{}> : <{}>) = <{}> <{}> = single value <{}> * count <{}>.",
-               graph[event_idx].name, op, contrib, metric_unit(graph, event_idx, metric), val, cnt);
+               graph[event_idx].name, op, fmt_py(contrib), metric_unit(graph, event_idx, metric), fmt_py(val), fmt_py(cnt));
     }
     total
 }
@@ -254,11 +254,11 @@ pub fn aggregate_event_count(
             path_count *= graph[eidx].count;
             let (s, t) = graph.edge_endpoints(eidx).unwrap();
             debug!("  Path (<{}> -> <{}>) updates event count to <{}>.",
-                   graph[s].name, graph[t].name, path_count);
+                   graph[s].name, graph[t].name, fmt_py(path_count));
         }
         total += path_count;
         debug!("  Total event count (<{}> -> <{}>) is increased by <{}>.",
-               graph[workload_idx].name, graph[event_idx].name, path_count);
+               graph[workload_idx].name, graph[event_idx].name, fmt_py(path_count));
     }
     total
 }
@@ -320,17 +320,17 @@ pub fn aggregate_specified(
                 };
                 let contribution = child_val * count * factor;
                 debug!("  Total value (<{}>) = <{}> <{}> = single value <{}> * count <{}> * factor <{}>.",
-                       graph[*tgt].name, contribution, metric_unit(graph, *tgt, metric),
-                       child_val, count, factor);
+                       graph[*tgt].name, fmt_py(contribution), metric_unit(graph, *tgt, metric),
+                       fmt_py(child_val), fmt_py(*count), fmt_py(*factor));
                 if agg == "parallel" {
                     if contribution > parallel_max {
                         debug!("  Update parallel maximum metric value to <{}>, based on event <{}>.",
-                               contribution, graph[*tgt].name);
+                               fmt_py(contribution), graph[*tgt].name);
                         parallel_max = contribution;
                     }
                 } else {
                     debug!("  Update sequential accumulated metric value by <{}>, based on event <{}>.",
-                           contribution, graph[*tgt].name);
+                           fmt_py(contribution), graph[*tgt].name);
                     sequential_acc += contribution;
                 }
             }
@@ -359,7 +359,7 @@ pub fn aggregate_specified(
         if let Some(m) = graph[v].metrics.get_mut(metric) {
             m.as_single_mut().value = result;
         }
-        debug!("  Total value (<{}>) = <{}> <{}>.", graph[v].name, result, metric_unit(graph, v, metric));
+        debug!("  Total value (<{}>) = <{}> <{}>.", graph[v].name, fmt_py(result), metric_unit(graph, v, metric));
     }
     Ok(())
 }
