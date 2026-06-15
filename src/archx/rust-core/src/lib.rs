@@ -61,6 +61,15 @@ impl ArchxGraph {
         self.inner.leaf_names()
     }
 
+    /// Leaf module names carrying `tag`, in leaf insertion order. Lets the Python
+    /// tag-aggregation wrapper drive the per-module loop itself (matching main).
+    fn get_tag_modules(&self, tag: &str) -> Vec<String> {
+        self.inner.leaf_indices().iter()
+            .filter(|&&idx| self.inner.graph[idx].tags.iter().any(|t| t == tag))
+            .map(|&idx| self.inner.graph[idx].name.clone())
+            .collect()
+    }
+
     fn is_leaf(&self, name: &str) -> PyResult<bool> {
         let idx = self.inner.get_index(name)
             .ok_or_else(|| pyo3::exceptions::PyValueError::new_err(
@@ -277,15 +286,20 @@ impl ArchxGraph {
                 result.set_item("unit", &s.unit)?;
             }
             MetricValue::MultiOp(ops) => {
-                let op = operation.ok_or_else(|| pyo3::exceptions::PyValueError::new_err(
-                    format!("Metric '{}' on module '{}' requires an operation", metric, module)))?;
-                let s = ops.get(op).ok_or_else(|| {
-                    let msg = format!(
-                        "Invalid operation <{}> for metric <{}> in module <{}>; legal values: {:?}.",
-                        op, metric, module, ops.keys().collect::<Vec<_>>());
-                    error!("{}", msg);
-                    pyo3::exceptions::PyValueError::new_err(msg)
-                })?;
+                // Mirror Python exactly: a missing operation renders as <None>, and
+                // legal values use Python list syntax with single quotes.
+                let s = match operation.and_then(|op| ops.get(op)) {
+                    Some(s) => s,
+                    None => {
+                        let legal = ops.keys().map(|k| format!("'{}'", k))
+                            .collect::<Vec<_>>().join(", ");
+                        let msg = format!(
+                            "Invalid operation <{}> for metric <{}> in module <{}>; legal values: [{}].",
+                            operation.unwrap_or("None"), metric, module, legal);
+                        error!("{}", msg);
+                        return Err(pyo3::exceptions::PyValueError::new_err(msg));
+                    }
+                };
                 result.set_item("value", s.value)?;
                 result.set_item("unit", &s.unit)?;
             }
@@ -344,8 +358,13 @@ impl ArchxGraph {
         for idx in non_leaf_ids {
             if let Some(m) = self.inner.graph[idx].metrics.get_mut(metric) {
                 if m.is_single() {
-                    m.as_single_mut().value = 0.0;
-                    debug!("  Reset metric <{}> in event <{}> to 0.", metric, self.inner.graph[idx].name);
+                    let s = m.as_single_mut();
+                    let was_nonzero = s.value != 0.0;
+                    s.value = 0.0;
+                    // match Python: only trace the reset when the value was nonzero
+                    if was_nonzero {
+                        debug!("  Reset metric <{}> in event <{}> to 0.", metric, self.inner.graph[idx].name);
+                    }
                 }
             }
         }
@@ -452,56 +471,9 @@ impl ArchxGraph {
         Ok(result.into())
     }
 
-    // ---- aggregate_tag_metric ----------------------------------------------
-
-    #[pyo3(signature = (metric, metric_aggregation, metric_unit, workload=None, tag=None))]
-    fn aggregate_tag_metric(
-        &mut self,
-        py: Python<'_>,
-        metric: &str,
-        metric_aggregation: &str,
-        metric_unit: &str,
-        workload: Option<&str>,
-        tag: Option<&str>,
-    ) -> PyResult<PyObject> {
-        let tag = tag.ok_or_else(|| pyo3::exceptions::PyValueError::new_err(
-            "tag argument is required"))?;
-        if metric_aggregation == "specified" {
-            return Err(pyo3::exceptions::PyValueError::new_err(
-                "'specified' aggregation is not supported for tag queries"));
-        }
-
-        // Find all leaf nodes carrying this tag
-        let tag_nodes: Vec<String> = self.inner.leaf_indices().iter()
-            .filter(|&&idx| self.inner.graph[idx].tags.contains(&tag.to_string()))
-            .map(|&idx| self.inner.graph[idx].name.clone())
-            .collect();
-
-        if tag_nodes.is_empty() {
-            let msg = format!("Invalid tag <{}>.", tag);
-            error!("{}", msg);
-            return Err(pyo3::exceptions::PyValueError::new_err(msg));
-        }
-
-        let mut total_value = 0.0;
-        for module_name in tag_nodes {
-            // aggregate_event_metric resets non-leaf values and recomputes each time
-            let res = self.aggregate_event_metric(
-                py, metric, metric_aggregation, metric_unit,
-                workload, Some(&module_name),
-            )?;
-            let d: &PyDict = res.downcast(py)?;
-            let v: f64 = d.get_item("value").unwrap().unwrap().extract()?;
-            total_value += v;
-            debug!("  Total value (module <{}>) = <{}> <{}>.", module_name, fmt_py(v), metric_unit);
-        }
-        debug!("  Total value (tag <{}>) = <{}> <{}>.", tag, fmt_py(total_value), metric_unit);
-
-        let result = PyDict::new(py);
-        result.set_item("value", total_value)?;
-        result.set_item("unit", metric_unit)?;
-        Ok(result.into())
-    }
+    // Tag aggregation is driven from the Python wrapper (it loops over
+    // get_tag_modules() calling aggregate_event_metric per module) so the
+    // per-module SUCCESS trace is emitted by Python, matching the main engine.
 
     // ---- aggregate_event_count -----------------------------------------------
 

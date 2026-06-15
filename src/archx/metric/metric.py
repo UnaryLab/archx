@@ -197,20 +197,33 @@ def aggregate_tag_metric(
         logger.error(f'Invalid aggregation <{cfg[key_aggregation]}> for tag <{tag}>; '
                      f'legal values: {legal_aggregation_tag}.')
 
-    result = event_graph.aggregate_tag_metric(
-        metric,
-        cfg[key_aggregation],
-        cfg[key_unit],
-        workload,
-        tag,
-    )
+    # Drive the per-module loop in Python (rather than in Rust) so each module's
+    # aggregate_event_metric emits its own SUCCESS trace, matching the original
+    # pure-Python engine. Rust only supplies the tag→module lookup.
+    tag_nodes = event_graph.get_tag_modules(tag)
+    assert len(tag_nodes) > 0, logger.error(f'Invalid tag <{tag}>.')
+
+    tag_metric = OrderedDict({key_value: 0.0, key_unit: cfg[key_unit]})
+    for module_name in tag_nodes:
+        module_metric = aggregate_event_metric(
+            event_graph=event_graph, metric_dict=metric_dict, metric=metric,
+            workload=workload, event=module_name)
+        assert tag_metric[key_unit] == module_metric[key_unit], \
+            logger.error(f'Inconsistent unit in metric <{metric}> for module '
+                         f'<{module_name}> with tag <{tag}>.')
+        tag_metric[key_value] += module_metric[key_value]
+        logger.debug(f'  Total value (module <{module_name}>) = '
+                     f'<{module_metric[key_value]}> <{module_metric[key_unit]}>.')
+
+    logger.debug(f'  Total value (tag <{tag}>) = '
+                 f'<{tag_metric[key_value]}> <{tag_metric[key_unit]}>.')
 
     if workload is None:
         logger.success(f'Aggregate metric <{metric}> for tag <{tag}>.')
     else:
         logger.success(f'Aggregate metric <{metric}> for tag <{tag}> '
                        f'in workload <{workload}>.')
-    return OrderedDict(result)
+    return tag_metric
 
 
 def aggregate_event_count(
