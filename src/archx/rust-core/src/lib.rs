@@ -378,7 +378,8 @@ impl ArchxGraph {
                         let w = workload.unwrap();
                         if is_leaf && is_multi_op {
                             let v = aggregate_summation_multiop(
-                                &self.inner.graph, w_idx, event_idx, metric);
+                                &self.inner.graph, w_idx, event_idx, metric)
+                                .map_err(pyo3::exceptions::PyValueError::new_err)?;
                             debug!("  Total value (<{}> -> <{}>) = <{}> <{}>.", w, event, fmt_py(v), metric_unit);
                             v
                         } else {

@@ -194,7 +194,7 @@ pub fn aggregate_summation_multiop(
     workload_idx: NodeIndex,
     event_idx: NodeIndex,
     metric: &str,
-) -> f64 {
+) -> Result<f64, String> {
     let paths = all_paths(graph, workload_idx, event_idx);
 
     // op → (metric_value, accumulated_count). `op_order` preserves first-seen order
@@ -219,14 +219,22 @@ pub fn aggregate_summation_multiop(
 
         // Operation is on the last edge (parent → module)
         if let Some(&edge_idx) = path.last() {
-            let op = graph[edge_idx].operation.get(metric)
-                .cloned()
-                .unwrap_or_default()
-                .to_lowercase();
-
-            // Record metric value for this op
             let node = &graph[event_idx];
-            let mval = node.metrics[metric].get_op_value(&op).unwrap_or(0.0);
+            // A multi-operation module requires the edge to name a valid operation
+            // for this metric. Reject a missing/invalid operation (rather than
+            // silently scoring 0) to match the pure-Python engine, which errors.
+            let op = match graph[edge_idx].operation.get(metric) {
+                Some(o) => o.to_lowercase(),
+                None => return Err(format!(
+                    "Missing operation for metric <{}> in multi-operation module <{}>; legal values: {:?}.",
+                    metric, node.name, node.metrics[metric].op_names())),
+            };
+            let mval = match node.metrics[metric].get_op_value(&op) {
+                Some(v) => v,
+                None => return Err(format!(
+                    "Invalid operation <{}> for metric <{}> in module <{}>; legal values: {:?}.",
+                    op, metric, node.name, node.metrics[metric].op_names())),
+            };
             if !op_metric.contains_key(&op) {
                 op_order.push(op.clone());
             }
@@ -247,7 +255,7 @@ pub fn aggregate_summation_multiop(
         debug!("  Total value (<{}> : <{}>) = <{}> <{}> = single value <{}> * count <{}>.",
                graph[event_idx].name, op, fmt_py(contrib), metric_unit(graph, event_idx, metric), fmt_py(val), fmt_py(cnt));
     }
-    total
+    Ok(total)
 }
 
 // ---------------------------------------------------------------------------
