@@ -1,4 +1,4 @@
-import subprocess, os, time, random, copy
+import subprocess, os, time, random, copy, platform
 
 from collections import OrderedDict
 
@@ -52,14 +52,22 @@ def cacti7_run(
     target.close()
 
     run_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'include/cacti7')
-    if not os.path.exists(os.path.join(run_dir, 'cacti')):
-        subprocess.call(['make', 'all'], shell=True, cwd=run_dir)
+
+    # The bundled CACTI binary only runs on the platform it was compiled for,
+    # so binaries are stored per host as 'cacti-<system>-<machine>'
+    # (e.g. cacti-Linux-x86_64, cacti-Darwin-arm64). Pick the one matching this
+    # host; build it from source via 'make' if it is absent.
+    cacti_bin = 'cacti-' + platform.system() + '-' + platform.machine()
+    if not os.path.exists(os.path.join(run_dir, cacti_bin)):
+        logger.info('No CACTI7 binary for <' + cacti_bin + '>; building from source via make.')
+        subprocess.call('make all', shell=True, cwd=run_dir)
         time.sleep(10)
-    
+        os.replace(os.path.join(run_dir, 'cacti'), os.path.join(run_dir, cacti_bin))
+
     tartget_cacti_name = result_file.replace('//', '/').replace('/', '_').split('.')[0] + '_'
     tartget_cacti_name += str(time.time())
 
-    rep_cmd = 'cp ./cacti ./cacti_' + tartget_cacti_name
+    rep_cmd = 'cp ./' + cacti_bin + ' ./cacti_' + tartget_cacti_name
     subprocess.call([rep_cmd], shell=True, cwd=run_dir)
     final_cmd = './cacti_' + tartget_cacti_name + ' -infile ' + target_cfg_file + ' > ' + result_file
     subprocess.call([final_cmd], shell=True, cwd=run_dir)

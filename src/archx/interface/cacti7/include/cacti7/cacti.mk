@@ -11,16 +11,29 @@ endif
 LIBS = 
 INCS = -lm
 
-ifeq ($(TAG),dbg)
-  DBG = -Wall 
-  OPT = -ggdb -g -O0 -DNTHREADS=1  -gstabs+
+# x86-only (-msse2/-mfpmath=sse) and gcc-only (-gstabs+) flags are gated on a
+# real x86_64 host so the build also works on arm64 / clang (e.g. macOS).
+UNAME_M := $(shell uname -m)
+ifeq ($(UNAME_M),x86_64)
+  ARCH_OPT = -msse2 -mfpmath=sse
+  DBG_FMT  = -gstabs+
 else
-  DBG = 
-  OPT = -g  -msse2 -mfpmath=sse -DNTHREADS=$(NTHREADS)
+  ARCH_OPT =
+  DBG_FMT  =
 endif
 
-#CXXFLAGS = -Wall -Wno-unknown-pragmas -Winline $(DBG) $(OPT) 
-CXXFLAGS = -Wno-unknown-pragmas $(DBG) $(OPT) 
+ifeq ($(TAG),dbg)
+  DBG = -Wall
+  OPT = -ggdb -g -O0 -DNTHREADS=1 $(DBG_FMT)
+else
+  DBG =
+  OPT = -g $(ARCH_OPT) -DNTHREADS=$(NTHREADS)
+endif
+
+# -std=gnu++98: this CACTI vintage glues string literals to macros
+# ("."VER_COMMENT_CACTI), which post-C++11 compilers reject.
+#CXXFLAGS = -Wall -Wno-unknown-pragmas -Winline $(DBG) $(OPT)
+CXXFLAGS = -std=gnu++98 -Wno-unknown-pragmas $(DBG) $(OPT)
 CXX = g++ -m64
 CC  = gcc -m64
 
