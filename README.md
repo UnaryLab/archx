@@ -17,12 +17,13 @@ pip install archx
 ```
 
 ### Option 2: source installation (developer mode)
-Editable install from source — live code changes are reflected without reinstalling.
+Editable install from source: live code changes are reflected without reinstalling.
 
 Requires the [Rust toolchain](https://rustup.rs/) to compile the Rust extension via [Maturin](https://www.maturin.rs/):
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-rustc --version  # verify
+source "$HOME/.cargo/env"   # add cargo/rustc to PATH in the current shell
+rustc --version             # verify
 ```
 
 ```bash

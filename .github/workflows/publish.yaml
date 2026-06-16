@@ -17,14 +17,17 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64
+            test: true               # native: runner is x86_64 Linux
           - os: ubuntu-latest
-            target: aarch64
-          - os: macos-latest
-            target: x86_64
+            target: aarch64          # cross-compiled, not runnable on the runner
           - os: macos-latest
             target: aarch64
+            test: true               # native: macos-latest runner is arm64
+          - os: macos-latest
+            target: x86_64           # cross-compiled, not runnable on the runner
           - os: windows-latest
             target: x86_64
+            test: true               # native: runner is x86_64 Windows
     steps:
       - uses: actions/checkout@v4
 
@@ -39,6 +42,17 @@ jobs:
           args: --release --out dist
           sccache: true
           manylinux: auto
+
+      # Verify the freshly built wheel installs and imports the compiled Rust
+      # core before it can reach PyPI. Only runs on natively-runnable targets;
+      # cross-compiled wheels (linux/aarch64, macos/x86_64) can't execute here.
+      - name: Smoke-test the wheel
+        if: ${{ matrix.test }}
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install dist/*.whl
+          python -c "import archx; import archx._core; print('wheel import OK:', archx.__file__)"
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
