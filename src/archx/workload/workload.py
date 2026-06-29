@@ -7,6 +7,7 @@ from archx.utils import read_yaml, get_path, write_yaml
 key_path = 'path'
 key_configuration = 'configuration'
 key_workload = 'workload'
+key_name = 'name'
 
 
 def create_workload_dict(workload_file: str) -> OrderedDict:
@@ -17,20 +18,19 @@ def create_workload_dict(workload_file: str) -> OrderedDict:
     workload_file_full_path = get_path(workload_file)
     workload_dict = read_yaml(workload_file_full_path)[key_workload]
 
-    for workload in workload_dict:
-        if key_path not in workload_dict[workload]:
-            assert key_configuration in workload_dict[workload], logger.info(f'No configuration in workload <{workload}>.')
-        else:
-            # load workload from path
-            new_workload_file = get_path(workload_dict[workload][key_path])
-            workload_dict[workload] = create_workload_dict(new_workload_file)[workload]
+    if key_path not in workload_dict:
+        assert key_name in workload_dict, logger.info(f'No name for workload at file <{workload_file_full_path}>.')
+        assert key_configuration in workload_dict, logger.info(f'No configuration in workload <{workload_dict[key_name]}>.')
+    else:
+        new_workload_file = get_path(workload_dict[key_path])
+        workload_dict = create_workload_dict(new_workload_file)[key_workload]
     
     logger.success(f'Create workload dictionary from <{workload_file_full_path}>.')
-
     return workload_dict
 
 
 def save_workload_dict(workload_dict: OrderedDict, save_path: str) -> None:
+
     """
     Save workload to a checkpoint
     """

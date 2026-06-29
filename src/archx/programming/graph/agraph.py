@@ -5,6 +5,7 @@ import os
 import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk
+from itertools import product
 
 from archx.programming.object.architecture import Architecture
 from archx.programming.object.event import Event
@@ -40,6 +41,33 @@ class AGraph:
         for param in parameters[1:]:
             self.model.Add(first_param == param)
 
+    def direct_constraint_partition(self, a: cp_model.IntVar, b: cp_model.IntVar):
+        """
+        Add a direct constraint where parameter 'b' partitions to length of parameter a. Will partially partition at end if len(b) % len(a) != 0.
+
+        Args:
+            a: IntVar
+            b: IntVar
+        """
+        assert isinstance(a, cp_model.IntVar), "'a' must be a cp_model.IntVar."
+        assert isinstance(b, cp_model.IntVar), "'b' must be a cp_model.IntVar."
+
+        values_a = self.parameter_enumerator.get_values_for_var(a)
+        values_b = self.parameter_enumerator.get_values_for_var(b)
+
+        size_a = len(values_a)
+        size_b = len(values_b)
+
+        allowed_tuples = [
+            (idx % size_a, idx)
+            for idx in range(size_b)
+        ]
+
+        assert len(allowed_tuples) > 0, "No valid combinations found for the given condition."
+
+        # Table constraint handled efficiently in C++ by OR-Tools
+        self.model.AddAllowedAssignments([a, b], allowed_tuples)
+
     def direct_constraint_conditional(self):
         raise NotImplementedError("Direct conditional constraints are not yet implemented.")
 
@@ -49,7 +77,7 @@ class AGraph:
     def anti_constraint_conditional(self):
         raise NotImplementedError("Anti conditional constraints are not yet implemented.")
     
-    def conditional_constraint(self, a: cp_model.IntVar, b: cp_model.IntVar, condition):
+    def conditional_constraint(self, condition, **kwargs):
         """
         Add a constraint where parameter combinations must satisfy a condition on actual values.
         
@@ -58,7 +86,8 @@ class AGraph:
             b: IntVar
             condition: Lambda that takes actual values and returns bool
                        e.g., lambda a, b: a[0] == b[0]
-        
+            c: IntVar (optional)
+
         Example:
             fifo_instance values: [[128], [256]]           (indices 0, 1)
             mux_instance values:  [[128,128], [256,256], [512,512]]  (indices 0, 1, 2)
@@ -67,71 +96,31 @@ class AGraph:
             Valid pairs: (0,0) because 128==128, (1,1) because 256==256
             Invalid: (0,1), (0,2), (1,0), (1,2)
         """
-        assert isinstance(a, cp_model.IntVar), "'a' must be a cp_model.IntVar."
-        assert isinstance(b, cp_model.IntVar), "'b' must be a cp_model.IntVar."
+        assert all(
+            isinstance(value, cp_model.IntVar)
+            for value in kwargs.values()
+        ), "All parameters must be cp_model.IntVar."
+        
         assert callable(condition), "'condition' must be a callable (lambda or function)."
         
         # Get the actual values from the enumerator
-        values_a = self.parameter_enumerator.get_values_for_var(a)
-        values_b = self.parameter_enumerator.get_values_for_var(b)
+        value_list = [ self.parameter_enumerator.get_values_for_var(var) for var in kwargs.values()]
+        item_list = list(kwargs.values())
         
         # Use list comprehension (faster than explicit loops)
         # Pre-compute valid (index_a, index_b) pairs where condition is True
+        
+
         allowed_tuples = [
-            (idx_a, idx_b)
-            for idx_a, val_a in enumerate(values_a)
-            for idx_b, val_b in enumerate(values_b)
-            if condition(val_a, val_b)
+            indices
+            for indices in product(*(range(len(v)) for v in value_list))
+            if condition(*(v[i] for v, i in zip(value_list, indices)))
         ]
         
         assert len(allowed_tuples) > 0, "No valid combinations found for the given condition."
         
         # Table constraint handled efficiently in C++ by OR-Tools
-        self.model.AddAllowedAssignments([a, b], allowed_tuples)
-
-    def conditional_constraint_equation(self, a: cp_model.IntVar, b: cp_model.IntVar, c: cp_model.IntVar, condition):
-        """
-        Add a constraint where three parameter combinations must satisfy a condition on actual values.
-        
-        Args:
-            a: IntVar
-            b: IntVar
-            c: IntVar
-            condition: Lambda that takes actual values and returns bool
-                       e.g., lambda a, b, c: a * b == c
-        
-        Example:
-            sram_width values: [256, 512, 1024]     (indices 0, 1, 2)
-            sram_depth values: [128, 256, 512]     (indices 0, 1, 2)
-            memory_size values: [32768, 65536]     (indices 0, 1)
-            condition: lambda a, b, c: a * b * bank == c
-            
-            Valid triples: only those where width * depth * bank == memory_size
-        """
-        assert isinstance(a, cp_model.IntVar), "'a' must be a cp_model.IntVar."
-        assert isinstance(b, cp_model.IntVar), "'b' must be a cp_model.IntVar."
-        assert isinstance(c, cp_model.IntVar), "'c' must be a cp_model.IntVar."
-        assert callable(condition), "'condition' must be a callable (lambda or function)."
-        
-        # Get the actual values from the enumerator
-        values_a = self.parameter_enumerator.get_values_for_var(a)
-        values_b = self.parameter_enumerator.get_values_for_var(b)
-        values_c = self.parameter_enumerator.get_values_for_var(c)
-        
-        # Pre-compute valid (index_a, index_b, index_c) triples where condition is True
-        allowed_tuples = [
-            (idx_a, idx_b, idx_c)
-            for idx_a, val_a in enumerate(values_a)
-            for idx_b, val_b in enumerate(values_b)
-            for idx_c, val_c in enumerate(values_c)
-            if condition(val_a, val_b, val_c)
-        ]
-        
-        assert len(allowed_tuples) > 0, "No valid combinations found for the given condition."
-        
-        # Table constraint handled efficiently in C++ by OR-Tools
-        self.model.AddAllowedAssignments([a, b, c], allowed_tuples)
-
+        self.model.AddAllowedAssignments(item_list, allowed_tuples)
         
     def generate(self):
         solutions = self.solve()
@@ -262,15 +251,50 @@ class AGraph:
         os.makedirs(self.path + '/metric', exist_ok=True)
         os.makedirs(self.path + '/runs', exist_ok=True)
 
+        def _freeze_value(value):
+            if isinstance(value, dict):
+                return tuple((k, _freeze_value(v)) for k, v in sorted(value.items()))
+            if isinstance(value, list):
+                return tuple(_freeze_value(v) for v in value)
+            return value
+
+        def _split_workload_config(config):
+            grouped = {}
+            for var_name, value in config.items():
+                param_info = self.parameter_enumerator.get_parameters_from_name(var_name)
+                workload_name = param_info['name']
+                grouped.setdefault(workload_name, {})[var_name] = value
+            return grouped
+
         # Save unique architecture configs
+        arch_paths = {}
         for i, architecture_config in enumerate(solutions['architecture']):
             architecture_dict = self.architecture.to_yaml(architecture_config)
-            write_yaml(os.path.join(self.path, f'architecture/config_{i}.architecture.yaml'), architecture_dict)
+            arch_path = os.path.abspath(os.path.join(self.path, f'architecture/config_{i}.architecture.yaml'))
+            write_yaml(arch_path, architecture_dict)
+            arch_paths[i] = arch_path
 
-        # Save unique workload configs
-        for i, workload_config in enumerate(solutions['workload']):
-            workload_dict = self.workload.to_yaml(workload_config)
-            write_yaml(os.path.join(self.path, f'workload/config_{i}.workload.yaml'), workload_dict)
+        # Save unique workload configs per workload name so different workloads do not share one file
+        workload_paths = {}
+        workload_seen = {}
+        for configuration in solutions['configurations']:
+            workload_config = solutions['workload'][configuration['work_idx']]
+            for workload_name, workload_values in _split_workload_config(workload_config).items():
+                workload_key = (
+                    workload_name,
+                    tuple((key, _freeze_value(workload_values[key])) for key in sorted(workload_values))
+                )
+
+                if workload_key not in workload_seen:
+                    work_idx = len(workload_seen)
+                    workload_seen[workload_key] = work_idx
+
+                    workload_dict = self.workload.to_yaml(workload_values)
+                    workload_dir = os.path.join(self.path, 'workload', workload_name)
+                    os.makedirs(workload_dir, exist_ok=True)
+                    workload_path = os.path.abspath(os.path.join(workload_dir, f'config_{work_idx}.workload.yaml'))
+                    write_yaml(workload_path, workload_dict)
+                    workload_paths[workload_key] = workload_path
 
         # Save event and metric (single files)
         event_dict = self.event.to_yaml()
@@ -283,25 +307,42 @@ class AGraph:
 
         # Build CSV with all configuration mappings
         df = pd.DataFrame()
+        row_seen = set()
         
-        for i, config in enumerate(solutions['configurations']):
-            arch_path = os.path.abspath(os.path.join(self.path, f'architecture/config_{config["arch_idx"]}.architecture.yaml'))
-            work_path = os.path.abspath(os.path.join(self.path, f'workload/config_{config["work_idx"]}.workload.yaml'))
-            run_path = os.path.abspath(os.path.join(self.path, f'runs/config_{i}'))
-            checkpoint_path = os.path.abspath(os.path.join(self.path, f'runs/config_{i}/checkpoint.gt'))
+        for config in solutions['configurations']:
+            arch_idx = config['arch_idx']
+            work_idx = config['work_idx']
+            workload_config = solutions['workload'][work_idx]
 
-            row = {
-                'config_id': i,
-                'arch_config': config['arch_idx'],
-                'arch_path': arch_path,
-                'work_config': config['work_idx'],
-                'work_path': work_path,
-                'event_path': event_path,
-                'metric_path': metric_path,
-                'run_path': run_path,
-                'checkpoint_path': checkpoint_path
-            }
-            df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
+            for workload_name, workload_values in _split_workload_config(workload_config).items():
+                workload_key = (
+                    workload_name,
+                    tuple((key, _freeze_value(workload_values[key])) for key in sorted(workload_values))
+                )
+                mapped_work_idx = workload_seen[workload_key]
+                row_key = (arch_idx, mapped_work_idx)
+                if row_key in row_seen:
+                    continue
+                row_seen.add(row_key)
+
+                arch_path = arch_paths[arch_idx]
+                work_path = workload_paths[workload_key]
+                run_path = os.path.abspath(os.path.join(self.path, 'runs', workload_name, f'arch_{arch_idx}', f'config_{mapped_work_idx}'))
+                checkpoint_path = os.path.abspath(os.path.join(run_path, 'checkpoint.json'))
+
+                row = {
+                    'config_id': len(df),
+                    'arch_config': arch_idx,
+                    'arch_path': arch_path,
+                    'workload_name': workload_name,
+                    'work_config': mapped_work_idx,
+                    'work_path': work_path,
+                    'event_path': event_path,
+                    'metric_path': metric_path,
+                    'run_path': run_path,
+                    'checkpoint_path': checkpoint_path
+                }
+                df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
 
         # Save CSV
         csv_path = os.path.join(self.path, 'configurations.csv')
