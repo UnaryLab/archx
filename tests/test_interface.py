@@ -1,5 +1,6 @@
 # following two lines are used in testing
 import sys, os, shutil
+import importlib
 
 from loguru import logger
 
@@ -18,6 +19,36 @@ def test_query_interface_csv_cmos():
     }
     output = query_interface(module, query)
     logger.info('test_query_interface_csv_cmos: ', output)
+
+
+def test_query_interface_output_cache(monkeypatch):
+    interface_module = importlib.import_module('archx.interface.interface')
+    interface_module._interface_output_cache.clear()
+
+    class DummyInterface:
+        calls = 0
+
+        @staticmethod
+        def query(name, interface, query, input_dir=None, output_dir=None):
+            DummyInterface.calls += 1
+            return {'area': {'value': DummyInterface.calls, 'unit': 'mm^2'}}
+
+    monkeypatch.setattr(
+        interface_module,
+        '_load_interface_module',
+        lambda interface, dst_file: DummyInterface,
+    )
+
+    query = {'class': 'mac', 'interface': 'dummy_cache', 'width': 32}
+    first = query_interface('mac0', query, output_dir='/tmp/run0')
+    first['area']['value'] = 999
+
+    second = query_interface('mac0', query, output_dir='/tmp/run1')
+
+    assert DummyInterface.calls == 1
+    assert second == {'area': {'value': 1, 'unit': 'mm^2'}}
+
+    interface_module._interface_output_cache.clear()
 
 
 def test_query_interface_cacti7_sram():
@@ -87,4 +118,3 @@ if __name__ == "__main__":
     test_register_interface()
     test_unregister_interface()
     test_cleanup()
-

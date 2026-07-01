@@ -9,6 +9,21 @@ from archx.utils import get_path
 
 key_interface = 'interface'
 _interface_module_cache = {}
+_interface_output_cache = {}
+
+
+def _freeze_cache_value(value):
+    if isinstance(value, dict):
+        return tuple((k, _freeze_cache_value(v)) for k, v in sorted(value.items()))
+    if isinstance(value, list):
+        return tuple(_freeze_cache_value(v) for v in value)
+    return value
+
+
+def _interface_output_cache_key(module: str, interface: str, query: OrderedDict, input_dir=None):
+    if input_dir is not None:
+        input_dir = os.path.realpath(input_dir)
+    return module, interface, _freeze_cache_value(query), input_dir
 
 
 def _load_interface_module(interface: str, dst_file: str):
@@ -39,9 +54,14 @@ def query_interface(module: str, query: OrderedDict, input_dir=None, output_dir=
     
     # actual query
     del query[key_interface]
-    query_result = module_py.query(module, q_interface, query, input_dir, output_dir)
+    cache_key = _interface_output_cache_key(module, q_interface, query, input_dir)
+    if cache_key in _interface_output_cache:
+        return copy.deepcopy(_interface_output_cache[cache_key])
 
-    return query_result
+    query_result = module_py.query(module, q_interface, query, input_dir, output_dir)
+    _interface_output_cache[cache_key] = copy.deepcopy(query_result)
+
+    return copy.deepcopy(query_result)
     
 
 def register_interface(name: str, interface_dir: str) -> None:
@@ -53,6 +73,7 @@ def register_interface(name: str, interface_dir: str) -> None:
     else:
         shutil.copytree(src_dir, dst_dir)
         _interface_module_cache.pop(os.path.realpath(os.path.join(dst_dir, name + '.py')), None)
+        _interface_output_cache.clear()
         logger.success(f'Register interface <{name}> from <{src_dir}> to <{dst_dir}>.')
 
 
@@ -62,6 +83,7 @@ def unregister_interface(name: str) -> None:
     if os.path.isdir(dst_dir):
         shutil.rmtree(dst_dir)
         _interface_module_cache.pop(os.path.realpath(os.path.join(dst_dir, name + '.py')), None)
+        _interface_output_cache.clear()
         logger.success(f'Unregister interface <{name}> to <{dst_dir}>.')
     else:
         logger.warning(f'Interface <{name}> does not exist at <{dst_dir}>.')
