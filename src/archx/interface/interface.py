@@ -8,6 +8,21 @@ from archx.utils import get_path
 
 
 key_interface = 'interface'
+_interface_module_cache = {}
+
+
+def _load_interface_module(interface: str, dst_file: str):
+    cache_key = os.path.realpath(dst_file)
+    if cache_key not in _interface_module_cache:
+        spec = importlib.util.spec_from_file_location(
+            'query_' + str(interface),
+            dst_file,
+        )
+        module_py = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module_py
+        spec.loader.exec_module(module_py)
+        _interface_module_cache[cache_key] = module_py
+    return _interface_module_cache[cache_key]
 
 
 def query_interface(module: str, query: OrderedDict, input_dir=None, output_dir=None) -> OrderedDict:
@@ -20,10 +35,7 @@ def query_interface(module: str, query: OrderedDict, input_dir=None, output_dir=
     dst_file = os.path.join(os.path.dirname(__file__), q_interface, q_interface + '.py')
 
     # find proper query interface code
-    spec = importlib.util.spec_from_file_location('query_' + str(module) + '_' + str(q_interface), dst_file)
-    module_py = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module_py
-    spec.loader.exec_module(module_py)
+    module_py = _load_interface_module(q_interface, dst_file)
     
     # actual query
     del query[key_interface]
@@ -40,6 +52,7 @@ def register_interface(name: str, interface_dir: str) -> None:
         logger.warning(f'Interface <{name}> exists at <{dst_dir}>.')
     else:
         shutil.copytree(src_dir, dst_dir)
+        _interface_module_cache.pop(os.path.realpath(os.path.join(dst_dir, name + '.py')), None)
         logger.success(f'Register interface <{name}> from <{src_dir}> to <{dst_dir}>.')
 
 
@@ -48,6 +61,7 @@ def unregister_interface(name: str) -> None:
     dst_dir = os.path.join(os.path.dirname(__file__), name)
     if os.path.isdir(dst_dir):
         shutil.rmtree(dst_dir)
+        _interface_module_cache.pop(os.path.realpath(os.path.join(dst_dir, name + '.py')), None)
         logger.success(f'Unregister interface <{name}> to <{dst_dir}>.')
     else:
         logger.warning(f'Interface <{name}> does not exist at <{dst_dir}>.')
@@ -64,4 +78,3 @@ def copy_interface(name: str, interface_dir: str) -> None:
         logger.warning(f'Interface <{name}> does not exist at <{src_dir}>.')
     elif os.path.isdir(src_dir):
         logger.warning(f'Interface <{name}> exists at <{dst_dir}>.')
-

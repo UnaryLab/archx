@@ -10,6 +10,7 @@ from archx.metric import load_metric_dict
 from archx.utils import read_yaml
 import pandas as pd
 from tqdm import tqdm
+import os
 
 logger.remove()
 
@@ -22,10 +23,12 @@ def memory_sizes(architecture_dict):
     return srams
 
 tag='onchip'
-configs = ['8b', '70b']
 output_path = 'chiplet4ai/llama/results/'
 runs_path = f'chiplet4ai/llama/description/configurations.csv'
 array_query_df = pd.DataFrame()
+
+if not os.path.exists(output_path):
+    os.makedirs(output_path)
 
 with open(runs_path, 'r') as f:
     runs_df = pd.read_csv(f)
@@ -33,7 +36,7 @@ with open(runs_path, 'r') as f:
         run_path = row['run_path']
         run_arch_path = run_path + '/architecture.yaml'
         run_workload_path = run_path + '/workload.yaml'
-        run_event_graph_path = run_path + '/checkpoint.gt'
+        run_event_graph_path = run_path + '/checkpoint.json'
         run_event_path = run_path + '/event.yaml'
         run_metric_path = run_path + '/metric.yaml'
 

@@ -1,4 +1,5 @@
-import importlib, sys
+import importlib.util
+import sys
 from collections import OrderedDict
 from loguru import logger
 
@@ -14,10 +15,14 @@ key_unit = 'unit'
 key_subevent = 'subevent'
 key_count = 'count'
 key_factor = 'factor'
+_function_cache = {}
 
 
 def import_function_from_path(file_path: str, function: str) -> callable:
     full_path = get_path(file_path)
+    cache_key = (full_path, function)
+    if cache_key in _function_cache:
+        return _function_cache[cache_key]
 
     spec = importlib.util.spec_from_file_location(function, full_path)
     module_py = importlib.util.module_from_spec(spec)
@@ -25,7 +30,8 @@ def import_function_from_path(file_path: str, function: str) -> callable:
     spec.loader.exec_module(module_py)
 
     if hasattr(module_py, function) and callable(getattr(module_py, function)):
-        return getattr(module_py, function)
+        _function_cache[cache_key] = getattr(module_py, function)
+        return _function_cache[cache_key]
     else:
         logger.error(f'Invalid function <{function}> at <{full_path}>.')
         exit()

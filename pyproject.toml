@@ -33,6 +33,7 @@ dependencies = [
   "Pillow",
   "pyfiglet",
   "pyyaml",
+  "tqdm",
   "yamlordereddictloader"
 ]
 

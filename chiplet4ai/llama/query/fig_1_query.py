@@ -9,6 +9,7 @@ from archx.event import load_event_graph
 from archx.metric import load_metric_dict, query_module_metric
 import pandas as pd
 from tqdm import tqdm
+import os
 
 logger.remove()
 
@@ -24,13 +25,16 @@ output_path = 'chiplet4ai/llama/results/'
 runs_path = f'chiplet4ai/llama/description/configurations.csv'
 array_query_df = pd.DataFrame()
 
+if not os.path.exists(output_path):
+    os.makedirs(output_path)
+
 with open(runs_path, 'r') as f:
     runs_df = pd.read_csv(f)
     for index, row in tqdm(runs_df.iterrows(), total=len(runs_df)):
         run_path = row['run_path']
         run_arch_path = run_path + '/architecture.yaml'
         run_workload_path = run_path + '/workload.yaml'
-        run_event_graph_path = run_path + '/checkpoint.gt'
+        run_event_graph_path = run_path + '/checkpoint.json'
         run_metric_path = run_path + '/metric.yaml'
 
         architecture_dict = load_architecture_dict(run_arch_path)

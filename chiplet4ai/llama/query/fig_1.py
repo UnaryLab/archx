@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib
+import os
 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -15,6 +16,9 @@ plt.rcParams.update({
 
 FIG_WIDTH = 240 / 72.27
 FIG_HEIGHT = FIG_WIDTH * .9
+
+if not os.path.exists('chiplet4ai/llama/figures'):
+    os.makedirs('chiplet4ai/llama/figures')
 
 df = pd.read_csv('chiplet4ai/llama/results/array_performance_metrics.csv')
 

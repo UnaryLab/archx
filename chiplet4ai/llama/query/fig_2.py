@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 import matplotlib
+import os
 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -14,6 +15,10 @@ plt.rcParams.update({
     'ytick.labelsize': 8,
     'legend.fontsize': 8,
 })
+
+if not os.path.exists('chiplet4ai/llama/figures'):
+    os.makedirs('chiplet4ai/llama/figures')
+
 
 FIG_WIDTH = 240 / 72.27
 FIG_HEIGHT = FIG_WIDTH * .9
