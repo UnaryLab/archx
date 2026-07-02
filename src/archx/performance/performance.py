@@ -1,6 +1,12 @@
 import importlib.util
+import copy
+import hashlib
+import os
+import pickle
 import sys
+import tempfile
 from collections import OrderedDict
+from collections.abc import Mapping, Sequence
 from loguru import logger
 
 from archx._core import ArchxGraph
@@ -16,6 +22,257 @@ key_subevent = 'subevent'
 key_count = 'count'
 key_factor = 'factor'
 _function_cache = {}
+_performance_output_cache = {}
+_performance_dependency_cache = {}
+_cache_version = 2
+_cache_env = 'ARCHX_PERFORMANCE_CACHE_DIR'
+_disable_cache_env = 'ARCHX_DISABLE_PERFORMANCE_CACHE'
+_missing = ('__archx_missing__',)
+
+
+class _TrackedAccess:
+    def __init__(self):
+        self.paths = set()
+
+    def record(self, root, path):
+        self.paths.add((root, tuple(path)))
+
+
+class _TrackedMapping(Mapping):
+    def __init__(self, value, root, path, tracker):
+        self._value = value
+        self._root = root
+        self._path = tuple(path)
+        self._tracker = tracker
+
+    def __getitem__(self, key):
+        return _wrap_tracked(
+            self._value[key],
+            self._root,
+            self._path + (key,),
+            self._tracker,
+        )
+
+    def __iter__(self):
+        self._tracker.record(self._root, self._path)
+        return iter(self._value)
+
+    def __len__(self):
+        self._tracker.record(self._root, self._path)
+        return len(self._value)
+
+    def __contains__(self, key):
+        self._tracker.record(self._root, self._path + (key,))
+        return key in self._value
+
+    def get(self, key, default=None):
+        if key in self:
+            return self[key]
+        return default
+
+    def keys(self):
+        self._tracker.record(self._root, self._path)
+        return self._value.keys()
+
+    def values(self):
+        self._tracker.record(self._root, self._path)
+        return (
+            _wrap_tracked(value, self._root, self._path + (key,), self._tracker)
+            for key, value in self._value.items()
+        )
+
+    def items(self):
+        self._tracker.record(self._root, self._path)
+        return (
+            (key, _wrap_tracked(value, self._root, self._path + (key,), self._tracker))
+            for key, value in self._value.items()
+        )
+
+    def copy(self):
+        self._tracker.record(self._root, self._path)
+        return self._value.copy()
+
+
+class _TrackedSequence(Sequence):
+    def __init__(self, value, root, path, tracker):
+        self._value = value
+        self._root = root
+        self._path = tuple(path)
+        self._tracker = tracker
+
+    def __getitem__(self, index):
+        if isinstance(index, slice):
+            self._tracker.record(self._root, self._path)
+            return self._value[index]
+        return _wrap_tracked(
+            self._value[index],
+            self._root,
+            self._path + (index,),
+            self._tracker,
+        )
+
+    def __iter__(self):
+        self._tracker.record(self._root, self._path)
+        return iter(self._value)
+
+    def __len__(self):
+        self._tracker.record(self._root, self._path)
+        return len(self._value)
+
+
+def _wrap_tracked(value, root, path, tracker):
+    if isinstance(value, Mapping):
+        return _TrackedMapping(value, root, path, tracker)
+    if isinstance(value, list) or isinstance(value, tuple):
+        return _TrackedSequence(value, root, path, tracker)
+    tracker.record(root, path)
+    return value
+
+
+def _freeze_cache_value(value):
+    if isinstance(value, Mapping):
+        return tuple((k, _freeze_cache_value(v)) for k, v in sorted(value.items(), key=lambda item: repr(item[0])))
+    if isinstance(value, list) or isinstance(value, tuple):
+        return tuple(_freeze_cache_value(v) for v in value)
+    return value
+
+
+def _read_path(root_value, path):
+    value = root_value
+    try:
+        for key in path:
+            value = value[key]
+    except (KeyError, IndexError, TypeError):
+        return _missing
+    return value
+
+
+def _performance_cache_enabled():
+    return os.environ.get(_disable_cache_env, '').lower() not in ('1', 'true', 'yes')
+
+
+def _performance_cache_dir():
+    cache_dir = os.environ.get(_cache_env)
+    if cache_dir is None:
+        cache_home = os.environ.get('XDG_CACHE_HOME', os.path.expanduser('~/.cache'))
+        cache_dir = os.path.join(cache_home, 'archx', 'performance')
+    try:
+        os.makedirs(cache_dir, exist_ok=True)
+    except OSError as exc:
+        logger.warning(f'Disable persistent performance cache; cannot create <{cache_dir}>: {exc}.')
+        return None
+    return cache_dir
+
+
+def _cache_hash(payload):
+    return hashlib.sha256(pickle.dumps(payload, protocol=pickle.HIGHEST_PROTOCOL)).hexdigest()
+
+
+def _performance_model_id(performance_path: str, event_name: str):
+    full_path = get_path(performance_path)
+    try:
+        stat = os.stat(full_path)
+        metadata = (os.path.realpath(full_path), stat.st_mtime_ns, stat.st_size)
+    except OSError:
+        metadata = (os.path.realpath(full_path), None, None)
+    return full_path, (_cache_version, event_name, metadata)
+
+
+def _dependency_index_path(model_id):
+    cache_dir = _performance_cache_dir()
+    if cache_dir is None:
+        return None
+    return os.path.join(cache_dir, _cache_hash(('dependencies', model_id)) + '.deps.pkl')
+
+
+def _output_cache_path(output_key):
+    cache_dir = _performance_cache_dir()
+    if cache_dir is None:
+        return None
+    return os.path.join(cache_dir, _cache_hash(('output', output_key)) + '.pkl')
+
+
+def _read_pickle(path):
+    if path is None or not os.path.isfile(path):
+        return None
+    try:
+        with open(path, 'rb') as f:
+            return pickle.load(f)
+    except (OSError, pickle.PickleError, EOFError) as exc:
+        logger.warning(f'Ignore invalid performance cache file <{path}>: {exc}.')
+        return None
+
+
+def _write_pickle(path, value):
+    if path is None:
+        return
+    cache_dir = os.path.dirname(path)
+    try:
+        with tempfile.NamedTemporaryFile('wb', dir=cache_dir, delete=False) as f:
+            pickle.dump(value, f, protocol=pickle.HIGHEST_PROTOCOL)
+            temp_path = f.name
+        os.replace(temp_path, path)
+    except OSError as exc:
+        logger.warning(f'Failed to write performance cache file <{path}>: {exc}.')
+        if 'temp_path' in locals() and os.path.exists(temp_path):
+            os.remove(temp_path)
+
+
+def _dependency_sets(model_id):
+    if model_id not in _performance_dependency_cache:
+        cached = _read_pickle(_dependency_index_path(model_id))
+        _performance_dependency_cache[model_id] = list(cached) if cached is not None else []
+    return _performance_dependency_cache[model_id]
+
+
+def _add_dependency_set(model_id, dependency_paths):
+    dependencies = tuple(sorted(dependency_paths))
+    dependency_sets = _dependency_sets(model_id)
+    if dependencies in dependency_sets:
+        return dependencies
+    dependency_sets.append(dependencies)
+    _write_pickle(_dependency_index_path(model_id), dependency_sets)
+    return dependencies
+
+
+def _dependency_values(dependencies, architecture_dict, workload_dict):
+    values = []
+    for root, path in dependencies:
+        root_value = architecture_dict if root == 'architecture' else workload_dict
+        values.append((root, path, _freeze_cache_value(_read_path(root_value, path))))
+    return tuple(values)
+
+
+def _performance_output_key(model_id, dependencies, architecture_dict, workload_dict):
+    return model_id, dependencies, _dependency_values(
+        dependencies,
+        architecture_dict,
+        workload_dict,
+    )
+
+
+def _read_performance_output(output_key):
+    if output_key in _performance_output_cache:
+        return copy.deepcopy(_performance_output_cache[output_key])
+    cached = _read_pickle(_output_cache_path(output_key))
+    if cached is not None:
+        _performance_output_cache[output_key] = copy.deepcopy(cached)
+        return copy.deepcopy(cached)
+    return None
+
+
+def _write_performance_output(output_key, performance_dict):
+    _performance_output_cache[output_key] = copy.deepcopy(performance_dict)
+    _write_pickle(_output_cache_path(output_key), performance_dict)
+
+
+def _run_performance_model_with_tracing(performance_model, architecture_dict, workload_dict):
+    tracker = _TrackedAccess()
+    performance_dict = performance_model(
+        architecture_dict=_TrackedMapping(architecture_dict, 'architecture', (), tracker),
+        workload_dict=_TrackedMapping(workload_dict, 'workload', (), tracker),
+    )
+    return performance_dict, tracker.paths
 
 
 def import_function_from_path(file_path: str, function: str) -> callable:
@@ -57,11 +314,42 @@ def simulate_performance_one_event(
         return event_graph
 
     # Load and execute the performance model
-    performance_model = import_function_from_path(performance_path, function=event_name)
-    performance_dict = performance_model(
-        architecture_dict=architecture_dict,
-        workload_dict=workload_dict,
-    )
+    full_performance_path, model_id = _performance_model_id(performance_path, event_name)
+    performance_model = import_function_from_path(full_performance_path, function=event_name)
+    performance_dict = None
+    if _performance_cache_enabled():
+        for dependencies in _dependency_sets(model_id):
+            output_key = _performance_output_key(
+                model_id,
+                dependencies,
+                architecture_dict,
+                workload_dict,
+            )
+            performance_dict = _read_performance_output(output_key)
+            if performance_dict is not None:
+                logger.debug(f'Use cached performance for event <{event_name}>.')
+                break
+
+    if performance_dict is None:
+        if _performance_cache_enabled():
+            performance_dict, dependency_paths = _run_performance_model_with_tracing(
+                performance_model,
+                architecture_dict,
+                workload_dict,
+            )
+            dependencies = _add_dependency_set(model_id, dependency_paths)
+            output_key = _performance_output_key(
+                model_id,
+                dependencies,
+                architecture_dict,
+                workload_dict,
+            )
+            _write_performance_output(output_key, performance_dict)
+        else:
+            performance_dict = performance_model(
+                architecture_dict=architecture_dict,
+                workload_dict=workload_dict,
+            )
     assert performance_dict is not None, \
         logger.error(f'No performance model returned for event <{event_name}>')
 

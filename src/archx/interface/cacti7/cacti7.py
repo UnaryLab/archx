@@ -1,4 +1,4 @@
-import subprocess, os, time, random, copy, platform
+import subprocess, os, time, copy, platform
 
 from collections import OrderedDict
 
@@ -64,15 +64,13 @@ def cacti7_run(
         time.sleep(10)
         os.replace(os.path.join(run_dir, 'cacti'), os.path.join(run_dir, cacti_bin))
 
-    tartget_cacti_name = result_file.replace('//', '/').replace('/', '_').split('.')[0] + '_'
-    tartget_cacti_name += str(time.time())
-
-    rep_cmd = 'cp ./' + cacti_bin + ' ./cacti_' + tartget_cacti_name
-    subprocess.call([rep_cmd], shell=True, cwd=run_dir)
-    final_cmd = './cacti_' + tartget_cacti_name + ' -infile ' + target_cfg_file + ' > ' + result_file
-    subprocess.call([final_cmd], shell=True, cwd=run_dir)
-    rm_cmd = 'rm -rf ./cacti_' + tartget_cacti_name
-    subprocess.call([rm_cmd], shell=True, cwd=run_dir)
+    with open(result_file, 'w') as report:
+        subprocess.run(
+            ['./' + cacti_bin, '-infile', target_cfg_file],
+            cwd=run_dir,
+            stdout=report,
+            check=True,
+        )
 
 
 def parse_report_line_count(
