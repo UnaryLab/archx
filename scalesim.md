@@ -25,7 +25,7 @@ This preserves ArchX's event-based structure, but makes each event's count and r
 
 ## Ranked Improvements
 
-### 1. Replace GEMM compute timing with SCALE-Sim-style fold timing
+### 1. Replace GEMM compute timing with SCALE-Sim-style fold timing - Done
 
 Current `chiplet4ai/common/performance/mapping.py` estimates array work from tile counts and utilization factors:
 
@@ -56,7 +56,9 @@ Then total non-stalled compute cycles are summed over all row and column folds.
 
 This should be the first change because it directly affects runtime and utilization, and it is the foundation for later memory-stall modeling.
 
-### 2. Track mapping efficiency and compute utilization explicitly
+Status: implemented in `chiplet4ai/common/performance/mapping.py::gemm(...)` using shared WS folds and `M + array_rows + array_cols - 2` per fold.
+
+### 2. Track mapping efficiency and compute utilization explicitly - Done
 
 SCALE-Sim reports two separate quantities:
 
@@ -78,7 +80,9 @@ compute_utilization = useful_macs / available_mac_slots
 
 These can be exposed as specified metrics or used internally to derive event factors.
 
-### 3. Model per-operand demand rates, not only total counts
+Status: implemented in `chiplet4ai/common/performance/mapping.py::gemm(...)` as `mapping_efficiency` and `compute_utilization` specified metrics.
+
+### 3. Model per-operand demand rates, not only total counts - Done
 
 SCALE-Sim derives SRAM bandwidth from when operands are demanded, not only how many operands exist.
 
@@ -100,7 +104,9 @@ For each phase, estimate:
 
 This gives a schedule-level model while staying analytical.
 
-### 4. Add a double-buffer feasibility/stall model
+Status: implemented at a fold-summary level in `chiplet4ai/common/performance/mapping.py::sram(...)` and `dram(...)` by deriving IFMAP, weight, and OFMAP movement from the same WS folds as `gemm(...)`. This does not yet model memory stalls.
+
+### 4. Add a double-buffer feasibility/stall model - Done
 
 SCALE-Sim's biggest behavioral difference is that memory can stall compute. It models active and prefetch buffers for reads, and active/drain behavior for output writes.
 
@@ -117,6 +123,10 @@ write_stall = max(0, drain_cycles - available_output_overlap)
 ```
 
 This would let ArchX report SCALE-Sim-like `stall_cycles` without address-level traces.
+
+This is the analytical memory stall modeling item.
+
+Status: implemented in `chiplet4ai/common/performance/mapping.py` as a shared WS schedule helper. The helper estimates residual DRAM read prefetch stalls and output drain stalls from fold-level operand bytes, DRAM bandwidth, and available compute overlap. This is still analytical and trace-free; it does not model SCALE-Sim's full active/prefetch buffer address state.
 
 ### 5. Make SRAM capacity semantics closer to SCALE-Sim
 
@@ -144,10 +154,10 @@ This should come after compute and memory timing are aligned, because output beh
 
 ## Recommended Sequence
 
-1. Implement SCALE-Sim-style WS fold timing.
-2. Add explicit mapping efficiency and compute utilization.
-3. Replace aggregate operand traffic with phase-level operand demand rates.
-4. Add analytical double-buffer read/write stall estimates.
+1. Done - Implement SCALE-Sim-style WS fold timing.
+2. Done - Add explicit mapping efficiency and compute utilization.
+3. Done - Replace aggregate operand traffic with phase-level operand demand rates.
+4. Done - Add analytical double-buffer read/write stall estimates.
 5. Adjust SRAM capacity modeling to active/prefetch regions.
 6. Decide whether to preserve or simplify partial-output spill modeling.
 
