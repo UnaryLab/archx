@@ -18,6 +18,9 @@ event:
     - dram_weight_read
     - dram_output_read
     - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
   a_proj_dc_sram:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -25,6 +28,9 @@ event:
     - sram_weight_write_mapping
     - sram_output_read_mapping
     - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
   a_proj_pf:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -44,6 +50,9 @@ event:
     - dram_weight_read
     - dram_output_read
     - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
   a_proj_pf_sram:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -51,6 +60,9 @@ event:
     - sram_weight_write_mapping
     - sram_output_read_mapping
     - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
   array_compute:
     performance: chiplet4ai/common/performance/array.py
     subevent:
@@ -104,6 +116,9 @@ event:
     - dram_weight_read
     - dram_output_read
     - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
   av_dc_sram:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -111,6 +126,9 @@ event:
     - sram_weight_write_mapping
     - sram_output_read_mapping
     - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
   av_pf:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -130,6 +148,9 @@ event:
     - dram_weight_read
     - dram_output_read
     - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
   av_pf_sram:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -137,6 +158,13 @@ event:
     - sram_weight_write_mapping
     - sram_output_read_mapping
     - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
+  cycle_reference:
+    performance: chiplet4ai/common/performance/mapping.py
+    subevent:
+    - pe
   decode:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -161,6 +189,9 @@ event:
     - dram_weight_read
     - dram_output_read
     - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
   down_proj_dc_sram:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -168,6 +199,9 @@ event:
     - sram_weight_write_mapping
     - sram_output_read_mapping
     - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
   down_proj_pf:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -187,6 +221,9 @@ event:
     - dram_weight_read
     - dram_output_read
     - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
   down_proj_pf_sram:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -194,10 +231,17 @@ event:
     - sram_weight_write_mapping
     - sram_output_read_mapping
     - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
   dram_input_read:
     performance: chiplet4ai/common/performance/memory.py
     subevent:
     - dram
+  dram_input_read_stall:
+    performance: chiplet4ai/common/performance/mapping.py
+    subevent:
+    - cycle_reference
   dram_output_read:
     performance: chiplet4ai/common/performance/memory.py
     subevent:
@@ -206,10 +250,18 @@ event:
     performance: chiplet4ai/common/performance/memory.py
     subevent:
     - dram
+  dram_output_write_stall:
+    performance: chiplet4ai/common/performance/mapping.py
+    subevent:
+    - cycle_reference
   dram_weight_read:
     performance: chiplet4ai/common/performance/memory.py
     subevent:
     - dram
+  dram_weight_read_stall:
+    performance: chiplet4ai/common/performance/mapping.py
+    subevent:
+    - cycle_reference
   gate_proj_dc:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -229,6 +281,9 @@ event:
     - dram_weight_read
     - dram_output_read
     - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
   gate_proj_dc_sram:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -236,6 +291,9 @@ event:
     - sram_weight_write_mapping
     - sram_output_read_mapping
     - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
   gate_proj_pf:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -255,6 +313,9 @@ event:
     - dram_weight_read
     - dram_output_read
     - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
   gate_proj_pf_sram:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -262,6 +323,9 @@ event:
     - sram_weight_write_mapping
     - sram_output_read_mapping
     - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
   layer_dc:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -351,6 +415,9 @@ event:
     - dram_weight_read
     - dram_output_read
     - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
   lm_head_dc_sram:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -358,6 +425,9 @@ event:
     - sram_weight_write_mapping
     - sram_output_read_mapping
     - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
   lm_head_pf:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -377,6 +447,9 @@ event:
     - dram_weight_read
     - dram_output_read
     - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
   lm_head_pf_sram:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -384,6 +457,9 @@ event:
     - sram_weight_write_mapping
     - sram_output_read_mapping
     - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
   prefill:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -408,6 +484,9 @@ event:
     - dram_weight_read
     - dram_output_read
     - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
   proj_k_dc_sram:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -415,6 +494,9 @@ event:
     - sram_weight_write_mapping
     - sram_output_read_mapping
     - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
   proj_k_pf:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -434,6 +516,9 @@ event:
     - dram_weight_read
     - dram_output_read
     - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
   proj_k_pf_sram:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -441,6 +526,9 @@ event:
     - sram_weight_write_mapping
     - sram_output_read_mapping
     - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
   proj_q_dc:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -460,6 +548,9 @@ event:
     - dram_weight_read
     - dram_output_read
     - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
   proj_q_dc_sram:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -467,6 +558,9 @@ event:
     - sram_weight_write_mapping
     - sram_output_read_mapping
     - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
   proj_q_pf:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -486,6 +580,9 @@ event:
     - dram_weight_read
     - dram_output_read
     - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
   proj_q_pf_sram:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -493,6 +590,9 @@ event:
     - sram_weight_write_mapping
     - sram_output_read_mapping
     - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
   proj_v_dc:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -512,6 +612,9 @@ event:
     - dram_weight_read
     - dram_output_read
     - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
   proj_v_dc_sram:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -519,6 +622,9 @@ event:
     - sram_weight_write_mapping
     - sram_output_read_mapping
     - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
   proj_v_pf:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -538,6 +644,9 @@ event:
     - dram_weight_read
     - dram_output_read
     - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
   proj_v_pf_sram:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -545,6 +654,9 @@ event:
     - sram_weight_write_mapping
     - sram_output_read_mapping
     - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
   qkt_dc:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -564,6 +676,9 @@ event:
     - dram_weight_read
     - dram_output_read
     - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
   qkt_dc_sram:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -571,6 +686,9 @@ event:
     - sram_weight_write_mapping
     - sram_output_read_mapping
     - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
   qkt_pf:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -590,6 +708,9 @@ event:
     - dram_weight_read
     - dram_output_read
     - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
   qkt_pf_sram:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -597,6 +718,9 @@ event:
     - sram_weight_write_mapping
     - sram_output_read_mapping
     - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
   sram_input_read:
     performance: chiplet4ai/common/performance/memory.py
     subevent:
@@ -617,6 +741,10 @@ event:
     performance: chiplet4ai/common/performance/node.py
     subevent:
     - sram_output_read
+  sram_output_tail_stall:
+    performance: chiplet4ai/common/performance/mapping.py
+    subevent:
+    - cycle_reference
   sram_output_write:
     performance: chiplet4ai/common/performance/memory.py
     subevent:
@@ -625,6 +753,14 @@ event:
     performance: chiplet4ai/common/performance/node.py
     subevent:
     - sram_output_write
+  sram_steady_state_stall:
+    performance: chiplet4ai/common/performance/mapping.py
+    subevent:
+    - cycle_reference
+  sram_weight_fill_stall:
+    performance: chiplet4ai/common/performance/mapping.py
+    subevent:
+    - cycle_reference
   sram_weight_read:
     performance: chiplet4ai/common/performance/memory.py
     subevent:
@@ -656,6 +792,9 @@ event:
     - dram_weight_read
     - dram_output_read
     - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
   up_proj_dc_sram:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -663,6 +802,9 @@ event:
     - sram_weight_write_mapping
     - sram_output_read_mapping
     - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
   up_proj_pf:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -682,6 +824,9 @@ event:
     - dram_weight_read
     - dram_output_read
     - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
   up_proj_pf_sram:
     performance: chiplet4ai/llama/llama_model.py
     subevent:
@@ -689,3 +834,6 @@ event:
     - sram_weight_write_mapping
     - sram_output_read_mapping
     - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall

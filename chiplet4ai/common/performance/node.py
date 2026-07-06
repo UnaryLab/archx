@@ -53,7 +53,6 @@ def sram_input_write_mapping(architecture_dict: OrderedDict, workload_dict: Orde
     performance_dict['subevent'] = OrderedDict({
         'sram_input_write': {'count': isram_depth * isram_bank, 'factor': {'cycle_count': 1/(isram_depth * isram_bank), 'runtime': 1/(isram_depth * isram_bank)}},
     })
-
     return performance_dict
 
 def sram_weight_write_mapping(architecture_dict: OrderedDict, workload_dict: OrderedDict) -> OrderedDict:
@@ -66,7 +65,6 @@ def sram_weight_write_mapping(architecture_dict: OrderedDict, workload_dict: Ord
     performance_dict['subevent'] = OrderedDict({
         'sram_weight_write': {'count': wsram_depth * wsram_bank, 'factor': {'cycle_count': 1/(wsram_depth * wsram_bank), 'runtime': 1/(wsram_depth * wsram_bank)}},
     })
-
     return performance_dict
 
 def sram_output_write_mapping(architecture_dict: OrderedDict, workload_dict: OrderedDict) -> OrderedDict:
@@ -79,7 +77,6 @@ def sram_output_write_mapping(architecture_dict: OrderedDict, workload_dict: Ord
     performance_dict['subevent'] = OrderedDict({
         'sram_output_write': {'count': osram_depth * osram_bank, 'factor': {'cycle_count': 1/(osram_depth * osram_bank), 'runtime': 1/(osram_depth * osram_bank)}},
     })
-
     return performance_dict
 
 def sram_output_read_mapping(architecture_dict: OrderedDict, workload_dict: OrderedDict) -> OrderedDict:
@@ -92,5 +89,4 @@ def sram_output_read_mapping(architecture_dict: OrderedDict, workload_dict: Orde
     performance_dict['subevent'] = OrderedDict({
         'sram_output_read': {'count': osram_depth * osram_bank, 'factor': {'cycle_count': 1/(osram_depth * osram_bank), 'runtime': 1/(osram_depth * osram_bank)}},
     })
-
     return performance_dict

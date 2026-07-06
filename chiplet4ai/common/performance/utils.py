@@ -1,5 +1,4 @@
 from collections import OrderedDict
-from math import floor
 
 def _step_config(M: int, K: int, N: int, step_start: int, step_dim: str):
     if step_dim is not None:
@@ -44,5 +43,5 @@ def _fit_2d_tile(rows: int, cols: int, min_rows: int, min_cols: int, capacity_el
 
 def _sram_bits(architecture_dict: OrderedDict, sram_name: str) -> int:
     query = architecture_dict['architecture'][sram_name]['query']
-    return int(query['width'] * floor(query['bank'] / 2) * query['depth'])
+    return int(query['width'] * query['bank'] * query['depth'])
 # endregion

@@ -6,6 +6,7 @@ def dram_input_read(architecture_dict: OrderedDict, workload_dict: OrderedDict=N
 
     performance_dict['cycle_count'] = OrderedDict({'value': 1, 'unit': 'cycle'})
     performance_dict['runtime'] = OrderedDict({'value': 1000 / (bandwidth * 2**30), 'unit': 'ms'})
+    performance_dict['bandwidth'] = OrderedDict({'value': 1, 'unit': 'GiB/s'})
     dram_dict = OrderedDict({'operation': OrderedDict({'dynamic_energy': 'read'})})
     performance_dict['subevent'] = OrderedDict({'dram': dram_dict})
 
@@ -17,6 +18,7 @@ def dram_weight_read(architecture_dict: OrderedDict, workload_dict: OrderedDict=
 
     performance_dict['cycle_count'] = OrderedDict({'value': 1, 'unit': 'cycle'})
     performance_dict['runtime'] = OrderedDict({'value': 1000 / (bandwidth * 2**30), 'unit': 'ms'})
+    performance_dict['bandwidth'] = OrderedDict({'value': 1, 'unit': 'GiB/s'})
     dram_dict = OrderedDict({'operation': OrderedDict({'dynamic_energy': 'read'})})
     performance_dict['subevent'] = OrderedDict({'dram': dram_dict})
 
@@ -28,6 +30,7 @@ def dram_output_write(architecture_dict: OrderedDict, workload_dict: OrderedDict
 
     performance_dict['cycle_count'] = OrderedDict({'value': 1, 'unit': 'cycle'})
     performance_dict['runtime'] = OrderedDict({'value': 1000 / (bandwidth * 2**30), 'unit': 'ms'})
+    performance_dict['bandwidth'] = OrderedDict({'value': 1, 'unit': 'GiB/s'})
     dram_dict = OrderedDict({'operation': OrderedDict({'dynamic_energy': 'write'})})
     performance_dict['subevent'] = OrderedDict({'dram': dram_dict})
 
@@ -39,6 +42,7 @@ def dram_output_read(architecture_dict: OrderedDict, workload_dict: OrderedDict=
 
     performance_dict['cycle_count'] = OrderedDict({'value': 1, 'unit': 'cycle'})
     performance_dict['runtime'] = OrderedDict({'value': 1000 / (bandwidth * 2**30), 'unit': 'ms'})
+    performance_dict['bandwidth'] = OrderedDict({'value': 1, 'unit': 'GiB/s'})
     dram_dict = OrderedDict({'operation': OrderedDict({'dynamic_energy': 'read'})})
     performance_dict['subevent'] = OrderedDict({'dram': dram_dict})
 
@@ -50,6 +54,7 @@ def sram_input_read(architecture_dict: OrderedDict, workload_dict: OrderedDict=N
 
     performance_dict['cycle_count'] = OrderedDict({'value': 1, 'unit': 'cycle'})
     performance_dict['runtime'] = OrderedDict({'value': 1 / 1000 / frequency, 'unit': 'ms'})
+    performance_dict['bandwidth'] = OrderedDict({'value': 1, 'unit': 'GiB/s'})
     sram_dict = OrderedDict({'operation': OrderedDict({'dynamic_energy': 'read'})})
     performance_dict['subevent'] = OrderedDict({'isram': sram_dict})
 
@@ -61,6 +66,7 @@ def sram_input_write(architecture_dict: OrderedDict, workload_dict: OrderedDict=
 
     performance_dict['cycle_count'] = OrderedDict({'value': 1, 'unit': 'cycle'})
     performance_dict['runtime'] = OrderedDict({'value': 1 / 1000 / frequency, 'unit': 'ms'})
+    performance_dict['bandwidth'] = OrderedDict({'value': 1, 'unit': 'GiB/s'})
     sram_dict = OrderedDict({'operation': OrderedDict({'dynamic_energy': 'write'})})
     performance_dict['subevent'] = OrderedDict({'isram': sram_dict})
 
@@ -72,6 +78,7 @@ def sram_weight_read(architecture_dict: OrderedDict, workload_dict: OrderedDict=
 
     performance_dict['cycle_count'] = OrderedDict({'value': 1, 'unit': 'cycle'})
     performance_dict['runtime'] = OrderedDict({'value': 1 / 1000 / frequency, 'unit': 'ms'})
+    performance_dict['bandwidth'] = OrderedDict({'value': 1, 'unit': 'GiB/s'})
     sram_dict = OrderedDict({'operation': OrderedDict({'dynamic_energy': 'read'})})
     performance_dict['subevent'] = OrderedDict({'wsram': sram_dict})
 
@@ -83,6 +90,7 @@ def sram_weight_write(architecture_dict: OrderedDict, workload_dict: OrderedDict
 
     performance_dict['cycle_count'] = OrderedDict({'value': 1, 'unit': 'cycle'})
     performance_dict['runtime'] = OrderedDict({'value': 1 / 1000 / frequency, 'unit': 'ms'})
+    performance_dict['bandwidth'] = OrderedDict({'value': 1, 'unit': 'GiB/s'})
     sram_dict = OrderedDict({'operation': OrderedDict({'dynamic_energy': 'write'})})
     performance_dict['subevent'] = OrderedDict({'wsram': sram_dict})
 
@@ -94,6 +102,7 @@ def sram_output_read(architecture_dict: OrderedDict, workload_dict: OrderedDict=
 
     performance_dict['cycle_count'] = OrderedDict({'value': 1, 'unit': 'cycle'})
     performance_dict['runtime'] = OrderedDict({'value': 1 / 1000 / frequency, 'unit': 'ms'})
+    performance_dict['bandwidth'] = OrderedDict({'value': 1, 'unit': 'GiB/s'})
     sram_dict = OrderedDict({'operation': OrderedDict({'dynamic_energy': 'read'})})
     performance_dict['subevent'] = OrderedDict({'osram': sram_dict})
 
@@ -105,6 +114,7 @@ def sram_output_write(architecture_dict: OrderedDict, workload_dict: OrderedDict
 
     performance_dict['cycle_count'] = OrderedDict({'value': 1, 'unit': 'cycle'})
     performance_dict['runtime'] = OrderedDict({'value': 1 / 1000 / frequency, 'unit': 'ms'})
+    performance_dict['bandwidth'] = OrderedDict({'value': 1, 'unit': 'GiB/s'})
     sram_dict = OrderedDict({'operation': OrderedDict({'dynamic_energy': 'write'})})
     performance_dict['subevent'] = OrderedDict({'osram': sram_dict})
 

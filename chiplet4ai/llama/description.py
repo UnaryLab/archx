@@ -64,8 +64,14 @@ def description(path):
     model_events = ['prefill', 'decode']
     layer_events_pf = ['proj_q_pf', 'proj_k_pf', 'proj_v_pf', 'qkt_pf', 'av_pf', 'a_proj_pf', 'up_proj_pf', 'gate_proj_pf', 'down_proj_pf']
     layer_events_dc = ['proj_q_dc', 'proj_k_dc', 'proj_v_dc', 'qkt_dc', 'av_dc', 'a_proj_dc', 'up_proj_dc', 'gate_proj_dc', 'down_proj_dc']
-    dram_mapping_events = ['dram_input_read', 'dram_weight_read', 'dram_output_read', 'dram_output_write']
-    sram_mapping_events = ['sram_input_write_mapping', 'sram_weight_write_mapping', 'sram_output_read_mapping', 'sram_output_write_mapping']
+    dram_mapping_events = [
+        'dram_input_read', 'dram_weight_read', 'dram_output_read', 'dram_output_write',
+        'dram_input_read_stall', 'dram_weight_read_stall', 'dram_output_write_stall'
+    ]
+    sram_mapping_events = [
+        'sram_input_write_mapping', 'sram_weight_write_mapping', 'sram_output_read_mapping', 'sram_output_write_mapping',
+        'sram_weight_fill_stall', 'sram_steady_state_stall', 'sram_output_tail_stall'
+    ]
     node_mapping_events = ['array_input_mapping', 'array_weight_mapping', 'array_compute_mapping']
     weight_events = ['wfifo', 'weight_path_en_reg', 'weight_en_reg', 'weight_path_reg', 'weight_reg']
 
@@ -220,6 +226,15 @@ def description(path):
     event.add_event(name='sram_weight_write', subevent=['wsram'], performance='chiplet4ai/common/performance/memory.py')
     event.add_event(name='sram_output_read', subevent=['osram'], performance='chiplet4ai/common/performance/memory.py')
     event.add_event(name='sram_output_write', subevent=['osram'], performance='chiplet4ai/common/performance/memory.py')
+
+    # analytical stall events
+    for stall_event in [
+        'dram_input_read_stall', 'dram_weight_read_stall', 'dram_output_write_stall',
+        'sram_weight_fill_stall', 'sram_steady_state_stall', 'sram_output_tail_stall'
+    ]:
+        event.add_event(name=stall_event, subevent=['cycle_reference'], performance='chiplet4ai/common/performance/mapping.py')
+
+    event.add_event(name='cycle_reference', subevent=['pe'], performance='chiplet4ai/common/performance/mapping.py')
     
 
     ##############################################
@@ -230,6 +245,7 @@ def description(path):
     metric.add_metric(name='dynamic_energy', unit='nJ',     aggregation='summation')
     metric.add_metric(name='cycle_count',    unit='cycles', aggregation='specified')
     metric.add_metric(name='runtime',        unit='ms',     aggregation='specified')
+    metric.add_metric(name='bandwidth',      unit='GiB/s',  aggregation='specified')
 
     ##############################################
     ###############   Workload   #################
