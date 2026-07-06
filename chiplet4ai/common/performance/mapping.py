@@ -112,6 +112,8 @@ def _ws_schedule(architecture_dict: OrderedDict, batch: int, M: int, K: int, N: 
     weight_read_bytes = 0
     output_read_bytes = 0
     output_write_bytes = 0
+    input_transfer_window_cycles = 0
+    weight_transfer_window_cycles = 0
     compute_cycles = 0
     read_stall_cycles = 0
     write_stall_cycles = 0
@@ -196,6 +198,13 @@ def _ws_schedule(architecture_dict: OrderedDict, batch: int, M: int, K: int, N: 
             read_prefetch_cycles += max(0, weight_prefetch_chunks - 1)
 
             read_prefetch_start_cycle = 0 if fold_count == 0 else previous_compute_start_cycle
+            read_prefetch_window_cycles = (
+                read_prefetch_cycles if fold_count == 0
+                else max(1, previous_compute_end_cycle - read_prefetch_start_cycle)
+            )
+            if prefetch_bytes > 0:
+                input_transfer_window_cycles += read_prefetch_window_cycles * prefetch_input_bytes / prefetch_bytes
+                weight_transfer_window_cycles += read_prefetch_window_cycles * prefetch_weight_bytes / prefetch_bytes
             read_engine_available_cycle = max(read_engine_available_cycle, read_prefetch_start_cycle) + read_prefetch_cycles
             compute_start_cycle = max(previous_compute_end_cycle, read_engine_available_cycle)
             read_stall_cycles += max(0, compute_start_cycle - previous_compute_end_cycle)
@@ -249,6 +258,8 @@ def _ws_schedule(architecture_dict: OrderedDict, batch: int, M: int, K: int, N: 
         'weight_read_bytes': weight_read_bytes,
         'output_read_bytes': output_read_bytes,
         'output_write_bytes': output_write_bytes,
+        'input_transfer_window_cycles': input_transfer_window_cycles,
+        'weight_transfer_window_cycles': weight_transfer_window_cycles,
         'compute_cycles': compute_cycles,
         'read_stall_cycles': read_stall_cycles,
         'write_stall_cycles': write_stall_cycles,
@@ -446,6 +457,14 @@ def dram(architecture_dict: OrderedDict, batch: int, M: int, K: int, N: int, ste
     })
     performance_dict['write_stall_cycle_count'] = OrderedDict({
         'value': schedule['write_stall_cycles'] / total_steps,
+        'unit': 'cycle',
+    })
+    performance_dict['input_transfer_window_cycle_count'] = OrderedDict({
+        'value': schedule['input_transfer_window_cycles'] / total_steps,
+        'unit': 'cycle',
+    })
+    performance_dict['weight_transfer_window_cycle_count'] = OrderedDict({
+        'value': schedule['weight_transfer_window_cycles'] / total_steps,
         'unit': 'cycle',
     })
 

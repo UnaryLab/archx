@@ -14,3 +14,9 @@ metric:
   runtime:
     aggregation: specified
     unit: ms
+  input_transfer_window_cycle_count:
+    aggregation: specified
+    unit: cycles
+  weight_transfer_window_cycle_count:
+    aggregation: specified
+    unit: cycles

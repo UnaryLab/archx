@@ -22,21 +22,24 @@ def memory_sizes(architecture_dict):
         srams.append(sram_size)
     return srams
 
-def required_bandwidth(event_graph, metric_dict, workload_name, execution_event, movement_event):
-    execution_time = query_execution_time(
-        event_graph=event_graph,
-        metric_dict=metric_dict,
-        workload=workload_name,
-        event=execution_event
-    )
+def transfer_window_bandwidth(event_graph, metric_dict, architecture_dict, workload_name, movement_event, window_metric):
     data_moved = aggregate_event_count(
         event_graph=event_graph,
         workload=workload_name,
         event=movement_event
     )
-    bandwidth = (data_moved / execution_time) / 2**30 if execution_time > 0 else 0
+    window_cycles = sum(
+        event_graph.get_node_specified_metric(event, window_metric)
+        * aggregate_event_count(event_graph=event_graph, workload=workload_name, event=event)
+        for event in event_graph.get_all_node_names()
+        if event.endswith('_dram') and event_graph.get_node_specified_metric(event, window_metric) is not None
+    )
+    frequency_mhz = architecture_dict['dram'].get('query', {}).get('frequency', 1000)
+    if data_moved > 0 and window_cycles <= 0:
+        raise ValueError(f'Missing {window_metric}; regenerate ArchX checkpoints before running Fig 2 query.')
+    bandwidth = (data_moved / window_cycles * float(frequency_mhz) * 1e6 / 2**30) if window_cycles > 0 else 0
 
-    return bandwidth, execution_time, data_moved
+    return bandwidth, window_cycles, data_moved
 
 tag='onchip'
 output_path = 'chiplet4ai/llama/results/'
@@ -80,19 +83,27 @@ with open(runs_path, 'r') as f:
         if batch_size != 512:
             continue
 
-        input_bandwidth, array_execution_time, input_data_moved = required_bandwidth(
+        array_execution_time = query_execution_time(
             event_graph=event_graph,
             metric_dict=metric_dict,
-            workload_name=workload_name,
-            execution_event='llama_array',
-            movement_event='dram_input_read'
+            workload=workload_name,
+            event='llama_array'
         )
-        weight_bandwidth, _, weight_data_moved = required_bandwidth(
+        input_bandwidth, input_transfer_window_cycles, input_data_moved = transfer_window_bandwidth(
             event_graph=event_graph,
             metric_dict=metric_dict,
+            architecture_dict=architecture_dict,
             workload_name=workload_name,
-            execution_event='llama_array',
-            movement_event='dram_weight_read'
+            movement_event='dram_input_read',
+            window_metric='input_transfer_window_cycle_count'
+        )
+        weight_bandwidth, weight_transfer_window_cycles, weight_data_moved = transfer_window_bandwidth(
+            event_graph=event_graph,
+            metric_dict=metric_dict,
+            architecture_dict=architecture_dict,
+            workload_name=workload_name,
+            movement_event='dram_weight_read',
+            window_metric='weight_transfer_window_cycle_count'
         )
 
         array_query_row = {
@@ -104,6 +115,8 @@ with open(runs_path, 'r') as f:
             'array_execution_time': array_execution_time,
             'input_data_moved': input_data_moved,
             'weight_data_moved': weight_data_moved,
+            'input_transfer_window_cycles': input_transfer_window_cycles,
+            'weight_transfer_window_cycles': weight_transfer_window_cycles,
             'input_required_bandwidth': input_bandwidth,
             'weight_required_bandwidth': weight_bandwidth
         }
@@ -115,7 +128,7 @@ with open(runs_path, 'r') as f:
 
     if not array_query_df.empty:
         array_query_df_sci = array_query_df.copy()
-        for col in ['asram_size', 'wsram_size', 'array_execution_time', 'input_data_moved', 'weight_data_moved', 'input_required_bandwidth', 'weight_required_bandwidth']:
+        for col in ['asram_size', 'wsram_size', 'array_execution_time', 'input_data_moved', 'weight_data_moved', 'input_transfer_window_cycles', 'weight_transfer_window_cycles', 'input_required_bandwidth', 'weight_required_bandwidth']:
             array_query_df_sci[col] = array_query_df_sci[col].apply(lambda x: f'{x:.3e}')
         array_query_df_sci = array_query_df_sci.sort_values(by=['model', 'array_dim', 'batch_size', 'asram_size', 'wsram_size'])
         array_query_df_sci.to_csv(output_path + f'bandwidth_performance_metrics_scientific.csv', index=False)
