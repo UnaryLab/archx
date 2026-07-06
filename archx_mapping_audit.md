@@ -33,7 +33,9 @@ That can work if `mapping.py` owns schedule timing and the lower mapping nodes o
 
 Remaining check: run an end-to-end ArchX aggregate on a small GEMM and verify that `*_arr + *_dram` equals the analytical schedule's compute cycles plus residual stall cycles.
 
-### 2. Per-event `stall_cycle_count` is not an active ArchX metric
+### 2. Per-event stall visibility
+
+Status: addressed through structural cycle queries in `chiplet4ai/llama/query/utils.py`.
 
 `mapping.py` returns `stall_cycle_count`, `read_stall_cycle_count`, and `write_stall_cycle_count`. ArchX stores them as specified metrics, but `description.py` only declares:
 
@@ -42,7 +44,18 @@ cycle_count
 runtime
 ```
 
-So those stall metrics are informational only unless they are added to the metric set or folded into `cycle_count` / `runtime` through edge factors. Right now `dram(...)` tries to fold stall into `cycle_count`, but the named stall metrics themselves are not queryable via the current metric YAML.
+Adding those as independent `specified` metrics is not straightforward because ArchX's specified aggregation only accepts injected specified values on events that connect directly to leaf modules. Most GEMM timing events are wrappers around child events, so exposing stall by adding metric declarations would either be ignored or rejected during aggregation.
+
+Instead, the query layer now exposes the schedule decomposition from the existing event structure:
+
+```text
+compute_cycle_count       = sum(cycle_count(*_arr))
+sram_cycle_count          = sum(cycle_count(*_sram))
+memory_stall_cycle_count  = sum(cycle_count(*_dram))
+unattributed_cycle_count  = cycle_count(parent) - components
+```
+
+This keeps `cycle_count` as the authoritative ArchX timing metric while making compute and memory-stall components visible for validation.
 
 ### 3. Runtime units are suspect
 
@@ -62,7 +75,9 @@ Then `node.py` expands one `sram_input_write_mapping` into `isram_depth * bank/2
 
 So `aggregate_event_count` for these mapping nodes is not semantically an actual access count.
 
-### 5. Lower-level `node.py` still encodes conceptual access assumptions
+### 5. Lower-level output SRAM ownership
+
+Status: addressed in `chiplet4ai/common/performance/node.py`.
 
 `array_compute_mapping` still expands to:
 
@@ -72,36 +87,45 @@ sram_output_read
 sram_output_write
 ```
 
-with fixed access expansion. Timing has been normalized, but there is still a conceptual mismatch between which level accounts for output reads/writes as traffic versus schedule time.
+with fixed access expansion. Timing had already been normalized. The remaining issue was dynamic-energy ownership: output SRAM traffic could be counted through both the array compute path and the explicit SRAM path.
+
+The output SRAM edges under `array_compute_mapping` now set `dynamic_energy` factor to zero, so:
+
+```text
+array path = compute/FIFO/register energy and timing
+sram path  = SRAM read/write energy
+dram path  = DRAM traffic and stall timing
+```
 
 ### 6. The memory stall model is not SCALE-Sim-accurate
 
-It estimates stalls from fold bytes and DRAM bandwidth overlap. It does not model:
+Status: addressed in `chiplet4ai/common/performance/mapping.py` with a trace-free cycle-demand approximation.
+
+The previous model estimated stalls from fold bytes and DRAM bandwidth overlap only. The schedule model now tracks:
 
 - active/prefetch buffer capacity
-- address reuse/hits
-- bank conflicts
-- SRAM ports
+- IFMAP and weight residency/reuse
+- SRAM service limits derived from bank/width
 - output write-buffer occupancy
-- true IFMAP/filter prefetch ordering
+- ordered prefetch readiness across folds
 
-So it is analytical, not simulated SCALE-Sim-equivalent.
+It is still analytical, not trace-based SCALE-Sim, but the model now has the main state variables needed to approximate SCALE-Sim-style memory stalls without generating traces.
 
 ## Bottom Line
 
 - Accurate fill/drain: mostly yes for array compute folds.
-- Accurate memory stalls: no, only a first analytical estimate.
-- Accurate end-to-end runtime/cycles in ArchX: likely closer after Issue 1, but still needs a direct aggregate validation.
+- Accurate memory stalls: improved trace-free approximation with active/prefetch buffers, reuse, SRAM service limits, and output buffer occupancy.
+- Accurate end-to-end runtime/cycles in ArchX: likely closer after Issue 1; Issue 2 now exposes component cycle queries for direct aggregate validation.
 - Accurate per-event counts: not uniformly. Some counts are normalized chunk counts used to recover traffic after lower-level expansion, not literal event counts.
 - Matches `description.py` structurally: yes.
-- Matches `description.py` semantically: partially; `node.py` and `mapping.py` now disagree in places about output read/write timing.
+- Matches `description.py` semantically: closer after Issue 5; output SRAM energy ownership now sits on the explicit SRAM path.
 
 ## Most Important Next Fix
 
-Validate the timing aggregation end to end and then make metric declarations expose the stall counters that `mapping.py` already computes.
+Validate the timing aggregation end to end using the structural cycle breakdown.
 
 Recommended direction:
 
 - Confirm `mapping.py` owns all schedule timing in the aggregate output.
 - Keep `node.py` as access/energy expansion with unit or zero timing factors.
-- Add stall metrics to `description.py` / metric YAML if they should be queried directly.
+- Use `query_cycle_breakdown(...)` to check whether `cycle_count(parent)` decomposes into `*_arr + *_sram + *_dram`.

@@ -2,11 +2,11 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from loguru import logger
-from chiplet4ai.llama.query.utils import query_performance_metrics, query_cycle_count
+from chiplet4ai.llama.query.utils import query_cycle_count
 from archx.architecture import load_architecture_dict
 from archx.workload import load_workload_dict
 from archx.event import load_event_graph
-from archx.metric import load_metric_dict, query_module_metric
+from archx.metric import load_metric_dict
 import pandas as pd
 from tqdm import tqdm
 import os
@@ -59,24 +59,18 @@ with open(runs_path, 'r') as f:
         workload_name = workload_dict['name']
         batch_size = workload_dict['configuration']['batch_size']
 
-        metrics = query_performance_metrics(
-            event_graph = event_graph,
-            metric_dict = metric_dict,
-            workload = workload_name,
-            event = 'llama_array',
-            module = 'pe',
-            tag='onchip',
-            metrics=['cycle_count', 'execution_time', 'flops', 'throughput']
+        cycle_count = query_cycle_count(
+            event_graph=event_graph,
+            metric_dict=metric_dict,
+            workload=workload_name,
+            event='llama_array'
         )
 
         array_query_row = {
             'model': workload_name,
             'array_dim': f'{array_dim[0]}x{array_dim[1]}',
             'batch_size': batch_size,
-            'flops': metrics['flops'],
-            'execution_time_s': metrics['execution_time'],
-            'cycle_count': metrics['cycle_count'],
-            'throughput': metrics['throughput']
+            'cycle_count': cycle_count
         }
 
         array_query_df = pd.concat([array_query_df, pd.DataFrame([array_query_row])], ignore_index=True) if not array_query_df.empty else pd.DataFrame([array_query_row])
@@ -86,7 +80,7 @@ with open(runs_path, 'r') as f:
 
     if not array_query_df.empty:
         array_query_df_sci = array_query_df.copy()
-        for col in ['flops', 'execution_time_s', 'cycle_count', 'throughput']:
+        for col in ['cycle_count']:
             array_query_df_sci[col] = array_query_df_sci[col].apply(lambda x: f'{x:.3e}')
         array_query_df_sci = array_query_df_sci.sort_values(by=['model', 'array_dim', 'batch_size'])
         array_query_df_sci.to_csv(output_path + f'array_performance_metrics_scientific.csv', index=False)

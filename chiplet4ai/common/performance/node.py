@@ -37,8 +37,8 @@ def array_compute_mapping(architecture_dict: OrderedDict, workload_dict: Ordered
     
     performance_dict['subevent'] = OrderedDict({
         'array_compute': {'count': array_height * array_width, 'factor': {'cycle_count': 1/(array_height * array_width), 'runtime': 1/(array_height * array_width)}},
-        'sram_output_read': {'count': array_height * array_width, 'factor': {'cycle_count': 0, 'runtime': 0}},
-        'sram_output_write': {'count': array_height * array_width, 'factor': {'cycle_count': 0, 'runtime': 0}},
+        'sram_output_read': {'count': array_height * array_width, 'factor': {'cycle_count': 0, 'runtime': 0, 'dynamic_energy': 0}},
+        'sram_output_write': {'count': array_height * array_width, 'factor': {'cycle_count': 0, 'runtime': 0, 'dynamic_energy': 0}},
     })
 
     return performance_dict

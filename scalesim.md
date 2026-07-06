@@ -128,7 +128,7 @@ This is the analytical memory stall modeling item.
 
 Status: implemented in `chiplet4ai/common/performance/mapping.py` as a shared WS schedule helper. The helper estimates residual DRAM read prefetch stalls and output drain stalls from fold-level operand bytes, DRAM bandwidth, and available compute overlap. This is still analytical and trace-free; it does not model SCALE-Sim's full active/prefetch buffer address state.
 
-### 5. Make SRAM capacity semantics closer to SCALE-Sim
+### 5. Make SRAM capacity semantics closer to SCALE-Sim - Done
 
 SCALE-Sim splits SRAM into active and prefetch regions, commonly with an active fraction around 0.5.
 
@@ -141,7 +141,9 @@ prefetch_elements = total_elements - active_elements
 
 Tile fitting should use active capacity. Prefetch feasibility should use prefetch capacity.
 
-### 6. Revisit output / partial-sum behavior
+Status: implemented in `chiplet4ai/common/performance/mapping.py::_ws_schedule(...)`. SRAM capacity is split into active and prefetch regions using `active_fraction` / `active_buffer_fraction` when present, defaulting to 0.5. Active capacity controls IFMAP/weight/output residency. Prefetch capacity contributes to read-prefetch feasibility.
+
+### 6. Revisit output / partial-sum behavior - Done
 
 Our model explicitly estimates output partial read/write traffic when outputs do not fit. SCALE-Sim's WS model primarily represents OFMAP writes through its write buffer and derives DRAM writes/drain timing from that.
 
@@ -152,14 +154,16 @@ This is not necessarily a bug in our model, but it is a modeling difference. We 
 
 This should come after compute and memory timing are aligned, because output behavior depends on the chosen accumulation model.
 
+Status: implemented as a trace-free output-buffer occupancy model in `chiplet4ai/common/performance/mapping.py::_ws_schedule(...)`. OFMAP bytes enter an output write buffer, drain at the modeled output service rate, and add write stalls when occupancy exceeds buffer capacity. Output partial reads are counted when an output tile cannot fit in active output SRAM across K folds.
+
 ## Recommended Sequence
 
 1. Done - Implement SCALE-Sim-style WS fold timing.
 2. Done - Add explicit mapping efficiency and compute utilization.
 3. Done - Replace aggregate operand traffic with phase-level operand demand rates.
 4. Done - Add analytical double-buffer read/write stall estimates.
-5. Adjust SRAM capacity modeling to active/prefetch regions.
-6. Decide whether to preserve or simplify partial-output spill modeling.
+5. Done - Adjust SRAM capacity modeling to active/prefetch regions.
+6. Done - Add output write-buffer occupancy and partial-output spill handling.
 
 ## Design Principle
 

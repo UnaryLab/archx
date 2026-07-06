@@ -35,7 +35,7 @@ df = pd.read_csv(RESULTS_PATH)
 
 input_df = (
     df
-    .groupby(['model', 'asram_size'], as_index=False)['asram_bandwidth']
+    .groupby(['model', 'asram_size'], as_index=False)['input_required_bandwidth']
     .mean()
     .sort_values(['model', 'asram_size'])
 )
@@ -43,7 +43,7 @@ input_df['sram_size_mib'] = input_df['asram_size'].apply(bits_to_mib)
 
 weight_df = (
     df
-    .groupby(['model', 'wsram_size'], as_index=False)['wsram_bandwidth']
+    .groupby(['model', 'wsram_size'], as_index=False)['weight_required_bandwidth']
     .mean()
     .sort_values(['model', 'wsram_size'])
 )
@@ -61,7 +61,7 @@ for model in sorted(input_df['model'].unique()):
     sub = input_df[input_df['model'] == model]
     axes[0].plot(
         sub['sram_size_mib'],
-        sub['asram_bandwidth'],
+        sub['input_required_bandwidth'],
         linewidth=0.9,
         markersize=4,
         marker=style['marker'],
@@ -74,7 +74,7 @@ for model in sorted(weight_df['model'].unique()):
     sub = weight_df[weight_df['model'] == model]
     axes[1].plot(
         sub['sram_size_mib'],
-        sub['wsram_bandwidth'],
+        sub['weight_required_bandwidth'],
         linewidth=0.9,
         markersize=4,
         marker=style['marker'],
@@ -82,11 +82,11 @@ for model in sorted(weight_df['model'].unique()):
         label=style['label'],
     )
 
-axes[0].set_title('Input SRAM')
-axes[0].set_ylabel('Bandwidth (GiB/s)')
+axes[0].set_title('Input Movement')
+axes[0].set_ylabel('Required Bandwidth (GiB/s)')
 axes[0].set_xlabel('SRAM Size (MiB)')
 
-axes[1].set_title('Weight SRAM')
+axes[1].set_title('Weight Movement')
 axes[1].set_xlabel('SRAM Size (MiB)')
 
 for ax in axes:
