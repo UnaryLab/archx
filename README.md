@@ -1,24 +1,24 @@
 # Archx
 
-A cost-modeling framework for computer-system design-space exploration, built around the **A-Graph** abstraction.
+An event-based cost-modeling framework for computer-system design-space exploration, built around the **A-Graph** abstraction.
 
 Archx models across the system stack, separating into 4 levels. Each level is described by one of the four inputs to a run (detailed under [Describing a design](#describing-a-design)).
 
 # Application
 
-What the system executes: the **workload**. A workload YAML (`-w`) names the application (a GEMM, an LLM, ...) and gives its `configuration` knobs (matrix dimensions, batch size, layer counts, ...) that the levels below consume.
+A given workload (e.g. LLM, Signal processing, Error correction, etc). Each workload is defined with parameters to sweep through multiple configurations.
 
 # Software
 
-How the application decomposes into work on the hardware: the **events**. An event YAML (`-e`) defines the A-Graph structure, breaking the application into a hierarchy of events down to leaf hardware modules, and attaches to each event a Python **performance model** that translates the workload configuration into per-subevent call counts, operations, and timing.
+An event graph that details how the application decomposes into architecture events. Each event has an isolated, python-based **performance model** attached that translates the workload configuration into per-subevent call counts.
 
 # Architecture
 
-The hardware organization the software runs on: the **architecture**. An architecture YAML (`-a`) declares the modules (compute units, memories, interconnect), their hierarchy and instance counts, their tags for group queries, and the query parameters (technology, frequency, sizes) used to price each module.
+The micro-architecture or blocks that build the overall architecture. Such blocks can be implemented at any granularity.
 
 # Circuit
 
-The physical costs of each module: arbitrary **metrics**. A metric YAML (`-m`) declares which metrics to compute (area, power, energy, cycle count, runtime, or any user-defined quantity) and how each aggregates up the graph; pluggable hardware **interfaces** (the CACTI7 memory model, CMOS synthesis CSVs, ...) supply the circuit-level values per module.
+The physical costs of each module, or **metrics**. Each metric, (e.g., area, power, energy, cycle count, runtime, or any user-defined quantity), details its aggregation up the graph; pluggable hardware **interfaces** (the CACTI7 memory model, CMOS synthesis CSVs, ...) supply the circuit-level values per module.
 
 Archx computes arbitrary hardware metrics for an architecture running a workload. It does this by:
 
