@@ -462,7 +462,7 @@ def _ws_schedule(architecture_dict: OrderedDict, batch: int, M: int, K: int, N: 
             _service_cycles(output_read_bytes, osram_bytes_per_cycle),
         ) - steady_window,
     )
-    output_tail_stall_cycles = max(0, _service_cycles(output_write_bytes, osram_bytes_per_cycle) - output_tail_window)
+    output_tail_stall_cycles = max(0, _service_cycles(output_write_bytes, osram_bytes_per_cycle) - (steady_window + output_tail_window))
     read_stall_cycles = max(input_read_stall_cycles, weight_read_stall_cycles) + weight_fill_stall_cycles + steady_state_stall_cycles + output_tail_stall_cycles
 
     input_transfer_window_cycles = _window_from_chunks(compute_cycles, input_read_bytes, input_chunks)
