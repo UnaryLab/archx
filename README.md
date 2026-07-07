@@ -203,7 +203,7 @@ archx -r <run_dir> -x runs.txt                    # execute all runs in parallel
 
 `-compile ... -full` chains all of the above in one command (add `-ff` to insert the GUI filter step). `-x` fans the runs out across all CPU cores; failing runs are collected in `failed_runs.txt`.
 
-#### Writing a description file
+### Writing a description file
 
 A description file builds the same four inputs as a single run, but programmatically, and declares which parameters to sweep. Any list-valued `instance` or `query` entry, and any workload parameter added with `sweep=True`, becomes a sweep axis; constraints prune invalid combinations before anything is written to disk.
 
