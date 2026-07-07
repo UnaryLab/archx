@@ -16,7 +16,10 @@ class Workload():
         return configuration
     
     def to_yaml(self, config):
-        workload_dict = {'workload': {}}
+        workload_dict = {'workload': {
+            'name': None,
+            'configuration': {}
+        }}
 
         for var_name, value in config.items():
             param_info = self.parameter_enumerator.get_parameters_from_name(var_name)
@@ -24,9 +27,9 @@ class Workload():
             param_name = param_info['param_name']
             copy_value = deepcopy(value)
             
-            if config_name not in workload_dict['workload']:
-                workload_dict['workload'][config_name] = {'configuration': {}}
-            workload_dict['workload'][config_name]['configuration'][param_name] = copy_value
+            if workload_dict['workload']['name'] is None:
+                workload_dict['workload']['name'] = config_name
+            workload_dict['workload']['configuration'][param_name] = copy_value
         
         return workload_dict
             
@@ -44,14 +47,14 @@ class Configuration():
         sweep = sweep if sweep is not None else False
 
         parameter_param = self.parameter_enumerator.add_parameter(name=self.name,
-                                                                   param_name=parameter_name,
-                                                                   value=parameter_value,
-                                                                   type='parameter',
-                                                                   sweep=sweep,
-                                                                   desc='workload')
+                                                                  param_name=parameter_name,
+                                                                  value=parameter_value,
+                                                                  type='parameter',
+                                                                  sweep=sweep,
+                                                                  desc='workload')
 
         param_dict = {
-            parameter_name: parameter_param
+            'parameter': parameter_param
         }
 
         logger.info(f"Added parameter '{parameter_name}' to configuration '{self.name}'.")
