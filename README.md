@@ -201,7 +201,60 @@ archx -r <run_dir> -f configurations.csv          # Tkinter GUI to filter -> run
 archx -r <run_dir> -x runs.txt                    # execute all runs in parallel
 ```
 
-`-compile ... -full` chains all of the above in one command (add `-ff` to insert the GUI filter step). `-x` fans the runs out across all CPU cores; failing runs are collected in `failed_runs.txt`. See `examples/systolic_array/description.py` for a description file.
+`-compile ... -full` chains all of the above in one command (add `-ff` to insert the GUI filter step). `-x` fans the runs out across all CPU cores; failing runs are collected in `failed_runs.txt`.
+
+#### Writing a description file
+
+A description file builds the same four inputs as a single run, but programmatically, and declares which parameters to sweep. Any list-valued `instance` or `query` entry, and any workload parameter added with `sweep=True`, becomes a sweep axis; constraints prune invalid combinations before anything is written to disk.
+
+```python
+from archx.programming.graph.agraph import AGraph
+
+
+def description(path):
+    agraph = AGraph(path=path)
+    architecture = agraph.architecture
+    event = agraph.event
+    metric = agraph.metric
+    workload = agraph.workload
+
+    # Architecture: list values become sweep axes.
+    architecture.add_attributes(technology=[45], frequency=400, interface='csv_cmos')
+    pe = architecture.add_module(name='pe', instance=[[16, 16], [32, 32], [64, 64]], tag=['onchip', 'compute'], query={'class': 'mac'})
+    sram = architecture.add_module(name='sram', instance=[1], tag=['memory'], query={'interface': 'cacti7', 'class': 'sram', 'bank': [32, 64, 128], 'width': 16, 'depth': [512, 1024, 2048]})
+
+    # Events: the A-Graph structure, same as the event YAML.
+    event.add_event(name='gemm', subevent=['mac_array', 'sram_rd', 'sram_wr'], performance='performance.py')
+    event.add_event(name='mac_array', subevent=['pe'], performance='performance.py')
+    event.add_event(name='sram_rd', subevent=['sram'], performance='performance.py')
+    event.add_event(name='sram_wr', subevent=['sram'], performance='performance.py')
+
+    # Metrics.
+    metric.add_metric(name='area', unit='mm^2', aggregation='module')
+    metric.add_metric(name='dynamic_energy', unit='nJ', aggregation='summation')
+    metric.add_metric(name='runtime', unit='ms', aggregation='specified')
+
+    # Workloads: sweep=True parameters become sweep axes.
+    gemm = workload.add_configuration(name='gemm')
+    gemm.add_parameter(parameter_name='m', parameter_value=[256, 512, 1024], sweep=True)
+    gemm.add_parameter(parameter_name='k', parameter_value=512)
+    gemm.add_parameter(parameter_name='n', parameter_value=512)
+
+    # Constraints prune the cross product of all axes.
+    # direct_constraint: the listed parameters sweep together by index
+    # (the i-th PE shape only pairs with the i-th bank count).
+    agraph.direct_constraint([pe['instance'], sram['query']['bank']])
+    # conditional_constraint: keep only combinations whose actual values
+    # satisfy an arbitrary condition (here: SRAM capacity capped at 4 Mib).
+    agraph.conditional_constraint(a=sram['query']['bank'], b=sram['query']['depth'], condition=lambda bank, depth: bank * depth * 16 <= 2**22)
+
+    agraph.generate()
+    return agraph
+```
+
+The handles returned by `add_module` index into the swept parameters (`pe['instance']`, `sram['query']['bank']`); passing a list of names (e.g. `name=['isram', 'wsram']`) creates several identically-parameterized modules, indexed as `srams['wsram']['query']['bank']`. `agraph.generate()` solves the constraint model and writes the per-configuration YAML files (`architecture/`, `workload/`, `event/`, `metric/`) plus `configurations.csv` into the run directory; `-extract` then turns the CSV into one `archx` command line per configuration in `runs.txt`.
+
+For a complete real-world description (multi-module arrays, partition and multi-variable conditional constraints), see `chiplet4ai/llama/description.py`.
 
 ### Interface management
 ```bash
