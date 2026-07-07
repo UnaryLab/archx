@@ -2,7 +2,25 @@
 
 A cost-modeling framework for computer-system design-space exploration, built around the **A-Graph** abstraction.
 
-Archx computes hardware metrics (area, power, energy, cycle count, runtime, ...) for an architecture running a workload. It does this by:
+Archx models across the system stack, separating into 4 levels. Each level is described by one of the four inputs to a run (detailed under [Describing a design](#describing-a-design)).
+
+# Application
+
+What the system executes: the **workload**. A workload YAML (`-w`) names the application (a GEMM, an LLM, ...) and gives its `configuration` knobs (matrix dimensions, batch size, layer counts, ...) that the levels below consume.
+
+# Software
+
+How the application decomposes into work on the hardware: the **events**. An event YAML (`-e`) defines the A-Graph structure, breaking the application into a hierarchy of events down to leaf hardware modules, and attaches to each event a Python **performance model** that translates the workload configuration into per-subevent call counts, operations, and timing.
+
+# Architecture
+
+The hardware organization the software runs on: the **architecture**. An architecture YAML (`-a`) declares the modules (compute units, memories, interconnect), their hierarchy and instance counts, their tags for group queries, and the query parameters (technology, frequency, sizes) used to price each module.
+
+# Circuit
+
+The physical costs of each module: arbitrary **metrics**. A metric YAML (`-m`) declares which metrics to compute (area, power, energy, cycle count, runtime, or any user-defined quantity) and how each aggregates up the graph; pluggable hardware **interfaces** (the CACTI7 memory model, CMOS synthesis CSVs, ...) supply the circuit-level values per module.
+
+Archx computes arbitrary hardware metrics for an architecture running a workload. It does this by:
 
 1. building a directed graph (the A-Graph) of **events** and hardware **modules** connected by **subevent** edges,
 2. populating each hardware module with costs queried from a pluggable hardware **interface** (the CACTI7 memory model, CMOS synthesis CSVs, ...),
