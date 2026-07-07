@@ -4,19 +4,19 @@ An event-based cost-modeling framework for computer-system design-space explorat
 
 Archx models across the system stack, separating into 4 levels. Each level is described by one of the four inputs to a run (detailed under [Describing a design](#describing-a-design)).
 
-# Application
+## Application
 
 A given workload (e.g. LLM, Signal processing, Error correction, etc). Each workload is defined with parameters to sweep through multiple configurations.
 
-# Software
+## Software
 
 An event graph that details how the application decomposes into architecture events. Each event has an isolated, python-based **performance model** attached that translates the workload configuration into per-subevent call counts.
 
-# Architecture
+## Architecture
 
 The micro-architecture or blocks that build the overall architecture. Such blocks can be implemented at any granularity.
 
-# Circuit
+## Circuit
 
 The physical costs of each module, or **metrics**. Each metric, (e.g., area, power, energy, cycle count, runtime, or any user-defined quantity), details its aggregation up the graph; pluggable hardware **interfaces** (the CACTI7 memory model, CMOS synthesis CSVs, ...) supply the circuit-level values per module.
 
