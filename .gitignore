@@ -1,7 +1,7 @@
 # Generated Archx yaml files and configuration files
 **/descrption/
 **/runs/
-SCALE-Sim/
+.claude/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
