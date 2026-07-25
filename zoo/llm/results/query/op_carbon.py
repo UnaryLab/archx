@@ -1,4 +1,4 @@
-from zoo.llm.results.query.utils import query_execution_time, load_yaml, query_dynamic_energy, query_leakage_power, query_tag_power, query_operational_carbon
+from zoo.llm.results.query.utils import query_execution_time, load_yaml, query_dynamic_energy, query_leakage_power, query_tag_power, query_operational_carbon, query_area
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import pandas as pd
@@ -28,7 +28,7 @@ def query(input_path, output_path):
 
     kv_paths = 'kv_heads_8'
 
-    carbon_intensity = 294.25  # gCO2eq/kWh
+    carbon_intensity = 301  # gCO2eq/kWh
 
     end_to_end_breakdown = pd.DataFrame()
 
@@ -47,17 +47,20 @@ def query(input_path, output_path):
                     event_graph = yaml_dict['event_graph']
                     metric_dict = yaml_dict['metric_dict']
 
-                    proj_op_carbon = query_operational_carbon(tag=None, event_graph=event_graph, metric_dict=metric_dict, workload=model, event='projection', CI=carbon_intensity)
+                    proj_op_carbon = query_operational_carbon(tag='onchip', event_graph=event_graph, metric_dict=metric_dict, workload=model, event='projection', CI=carbon_intensity)
                     proj_op_carbon_dict = {'carbon': proj_op_carbon}
-
-                    attn_op_carbon = query_operational_carbon(tag=None, event_graph=event_graph, metric_dict=metric_dict, workload=model, event='attention', CI=carbon_intensity)
+                    
+                    attn_op_carbon = query_operational_carbon(tag='onchip', event_graph=event_graph, metric_dict=metric_dict, workload=model, event='attention', CI=carbon_intensity)
                     attn_op_carbon_dict = {'carbon': attn_op_carbon}
 
-                    ffn_op_carbon = query_operational_carbon(tag=None, event_graph=event_graph, metric_dict=metric_dict, workload=model, event='ffn', CI=carbon_intensity)
+                    ffn_op_carbon = query_operational_carbon(tag='onchip', event_graph=event_graph, metric_dict=metric_dict, workload=model, event='ffn', CI=carbon_intensity)
                     ffn_op_carbon_dict = {'carbon': ffn_op_carbon}
 
-                    nonlinear_op_carbon = query_operational_carbon(tag=None, event_graph=event_graph, metric_dict=metric_dict, workload=model, event='nonlinear', CI=carbon_intensity)
+                    nonlinear_op_carbon = query_operational_carbon(tag='onchip', event_graph=event_graph, metric_dict=metric_dict, workload=model, event='nonlinear', CI=carbon_intensity)
                     nonlinear_op_carbon_dict = {'carbon': nonlinear_op_carbon}
+
+                    # total_op_carbon = query_operational_carbon(tag=None, event_graph=event_graph, metric_dict=metric_dict, workload=model, event=model, CI=carbon_intensity)
+                    # total_op_carbon_dict = {'carbon': total_op_carbon}
 
                     proj_metric_df = pd.DataFrame(proj_op_carbon_dict, index=[0])
                     proj_metric_df['layer'] = 'projection'
@@ -65,11 +68,22 @@ def query(input_path, output_path):
                     attn_metric_df['layer'] = 'attention'
                     ffn_metric_df = pd.DataFrame(ffn_op_carbon_dict, index=[0])
                     ffn_metric_df['layer'] = 'ffn'
+                    # total_op_carbon_df = pd.DataFrame(total_op_carbon_dict, index=[0])
+                    # total_op_carbon_df['layer'] = 'total'
                     nonlinear_metric_df = pd.DataFrame(nonlinear_op_carbon_dict, index=[0])
                     nonlinear_metric_df['layer'] = 'nonlinear'
 
+                    total_execution_time = query_execution_time(event_graph=event_graph, metric_dict=metric_dict, workload=model, event=model)
 
-                    end_to_end_metric_df = pd.concat([proj_metric_df, attn_metric_df, ffn_metric_df, nonlinear_metric_df])
+                    onchip_area = query_area(event_graph=event_graph, metric_dict=metric_dict, tag='onchip')
+                    onchip_carbon = (0.55 * onchip_area) * (carbon_intensity / 3.6)
+                    onchip_carbon *= ((total_execution_time) / (5* 365 * 24 * 3600))
+                    onchip_carbon /= 1000 # convert to kgCO2eq
+
+                    onchip_carbon_dict = {'carbon': onchip_carbon, 'layer': 'onchip_em'}
+                    onchip_carbon_df = pd.DataFrame(onchip_carbon_dict, index=[0])
+
+                    end_to_end_metric_df = pd.concat([proj_metric_df, attn_metric_df, ffn_metric_df, nonlinear_metric_df, onchip_carbon_df])
                     end_to_end_metric_df['arch'] = arch
                     end_to_end_metric_df['subarch'] = subarch
                     end_to_end_metric_df['arch_dim'] = arch_dim
@@ -78,7 +92,7 @@ def query(input_path, output_path):
                     end_to_end_metric_df = end_to_end_metric_df.drop(columns=['flops', 'execution_time', 'power', 'energy'], errors='ignore')
                     end_to_end_breakdown = pd.concat([end_to_end_breakdown, end_to_end_metric_df], axis=0)
 
-    end_to_end_breakdown.to_csv(output_path + 'end_to_end_carbon_breakdown.csv', index=False)
+    end_to_end_breakdown.to_csv(output_path + 'op_carbon.csv', index=False)
 
     group_cols = [col for col in end_to_end_breakdown.columns if col not in ['carbon', 'layer']]
     total_carbon_df = end_to_end_breakdown.groupby(group_cols)['carbon'].sum().reset_index()
@@ -103,17 +117,17 @@ def query(input_path, output_path):
                 end_to_end_breakdown.loc[model_mask, 'carbon'] / baseline_carbon
             )
 
-    end_to_end_breakdown.to_csv(output_path + 'end_to_end_carbon_breakdown_norm.csv', index=False)
+    end_to_end_breakdown.to_csv(output_path + 'op_carbon_norm.csv', index=False)
 
 def figure(input_path: str, output_path: str):
 
-    df = pd.read_csv(input_path + 'end_to_end_carbon_breakdown_norm.csv')
+    df = pd.read_csv(input_path + 'op_carbon_norm.csv')
 
     fig_width_pt = 250
     fig_width = fig_width_pt/72
-    fig_height = fig_width/4.24
+    fig_height = fig_width/3.25
 
-    font_size = 7
+    font_size = 8
 
     fig, axes = plt.subplots(
         1, 4, figsize=(fig_width, fig_height), sharex=False, sharey=True
@@ -131,24 +145,25 @@ def figure(input_path: str, output_path: str):
     
 
     # Create extended architecture list for display (systolic subarchs as separate items)
-    display_archs = []
-    for arch in label_dict['arch']:
-        if arch == 'simd':
-            continue  # Skip simd architecture
-        elif arch == 'systolic':
-            display_archs.extend(['systolic', 'systolic_taylor', 'systolic_pwl'])
-        else:
-            display_archs.append(arch)
+    display_archs = ['mugi', 'carat', 'systolic', 'simd', 'systolic_taylor', 'systolic_pwl']
+    # for arch in label_dict['arch']:
+    #     if arch == 'simd':
+    #         display_archs.append('simd')
+    #     elif arch == 'systolic':
+    #         display_archs.extend(['systolic', 'systolic_taylor', 'systolic_pwl'])
+    #     else:
+    #         display_archs.append(arch)
     
     bars_per_arch = {
         'mugi': 1,
         'carat': 1,
         'systolic': 1,
+        'simd': 1,
         'systolic_taylor': 1,
         'systolic_pwl': 1
     }
 
-    bar_width = 0.5
+    bar_width = 0.6
 
     group_centers = np.arange(len(display_archs))
 
@@ -167,7 +182,8 @@ def figure(input_path: str, output_path: str):
         'projection': '#FF6B6B',  # Red
         'attention': "#53CC6D",   # Teal
         'ffn': '#45B7D1',         # Blue
-        'nonlinear': '#FFA07A'    # Light Salmon
+        'nonlinear': '#FFA07A',    # Light Salmon
+        'onchip_em': "#D68AF1"  # Light Gray
     }
 
     
@@ -175,7 +191,7 @@ def figure(input_path: str, output_path: str):
     for idx, model in enumerate(label_dict['model']):
         ax = axes[idx]
         model_label = '7B' if model == 'llama_2_7b' else '13B' if model == 'llama_2_13b' else '70B' if model in 'llama_2_70b' else '70B GQA'
-        ax.set_title(model_label, fontsize=font_size, pad = 2.5)
+        ax.set_title(model_label, fontsize=9, pad = 2.5)
 
         
 
@@ -219,6 +235,14 @@ def figure(input_path: str, output_path: str):
                     (df['arch_dim'].isin(['256x8']))
                 ]
             
+            if arch == 'simd':
+                filtered_df = df[
+                    (df['model'] == model) &
+                    (df['arch'] == arch) &
+                    (df['subarch'] == 'mac') &
+                    (df['arch_dim'] == '16x16')
+                ]
+
             if arch == 'systolic':
                 filtered_df = df[
                     (df['model'] == model) &
@@ -236,14 +260,14 @@ def figure(input_path: str, output_path: str):
 
             # Get data for each layer separately
             layer_data = {}
-            for layer in ['projection', 'attention', 'ffn', 'nonlinear']:
+            for layer in ['projection', 'attention', 'ffn', 'nonlinear', 'onchip_em']:
                 layer_filtered_df = filtered_df[filtered_df['layer'] == layer]
                 layer_data[layer] = layer_filtered_df['normalized_carbon'].tolist()
 
             # Create stacked bars for each architecture
             for j, pos in enumerate(bar_positions):
                 bottom = 0
-                for layer in ['projection', 'attention', 'ffn', 'nonlinear']:
+                for layer in ['projection', 'attention', 'ffn', 'nonlinear', 'onchip_em']:
                     if j < len(layer_data[layer]) and layer_data[layer]:
                         height = layer_data[layer][j] if j < len(layer_data[layer]) else 0
                         ax.bar(
@@ -254,7 +278,7 @@ def figure(input_path: str, output_path: str):
                             label=layer if j == 0 and i == 0 else "",  # Only label once for legend
                             color=layer_colors[layer],
                             edgecolor='black',
-                            linewidth=0.3
+                            linewidth=0.4
                         )
                         bottom += height
 
@@ -286,11 +310,13 @@ def figure(input_path: str, output_path: str):
                 display_arch_labels.append('M')
             elif display_arch == 'carat':
                 display_arch_labels.append('C')
+            elif display_arch == 'simd':
+                display_arch_labels.append('D')
             else:
                 display_arch_labels.append(display_arch)
         
         ax.set_xticks(tick_positions)
-        ax.set_xticklabels(display_arch_labels, fontsize=font_size-1)
+        ax.set_xticklabels(display_arch_labels, fontsize=font_size)
         ax.set_xlim(-1, len(display_archs))
         
         # Add top x-axis with dimension labels
@@ -305,7 +331,8 @@ def figure(input_path: str, output_path: str):
         vlp_indices = [i for i, arch in enumerate(display_archs) if arch in ['mugi', 'carat']]
         # Systolic group: systolic, systolic_taylor, systolic_pwl (16x16)
         systolic_indices = [i for i, arch in enumerate(display_archs) if arch.startswith('systolic')]
-        
+        # simd_indices = [i for i, arch in enumerate(display_archs) if arch == 'simd']
+
         # Calculate position for VLP group (256)
         if vlp_indices:
             vlp_positions = []
@@ -317,12 +344,11 @@ def figure(input_path: str, output_path: str):
                     vlp_positions.append(np.mean(bar_positions))
                 else:
                     vlp_positions.append(bar_positions[0])
-            
             # Center the label over the VLP group
             vlp_center = np.mean(vlp_positions)
             dim_tick_positions.append(vlp_center)
             dim_tick_labels.append('256')
-        
+
         # Calculate position for Systolic group (16)
         if systolic_indices:
             systolic_positions = []
@@ -334,19 +360,20 @@ def figure(input_path: str, output_path: str):
                     systolic_positions.append(np.mean(bar_positions))
                 else:
                     systolic_positions.append(bar_positions[0])
-            
             # Center the label over the Systolic group
             systolic_center = np.mean(systolic_positions)
             dim_tick_positions.append(systolic_center)
             dim_tick_labels.append('16')
+
+        # Do NOT add a tick for SIMD (SD) array size
         
         ax2.set_xticks(dim_tick_positions)
-        ax2.set_xticklabels(dim_tick_labels, fontsize=font_size-1)
+        ax2.set_xticklabels(dim_tick_labels, fontsize=font_size)
         ax2.set_xlim(ax.get_xlim())
         
-        # Make tick marks thinner
-        ax.tick_params(axis='both', width=0.3, length=2)
-        ax2.tick_params(axis='x', width=0.3, length=2)
+        # Set tick marks to normal thickness
+        ax.tick_params(axis='both', width=1.0, length=4)
+        ax2.tick_params(axis='x', width=1.0, length=4)
         
         # Make both xticks closer to the graph
         ax.tick_params(axis='x', pad=0.5)
@@ -356,16 +383,16 @@ def figure(input_path: str, output_path: str):
         ax.tick_params(axis='y', labelsize=font_size)
         
         # Set y-axis to show integers 0, 1, 2 only
-        ax.set_yticks([0, 1, 2])
-        ax.set_yticklabels(['0', '1', '2'])
-        ax.set_ylim(0, 2.2)  # Set y-limit to accommodate the 2.0 max
+        ax.set_yticks([0, 0.5, 1, 1.5])
+        #ax.set_yticklabels(['0', '1', '2'])
+        ax.set_ylim(0, 1.75)  # Set y-limit to requested range
         
         # Remove all spines except outer ones to create unified appearance
         if idx > 0:
             # Remove y-axis labels and ticks for interior subplots
             ax.tick_params(axis='y', left=False, labelleft=False)
             # Add light dashed grid lines (same as leftmost subplot)
-            ax.grid(True, axis='y', linestyle='--', linewidth=0.3, alpha=0.5, color='gray')
+            ax.grid(True, axis='y', linestyle='--', linewidth=1.0, alpha=0.5, color='gray')
             # Remove left spine for interior subplots
             ax.spines['left'].set_visible(False)
         else:
@@ -374,24 +401,24 @@ def figure(input_path: str, output_path: str):
             # Explicitly enable y-axis labels
             ax.yaxis.set_tick_params(labelleft=True)
             # Add light dashed grid lines
-            ax.grid(True, axis='y', linestyle='--', linewidth=0.3, alpha=0.5, color='gray')
-            # Make leftmost spine thinner
-            ax.spines['left'].set_linewidth(0.3)
+            ax.grid(True, axis='y', linestyle='--', linewidth=1.0, alpha=0.5, color='gray')
+            # Set leftmost spine to normal thickness
+            ax.spines['left'].set_linewidth(1.0)
         
         # Remove right spine for all but the rightmost subplot
         if idx < len(label_dict['model']) - 1:
             ax.spines['right'].set_visible(False)
         else:
-            # Make rightmost spine thinner
-            ax.spines['right'].set_linewidth(0.3)
+            # Set rightmost spine to normal thickness
+            ax.spines['right'].set_linewidth(1.0)
         
-        # Make top and bottom spines thinner
-        ax.spines['top'].set_linewidth(0.3)
-        ax.spines['bottom'].set_linewidth(0.3)
+        # Set top and bottom spines to normal thickness
+        ax.spines['top'].set_linewidth(1.0)
+        ax.spines['bottom'].set_linewidth(1.0)
         
         # Remove top spine from twin axis except for outer ones
         if idx == 0:
-            ax2.spines['top'].set_linewidth(0.3)
+            ax2.spines['top'].set_linewidth(1.0)
         else:
             ax2.spines['top'].set_visible(False)
             
@@ -405,11 +432,11 @@ def figure(input_path: str, output_path: str):
     #     ax.set_xlabel("Architecture", fontsize=font_size)
     
     # Add legend for layers at the top in one row
-    handles = [plt.Rectangle((0,0),1,1, color=layer_colors[layer]) for layer in ['projection', 'attention', 'ffn', 'nonlinear']]
-    labels = ['Projection', 'Attention', 'FFN', 'Nonlinear']
-    fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.525, 1.4), ncol=4, fontsize=font_size,
-               columnspacing=1, handlelength=.75, handleheight=0.5, handletextpad=1)
+    handles = [plt.Rectangle((0,0),1,1, color=layer_colors[layer]) for layer in ['projection', 'attention', 'ffn', 'nonlinear', 'onchip_em']]
+    labels = ['Projection', 'Attention', 'FFN', 'Nonlinear', 'Embodied']
+    fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.525, 1.37), ncol=5, fontsize=font_size,
+               columnspacing=0.5, handlelength=.6, handleheight=0.5, handletextpad=0.4)
     plt.subplots_adjust(left=0.08, right=0.98, top=0.82, bottom=0.25)
 
-    plt.savefig(output_path + 'end_to_end_carbon_breakdown.png', dpi=1200, bbox_inches='tight')
-    plt.savefig(output_path + 'end_to_end_carbon_breakdown.pdf', dpi=1200, bbox_inches='tight')
+    plt.savefig(output_path + 'op_carbon.png', dpi=1200, bbox_inches='tight')
+    plt.savefig(output_path + 'op_carbon.pdf', dpi=1200, bbox_inches='tight')

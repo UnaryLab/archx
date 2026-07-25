@@ -3,7 +3,7 @@ instance:
   width: [8]
   array: [128, 8]
   array_double: [128, 8, 2]
-  broadcast_array: [3, 8]
+  broadcast_array: [2, 8]
   broadcast_height: [3]
   height_pipeline_tree: [3]
   height_tree: [127]

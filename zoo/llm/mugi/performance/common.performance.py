@@ -23,7 +23,7 @@ def instruction(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)
 
 def counter_reuse(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)->OrderedDict:
     performance_dict = OrderedDict()
-    workload_dict = next(iter(workload_dict.values()))['configuration']
+    workload_dict = workload_dict['configuration']
     cycles = workload_dict['cycles']
     router_dim = get_prod(architecture_dict['irouter']['instance']) if 'irouter' in architecture_dict else 1
 
@@ -44,7 +44,7 @@ def counter_reuse(architecture_dict: OrderedDict, workload_dict: OrderedDict=Non
 
 def vector(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)->OrderedDict:
     performance_dict = OrderedDict()
-    workload_dict = next(iter(workload_dict.values()))['configuration']
+    workload_dict = workload_dict['configuration']
     router_dim = get_prod(architecture_dict['irouter']['instance']) if 'irouter' in architecture_dict else 1
 
     frequency = architecture_dict['multiplier']['query']['frequency']

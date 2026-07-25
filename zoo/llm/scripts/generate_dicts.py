@@ -158,11 +158,11 @@ def generate_workload(base_path: str):
                 del filtered_config_dict[shared_key]
             config_combinations = [dict(zip(filtered_config_dict.keys(), combination)) for combination in itertools.product(*filtered_config_dict.values())]
             for combination in config_combinations:
-                generated_workload_dict = OrderedDict({'workload': {workload_key: {'configuration': {}}}})
-                generated_workload_dict['workload'][workload_key]['configuration'].update(workload_value['configuration'])
+                generated_workload_dict = OrderedDict({'workload': {'name': workload_key, 'configuration': {}}})
+                generated_workload_dict['workload']['configuration'].update(workload_value['configuration'])
                 if architecture_value:
-                    generated_workload_dict['workload'][workload_key]['configuration'].update(architecture_value)
-                generated_workload_dict['workload'][workload_key]['configuration'].update(combination)
+                    generated_workload_dict['workload']['configuration'].update(architecture_value)
+                generated_workload_dict['workload']['configuration'].update(combination)
 
                 workload_config_path = ''
                 for key, value in combination.items():

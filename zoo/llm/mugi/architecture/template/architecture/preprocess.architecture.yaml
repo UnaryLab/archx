@@ -4,7 +4,7 @@ architecture:
       tag: nonlinear
       instance: height
       query:
-        class: round
+        class: vlp_round
 
     sign_mantissa_register:
       tag: nonlinear
@@ -24,4 +24,4 @@ architecture:
       tag: nonlinear
       instance: height
       query:
-        class: clamp
+        class: vlp_clamp

@@ -4,13 +4,13 @@ architecture:
       tag: nonlinear
       instance: pwl_comparator
       query:
-        class: bf_comparator
+        class: pwl_bf_max
 
     pwl_encoder:
       tag: nonlinear
       instance: height
       query:
-        class: 21_22_encoder
+        class: pwl_22_seg_encoder
 
     pwl_register:
       tag: nonlinear

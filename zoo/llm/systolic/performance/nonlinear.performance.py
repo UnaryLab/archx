@@ -65,7 +65,7 @@ def gemm_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=No
 
 def softmax_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)->OrderedDict:
     performance_dict = OrderedDict()
-    workload_dict = next(iter(workload_dict.values()))
+    workload_dict = workload_dict
     router_dim = get_prod(architecture_dict['irouter']['instance']) if 'irouter' in architecture_dict else 1
 
     frequency = architecture_dict['multiplier_vector']['query']['frequency']
@@ -158,7 +158,7 @@ def softmax_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict
 
 def silu_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)->OrderedDict:
     performance_dict = OrderedDict()
-    workload_dict = next(iter(workload_dict.values()))
+    workload_dict = workload_dict
     router_dim = get_prod(architecture_dict['irouter']['instance']) if 'irouter' in architecture_dict else 1
 
     frequency = architecture_dict['multiplier_vector']['query']['frequency']

@@ -32,7 +32,7 @@ event:
     performance: zoo/llm/mugi/performance/gemm.performance.py
 
   nonlinear_gemm:
-    subevent: [round, sign_mantissa_register, exponent_register, exp_clamp, window_select, post_comp, max_tree, max_tree_register]
+    subevent: [round, sign_mantissa_register, exponent_register, exp_clamp, window_select, exp_norm, exp_select, max_tree, max_tree_register]
     performance: zoo/llm/mugi/performance/gemm.performance.py
 
   vector:

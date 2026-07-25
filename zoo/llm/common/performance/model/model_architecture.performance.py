@@ -6,7 +6,7 @@ from loguru import logger
 # region functions
 def gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
-    layers = next(iter(workload_dict.values()))['configuration']['layers']
+    layers = workload_dict['configuration']['layers']
 
     projection_dict = OrderedDict({'count': layers, 'aggregation': 'sequential'})
     attention_dict = OrderedDict({'count': layers, 'aggregation': 'sequential'})
@@ -24,7 +24,7 @@ def gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> Ord
 
 def nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
-    layers = next(iter(workload_dict.values()))['configuration']['layers']
+    layers = workload_dict['configuration']['layers']
 
     softmax_dict = OrderedDict({'count': layers, 'aggregation': 'sequential'})
     silu_dict = OrderedDict({'count': layers, 'aggregation': 'sequential'})
@@ -245,7 +245,7 @@ def silu(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> Ord
 # region sublayer prefill/decode
 def proj_q_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
-    workload_config = next(iter(workload_dict.values()))['configuration']
+    workload_config = workload_dict['configuration']
 
     if workload_config['architecture'].lower() == 'mugi':
         workload_config.update({'early_termination_cycles_cycles': workload_config['proj_avg_early_termination_cycles']})
@@ -272,7 +272,7 @@ def proj_q_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=No
 
 def proj_q_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
-    workload_config = next(iter(workload_dict.values()))['configuration']
+    workload_config = workload_dict['configuration']
 
     if workload_config['architecture'].lower() == 'mugi':
         workload_config.update({'early_termination_cycles': workload_config['proj_avg_early_termination_cycles']})
@@ -293,12 +293,11 @@ def proj_q_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=Non
     })
 
     performance_dict = mapping(mapping_dict=mapping_dict, architecture_dict=architecture_dict, workload_dict=workload_config)
-    
     return performance_dict
 
 def proj_k_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
-    workload_config = next(iter(workload_dict.values()))['configuration']
+    workload_config = workload_dict['configuration']
 
     if workload_config['architecture'].lower() == 'mugi':
         workload_config.update({'early_termination_cycles': workload_config['proj_avg_early_termination_cycles']})
@@ -326,7 +325,7 @@ def proj_k_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=No
 
 def proj_k_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
-    workload_config = next(iter(workload_dict.values()))['configuration']
+    workload_config = workload_dict['configuration']
 
     if workload_config['architecture'].lower() == 'mugi':
         workload_config.update({'early_termination_cycles': workload_config['proj_avg_early_termination_cycles']})
@@ -353,7 +352,7 @@ def proj_k_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=Non
 
 def proj_v_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
-    workload_config = next(iter(workload_dict.values()))['configuration']
+    workload_config = workload_dict['configuration']
 
     if workload_config['architecture'].lower() == 'mugi':
         workload_config.update({'early_termination_cycles': workload_config['proj_avg_early_termination_cycles']})
@@ -381,7 +380,7 @@ def proj_v_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=No
 
 def proj_v_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
-    workload_config = next(iter(workload_dict.values()))['configuration']
+    workload_config = workload_dict['configuration']
 
     if workload_config['architecture'].lower() == 'mugi':
         workload_config.update({'early_termination_cycles': workload_config['proj_avg_early_termination_cycles']})
@@ -407,7 +406,7 @@ def proj_v_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=Non
 
 def proj_a_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
-    workload_config = next(iter(workload_dict.values()))['configuration']
+    workload_config = workload_dict['configuration']
 
     if workload_config['architecture'].lower() == 'mugi':
         workload_config.update({'early_termination_cycles': workload_config['proj_avg_early_termination_cycles']})
@@ -433,7 +432,7 @@ def proj_a_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=No
 
 def proj_a_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
-    workload_config = next(iter(workload_dict.values()))['configuration']
+    workload_config = workload_dict['configuration']
 
     if workload_config['architecture'].lower() == 'mugi':
         workload_config.update({'early_termination_cycles': workload_config['proj_avg_early_termination_cycles']})
@@ -458,7 +457,7 @@ def proj_a_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=Non
 
 def qkt_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
-    workload_config = next(iter(workload_dict.values()))['configuration']
+    workload_config = workload_dict['configuration']
 
     if workload_config['architecture'].lower() == 'mugi':
         workload_config.update({'early_termination_cycles': workload_config['k_avg_early_termination_cycles']})
@@ -491,7 +490,7 @@ def qkt_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)
 
 def qkt_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
-    workload_config = next(iter(workload_dict.values()))['configuration']
+    workload_config = workload_dict['configuration']
 
     if workload_config['architecture'].lower() == 'mugi':
         workload_config.update({'early_termination_cycles': workload_config['k_avg_early_termination_cycles']})
@@ -529,7 +528,7 @@ def qkt_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) 
 
 def av_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
-    workload_config = next(iter(workload_dict.values()))['configuration']
+    workload_config = workload_dict['configuration']
 
     if workload_config['architecture'].lower() == 'mugi':
         workload_config.update({'early_termination_cycles': workload_config['v_avg_early_termination_cycles']})
@@ -564,7 +563,7 @@ def av_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) 
 
 def av_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
-    workload_config = next(iter(workload_dict.values()))['configuration']
+    workload_config = workload_dict['configuration']
     if workload_config['architecture'].lower() == 'mugi':
         workload_config.update({'early_termination_cycles': workload_config['v_avg_early_termination_cycles']})
 
@@ -603,7 +602,7 @@ def av_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -
 
 def proj_up_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
-    workload_config = next(iter(workload_dict.values()))['configuration']
+    workload_config = workload_dict['configuration']
 
     if workload_config['architecture'].lower() == 'mugi':
         workload_config.update({'early_termination_cycles': workload_config['ffn_avg_early_termination_cycles']})
@@ -630,7 +629,7 @@ def proj_up_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=N
 
 def proj_up_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
-    workload_config = next(iter(workload_dict.values()))['configuration']
+    workload_config = workload_dict['configuration']
 
     if workload_config['architecture'].lower() == 'mugi':
         workload_config.update({'early_termination_cycles': workload_config['ffn_avg_early_termination_cycles']})
@@ -656,7 +655,7 @@ def proj_up_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=No
 
 def proj_gate_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
-    workload_config = next(iter(workload_dict.values()))['configuration']
+    workload_config = workload_dict['configuration']
 
     if workload_config['architecture'].lower() == 'mugi':
         workload_config.update({'early_termination_cycles': workload_config['ffn_avg_early_termination_cycles']})
@@ -683,7 +682,7 @@ def proj_gate_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict
 
 def proj_gate_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
-    workload_config = next(iter(workload_dict.values()))['configuration']
+    workload_config = workload_dict['configuration']
 
     if workload_config['architecture'].lower() == 'mugi':
         workload_config.update({'early_termination_cycles': workload_config['ffn_avg_early_termination_cycles']})
@@ -709,7 +708,7 @@ def proj_gate_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=
 
 def proj_down_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
-    workload_config = next(iter(workload_dict.values()))['configuration']
+    workload_config = workload_dict['configuration']
 
     if workload_config['architecture'].lower() == 'mugi':
         workload_config.update({'early_termination_cycles': workload_config['ffn_avg_early_termination_cycles']})
@@ -736,7 +735,7 @@ def proj_down_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict
 
 def proj_down_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
-    workload_config = next(iter(workload_dict.values()))['configuration']
+    workload_config = workload_dict['configuration']
 
     if workload_config['architecture'].lower() == 'mugi':
         workload_config.update({'early_termination_cycles': workload_config['ffn_avg_early_termination_cycles']})
@@ -762,7 +761,7 @@ def proj_down_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=
 
 def softmax_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
-    workload_config = next(iter(workload_dict.values()))['configuration']
+    workload_config = workload_dict['configuration']
 
     if workload_config['architecture'].lower() == 'mugi':
         workload_config.update({'early_termination_cycles': workload_config['nonlinear_avg_early_termination_cycles']})
@@ -791,7 +790,7 @@ def softmax_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=N
 
 def softmax_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
-    workload_config = next(iter(workload_dict.values()))['configuration']
+    workload_config = workload_dict['configuration']
 
     if workload_config['architecture'].lower() == 'mugi':
         workload_config.update({'early_termination_cycles': workload_config['nonlinear_avg_early_termination_cycles']})
@@ -829,7 +828,7 @@ def softmax_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=No
 
 def silu_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
-    workload_config = next(iter(workload_dict.values()))['configuration']
+    workload_config = workload_dict['configuration']
 
     if workload_config['architecture'].lower() == 'mugi':
         workload_config.update({'early_termination_cycles': workload_config['nonlinear_avg_early_termination_cycles']})
@@ -854,7 +853,7 @@ def silu_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None
 
 def silu_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
-    workload_config = next(iter(workload_dict.values()))['configuration']
+    workload_config = workload_dict['configuration']
 
     if workload_config['architecture'].lower() == 'mugi':
         workload_config.update({'early_termination_cycles': workload_config['nonlinear_avg_early_termination_cycles']})
@@ -879,7 +878,7 @@ def silu_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)
 
 def output_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
-    workload_config = next(iter(workload_dict.values()))['configuration']
+    workload_config = workload_dict['configuration']
 
     if workload_config['architecture'].lower() == 'mugi':
         workload_config.update({'early_termination_cycles': workload_config['default_avg_early_termination_cycles']})
@@ -906,7 +905,7 @@ def output_prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict=No
 
 def output_decode(architecture_dict: OrderedDict, workload_dict: OrderedDict=None) -> OrderedDict:
     performance_dict = OrderedDict()
-    workload_config = next(iter(workload_dict.values()))['configuration']
+    workload_config = workload_dict['configuration']
 
     if workload_config['architecture'].lower() == 'mugi':
         workload_config.update({'early_termination_cycles': workload_config['default_avg_early_termination_cycles']})

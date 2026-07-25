@@ -12,3 +12,6 @@ configuration:
   division_mult_cycles: [14]
   accumulation_cycles: [1]
   architecture: ['simd']
+  noc_tile_m: [256]
+  noc_tile_k: [256]
+  noc_tile_n: [256]

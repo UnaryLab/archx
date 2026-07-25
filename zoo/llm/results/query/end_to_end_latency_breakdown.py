@@ -21,6 +21,8 @@ def query(input_path, output_path):
     mugi_nonlinear_module = 'magnitude_register'
     baseline_nonlinear_module = 'accumulator_vector'
 
+    kv_paths = 'kv_heads_8'
+
     model_list = ['llama_2_7b', 'llama_2_13b', 'llama_2_70b', 'llama_2_70b_GQA']
     max_seq_len = 'max_seq_len_4096'
     batch_size = 'batch_size_8'
@@ -36,7 +38,8 @@ def query(input_path, output_path):
                     module = gemm_vlp_latency_module if arch in vlp_list else gemm_baseline_latency_module
                     nonlinear_module = mugi_nonlinear_module if arch in ['mugi'] else baseline_nonlinear_module
                     termination_path = 'full_termination' if arch == 'mugi' else ''
-                    run_path = os.path.normpath(f'{input_path}{arch}/{network}/{subarch}/{arch_dim}/{model}/{max_seq_len}/{batch_size}/{termination_path}/')
+                    kv_path = kv_paths if model in ['llama_2_70b_GQA'] else ''
+                    run_path = os.path.normpath(f'{input_path}{arch}/{network}/{subarch}/{arch_dim}/{model}/{max_seq_len}/{batch_size}/{kv_path}/{termination_path}/')
                     yaml_dict = load_yaml(run_path)
 
                     event_graph = yaml_dict['event_graph']
@@ -114,9 +117,9 @@ def figure(input_path: str, output_path: str):
 
     fig_width_pt = 250
     fig_width = fig_width_pt/72
-    fig_height = fig_width/4.24
+    fig_height = fig_width/3.25
 
-    font_size = 7
+    font_size = 8
 
     fig, axes = plt.subplots(
         1, 4, figsize=(fig_width, fig_height), sharex=False, sharey=True
@@ -151,7 +154,7 @@ def figure(input_path: str, output_path: str):
         'systolic_pwl': 1
     }
 
-    bar_width = 0.5
+    bar_width = 0.6
 
     group_centers = np.arange(len(display_archs))
 
@@ -178,7 +181,7 @@ def figure(input_path: str, output_path: str):
     for idx, model in enumerate(label_dict['model']):
         ax = axes[idx]
         model_label = '7B' if model == 'llama_2_7b' else '13B' if model == 'llama_2_13b' else '70B' if model in 'llama_2_70b' else '70B GQA'
-        ax.set_title(model_label, fontsize=font_size, pad = 2.5)
+        ax.set_title(model_label, fontsize=font_size+1, pad = 2.5)
 
         
 
@@ -257,7 +260,7 @@ def figure(input_path: str, output_path: str):
                             label=layer if j == 0 and i == 0 else "",  # Only label once for legend
                             color=layer_colors[layer],
                             edgecolor='black',
-                            linewidth=0.3
+                            linewidth=0.4
                         )
                         bottom += height
 
@@ -293,7 +296,7 @@ def figure(input_path: str, output_path: str):
                 display_arch_labels.append(display_arch)
         
         ax.set_xticks(tick_positions)
-        ax.set_xticklabels(display_arch_labels, fontsize=font_size-1)
+        ax.set_xticklabels(display_arch_labels, fontsize=font_size)
         ax.set_xlim(-1, len(display_archs))
         
         # Add top x-axis with dimension labels
@@ -344,12 +347,12 @@ def figure(input_path: str, output_path: str):
             dim_tick_labels.append('16')
         
         ax2.set_xticks(dim_tick_positions)
-        ax2.set_xticklabels(dim_tick_labels, fontsize=font_size-1)
+        ax2.set_xticklabels(dim_tick_labels, fontsize=font_size)
         ax2.set_xlim(ax.get_xlim())
         
-        # Make tick marks thinner
-        ax.tick_params(axis='both', width=0.3, length=2)
-        ax2.tick_params(axis='x', width=0.3, length=2)
+        # Set tick marks to normal thickness
+        ax.tick_params(axis='both', width=1.0, length=4)
+        ax2.tick_params(axis='x', width=1.0, length=4)
         
         # Make both xticks closer to the graph
         ax.tick_params(axis='x', pad=0.5)
@@ -368,7 +371,7 @@ def figure(input_path: str, output_path: str):
             # Remove y-axis labels and ticks for interior subplots
             ax.tick_params(axis='y', left=False, labelleft=False)
             # Add light dashed grid lines (same as leftmost subplot)
-            ax.grid(True, axis='y', linestyle='--', linewidth=0.3, alpha=0.5, color='gray')
+            ax.grid(True, axis='y', linestyle='--', linewidth=1.0, alpha=0.5, color='gray')
             # Remove left spine for interior subplots
             ax.spines['left'].set_visible(False)
         else:
@@ -377,24 +380,24 @@ def figure(input_path: str, output_path: str):
             # Explicitly enable y-axis labels
             ax.yaxis.set_tick_params(labelleft=True)
             # Add light dashed grid lines
-            ax.grid(True, axis='y', linestyle='--', linewidth=0.3, alpha=0.5, color='gray')
-            # Make leftmost spine thinner
-            ax.spines['left'].set_linewidth(0.3)
+            ax.grid(True, axis='y', linestyle='--', linewidth=1.0, alpha=0.5, color='gray')
+            # Set leftmost spine to normal thickness
+            ax.spines['left'].set_linewidth(1.0)
         
         # Remove right spine for all but the rightmost subplot
         if idx < len(label_dict['model']) - 1:
             ax.spines['right'].set_visible(False)
         else:
-            # Make rightmost spine thinner
-            ax.spines['right'].set_linewidth(0.3)
+            # Set rightmost spine to normal thickness
+            ax.spines['right'].set_linewidth(1.0)
         
-        # Make top and bottom spines thinner
-        ax.spines['top'].set_linewidth(0.3)
-        ax.spines['bottom'].set_linewidth(0.3)
+        # Set top and bottom spines to normal thickness
+        ax.spines['top'].set_linewidth(1.0)
+        ax.spines['bottom'].set_linewidth(1.0)
         
         # Remove top spine from twin axis except for outer ones
         if idx == 0:
-            ax2.spines['top'].set_linewidth(0.3)
+            ax2.spines['top'].set_linewidth(1.0)
         else:
             ax2.spines['top'].set_visible(False)
             
@@ -410,8 +413,8 @@ def figure(input_path: str, output_path: str):
     # Add legend for layers at the top in one row
     handles = [plt.Rectangle((0,0),1,1, color=layer_colors[layer]) for layer in ['projection', 'attention', 'ffn', 'nonlinear']]
     labels = ['Projection', 'Attention', 'FFN', 'Nonlinear']
-    fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.525, 1.4), ncol=4, fontsize=font_size,
-               columnspacing=1, handlelength=.75, handleheight=0.5, handletextpad=1)
+    fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.525, 1.37), ncol=4, fontsize=font_size,
+               columnspacing=1, handlelength=.75, handleheight=0.5, handletextpad=0.4)
     plt.subplots_adjust(left=0.08, right=0.98, top=0.82, bottom=0.25)
 
     plt.savefig(output_path + 'end_to_end_latency_breakdown.png', dpi=1200, bbox_inches='tight')

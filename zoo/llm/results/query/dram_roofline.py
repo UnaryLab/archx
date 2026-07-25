@@ -45,6 +45,8 @@ def query(input_path, output_path):
     batch_size = 'batch_size_8'
     network = 'single_node'
 
+    kv_paths = 'kv_heads_8'
+
     total_throughput_global = pd.DataFrame()
 
     for arch in vlp_list + baseline_list:
@@ -55,7 +57,8 @@ def query(input_path, output_path):
                     module = gemm_vlp_latency_module if arch in vlp_list else gemm_baseline_latency_module
                     nonlinear_module = mugi_nonlinear_module if arch in ['mugi'] else baseline_nonlinear_module
                     termination_path = 'full_termination' if arch == 'mugi' else ''
-                    run_path = os.path.normpath(f'{input_path}{arch}/{network}/{subarch}/{arch_dim}/{model}/{max_seq_len}/{batch_size}/{termination_path}/')
+                    kv_path = kv_paths if model in ['llama_2_70b_GQA'] else ''
+                    run_path = os.path.normpath(f'{input_path}{arch}/{network}/{subarch}/{arch_dim}/{model}/{max_seq_len}/{batch_size}/{kv_path}/{termination_path}/')
                     yaml_dict = load_yaml(run_path)
 
                     event_graph = yaml_dict['event_graph']
@@ -300,4 +303,3 @@ def figure(input_path, output_path):
     plt.tight_layout(pad=0.5)
     plt.savefig(output_path + 'dram_roofline.png', bbox_inches='tight', dpi=1200, pad_inches=0.065)
     plt.savefig(output_path + 'dram_roofline.pdf', bbox_inches='tight', dpi=1200, pad_inches=0.065)
-    plt.show()

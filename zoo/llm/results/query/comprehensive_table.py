@@ -1,4 +1,4 @@
-from zoo.llm.results.query.utils import query_area, query_performance_gemm_metrics, query_performance_nonlinear_metrics, load_yaml, compute_throughput_efficiancy
+from zoo.llm.results.query.utils import query_area, query_performance_gemm_metrics, query_performance_nonlinear_metrics, load_yaml, compute_throughput_efficiancy, query_execution_time
 import pandas as pd
 from collections import OrderedDict
 import os
@@ -40,7 +40,11 @@ def query(input_path, output_path):
                         continue
                     if arch_dim in ['256x8', '16x16'] and network == 'multi_node_8x8':
                         continue
+                    if network == 'multi_node_8x8':
+                        continue
                     if arch_dim in ['64x8', '8x8'] and network == 'multi_node_4x4':
+                        continue
+                    if network == 'multi_node_2x2':
                         continue
 
                     gemm_module = throughput_module[arch]['gemm']
@@ -53,14 +57,23 @@ def query(input_path, output_path):
                     event_graph = yaml_dict['event_graph']
                     metric_dict = yaml_dict['metric_dict']
 
+                    runtime = query_execution_time(event_graph=event_graph, metric_dict=metric_dict, workload=model, event=model)  # convert to seconds
+                    tokens = int(batch_size.split('_')[-1]) * int(max_seq_len.split('_')[-1])
                     gemm_performance_metrics_dict = query_performance_gemm_metrics(event_graph=event_graph, metric_dict=metric_dict, workload=model, event='gemm', module=gemm_module)
                     nonlinear_performance_metrics_dict = query_performance_nonlinear_metrics(event_graph=event_graph, metric_dict=metric_dict, workload=model, event='nonlinear', module=nonlinear_module)
 
                     assert gemm_performance_metrics_dict['power'] == nonlinear_performance_metrics_dict['power'], "Power mismatch between gemm and nonlinear modules"
 
+                    # performance_metrics_dict = OrderedDict({
+                    #     'flops': gemm_performance_metrics_dict['flops'] + nonlinear_performance_metrics_dict['flops'],
+                    #     'execution_time': gemm_performance_metrics_dict['execution_time'] + nonlinear_performance_metrics_dict['execution_time'],
+                    #     'energy': gemm_performance_metrics_dict['energy'] + nonlinear_performance_metrics_dict['energy'],
+                    #     'power': gemm_performance_metrics_dict['power']
+                    # })
+
                     performance_metrics_dict = OrderedDict({
-                        'flops': gemm_performance_metrics_dict['flops'] + nonlinear_performance_metrics_dict['flops'],
-                        'execution_time': gemm_performance_metrics_dict['execution_time'] + nonlinear_performance_metrics_dict['execution_time'],
+                        'flops': tokens,
+                        'execution_time': runtime,
                         'energy': gemm_performance_metrics_dict['energy'] + nonlinear_performance_metrics_dict['energy'],
                         'power': gemm_performance_metrics_dict['power']
                     })
@@ -74,7 +87,7 @@ def query(input_path, output_path):
                         'network': network,
                         'arch_dim': arch_dim,
                         'throughput': throughput_eff_dict['throughput'],
-                        'energy_efficiency': throughput_eff_dict['energy_efficiency'] * (10**3), # GFLOPS/s/mJ
+                        'energy_efficiency': throughput_eff_dict['energy_efficiency'] * (10**6), # GFLOPS/s/mJ
                         'power_efficiency': throughput_eff_dict['power_efficiency'],
                         'area': area,
                         'flops': performance_metrics_dict['flops'],
@@ -158,7 +171,7 @@ def table(input_path: str, output_path: str):
         
     with open(output_path + 'comprehensive_table.txt', 'w') as f:
         f.write(' & Arch & Throughput & Area & Energy Efficiency & Power Efficiency \\\\\n')
-        f.write(' &      & GFLOP/s & mm^2 & GFLOP/s/mJ & GFLOP/s/W \\\\\n')
+        f.write(' &      & Tokens/s & mm^2 & Tokens/s/uJ & Tokens/s/W \\\\\n')
     with open(output_path + 'comprehensive_table.txt', 'a') as f:
         for string in vlp_single_node_list:
             f.write(string + '\n')
@@ -166,8 +179,8 @@ def table(input_path: str, output_path: str):
             f.write(string + '\n')
         for string in baseline_sa_list:
             f.write(string + '\n')
-        for string in tensor_single_node_list:
-            f.write(string + '\n')
+        # for string in tensor_single_node_list:
+        #     f.write(string + '\n')
         for string in vlp_multi_node_list:
             f.write(string + '\n')
         for string in sa_multi_node_list:

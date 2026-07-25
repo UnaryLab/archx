@@ -1,7 +1,13 @@
 architecture:
   module:
-    post_comp:
+    exp_norm:
       tag: nonlinear
       instance: height
       query:
-        class: bf_post
+        class: exp_norm
+
+    exp_select:
+      tag: nonlinear
+      instance: height
+      query:
+        class: exp_select

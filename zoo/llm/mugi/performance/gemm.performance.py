@@ -20,7 +20,7 @@ def input_gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)-
 
 def input_reuse_gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)->OrderedDict:
     performance_dict = OrderedDict()
-    workload_dict = next(iter(workload_dict.values()))['configuration']
+    workload_dict = workload_dict['configuration']
     router_dim = get_prod(architecture_dict['irouter']['instance']) if 'irouter' in architecture_dict else 1
 
     frequency = architecture_dict['multiplier']['query']['frequency']
@@ -86,7 +86,7 @@ def weight_reuse_gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict
 def array_gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)->OrderedDict:
     performance_dict = OrderedDict()
     router_dim = get_prod(architecture_dict['irouter']['instance']) if 'irouter' in architecture_dict else 1
-    cycles = next(iter(workload_dict.values()))['configuration']['cycles']
+    cycles = workload_dict['configuration']['cycles']
 
     frequency = architecture_dict['temporal_register']['query']['frequency']
     
@@ -114,12 +114,13 @@ def array_gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)-
                                                 'sign_xor': sign_xor_dict,
                                                 'adder': adder_dict,
                                                 'ofifo': ofifo_dict})
+
     return performance_dict
 
 def array_fifo_gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)->OrderedDict:
     performance_dict = OrderedDict()
     router_dim = get_prod(architecture_dict['irouter']['instance']) if 'irouter' in architecture_dict else 1
-    cycles = next(iter(workload_dict.values()))['configuration']['cycles']
+    cycles = workload_dict['configuration']['cycles']
 
     frequency = architecture_dict['pe_fifo']['query']['frequency']
 
@@ -147,7 +148,8 @@ def nonlinear_gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict=No
     sign_mantissa_register_dict = OrderedDict({'count': 0})
     exponent_register_dict = OrderedDict({'count': 0})
     exp_clamp_dict = OrderedDict({'count': 0})
-    post_comp_dict = OrderedDict({'count': 0})
+    exp_norm_dict = OrderedDict({'count': 0})
+    exp_select_dict = OrderedDict({'count': 0})
     max_tree_dict = OrderedDict({'count': 0})
     max_tree_register_dict = OrderedDict({'count': 0})
 
@@ -162,7 +164,8 @@ def nonlinear_gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict=No
                                                  'sign_mantissa_register': sign_mantissa_register_dict,
                                                  'exponent_register': exponent_register_dict,
                                                  'exp_clamp': exp_clamp_dict,
-                                                 'post_comp': post_comp_dict,
+                                                 'exp_norm': exp_norm_dict,
+                                                 'exp_select': exp_select_dict,
                                                  'max_tree': max_tree_dict,
                                                  'max_tree_register': max_tree_register_dict})
     

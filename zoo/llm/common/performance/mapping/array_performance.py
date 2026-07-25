@@ -45,8 +45,6 @@ def gemm_tile_events(tiles: TiledGEMM, architecture_dict: OrderedDict, workload_
     stationary = workload_dict['node_stationary']
     et_cycles = workload_dict.get('early_termination_cycles')
     cycles = workload_dict.get('cycles')
-    
-    k_dim = architecture_dict['multiplier']['instance'][-2]
 
     performance_dict = OrderedDict()
     performance_dict['subevent'] = OrderedDict()
@@ -199,7 +197,7 @@ def nonlinear_tile_events(function: str, tiles: TiledMatrix, architecture_dict: 
         if function == 'softmax':
             # array computation (LUT selection)
             array_events = tiles.m_tiles * tiles.n_total
-            array_events_utilization = weight_events_utilization
+            array_events_utilization = weight_events_utilization * 2
             array_events *= array_events_utilization
             array_cycle_utilization = 1 / array_events_utilization
             performance_dict['subevent']['array_nonlinear'] = OrderedDict({'count': array_events,

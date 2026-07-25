@@ -40,7 +40,7 @@ def counter_reuse(architecture_dict: OrderedDict, workload_dict: OrderedDict=Non
 def input_reuse_gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)->OrderedDict:
     performance_dict = OrderedDict()
     router_dim = get_prod(architecture_dict['irouter']['instance']) if 'irouter' in architecture_dict else 1
-    cycles = next(iter(workload_dict.values()))['configuration']['cycles']
+    cycles = workload_dict['configuration']['cycles']
 
     frequency = architecture_dict['accumulator']['query']['frequency']
 
@@ -113,7 +113,7 @@ def weight_reuse_gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict
 def array_gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)->OrderedDict:
     performance_dict = OrderedDict()
     router_dim = get_prod(architecture_dict['irouter']['instance']) if 'irouter' in architecture_dict else 1
-    cycles = next(iter(workload_dict.values()))['configuration']['cycles']
+    cycles = workload_dict['configuration']['cycles']
 
     frequency = architecture_dict['temporal_register']['query']['frequency']
     
@@ -155,7 +155,7 @@ def array_gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)-
 def array_fifo_gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)->OrderedDict:
     performance_dict = OrderedDict()
     router_dim = get_prod(architecture_dict['irouter']['instance']) if 'irouter' in architecture_dict else 1
-    cycles = next(iter(workload_dict.values()))['configuration']['cycles']
+    cycles = workload_dict['configuration']['cycles']
 
     frequency = architecture_dict['temporal_register']['query']['frequency']
     

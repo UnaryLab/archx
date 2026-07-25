@@ -4,4 +4,4 @@ architecture:
       tag: nonlinear
       instance: node
       query:
-        class: window_select
+        class: vlp_window

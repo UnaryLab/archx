@@ -118,11 +118,15 @@ def figure(input_path: str, output_path: str):
 
     df = pd.concat([other_df, mugi_df])
 
-    fig_width_pt = 500            
+    fig_width_pt = 500           
     fig_width = fig_width_pt / 72.27   
-    fig_height = fig_width / 4.75  # Doubled height for two subplots
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(fig_width, fig_height), sharex=True, 
-                                   gridspec_kw={'hspace': 0.6, 'height_ratios': [0.6, 1]})
+    fig_height = fig_width / 5  # Adjusted height for separate subplots
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(fig_width, fig_height), sharex=False, 
+                                   gridspec_kw={'hspace': 0.325})
+    
+    # Add titles above each subplot
+    ax1.set_title('Norm Throughput', fontsize=7, pad=4)
+    ax2.set_title('Norm Energy/Token', fontsize=7, pad=4)
 
     color_map = {
         'Mugi': "#7BCCEC",
@@ -142,7 +146,7 @@ def figure(input_path: str, output_path: str):
     
     batch_sizes = [1, 2, 4, 8, 16, 32]
     seq_lens = sorted([int(seq.split('_')[-1]) for seq in df['max_seq_len'].unique()])
-    segment_spacing = len(batch_sizes) + 0.5
+    segment_spacing = len(batch_sizes) + 0.25
     
     x_positions = []
     all_labels = []
@@ -236,12 +240,12 @@ def figure(input_path: str, output_path: str):
             ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda val, pos: f'{int(val)}x'))
         
         ax.grid(axis='y', linestyle='--', color='grey', alpha=0.5, linewidth=0.5)
-        if(metric == 'throughput'):
-            ax.set_title(title, fontsize=7, pad = 13)
-        else:
-            ax.set_title(title, fontsize=7)
+        
+        # Ensure grid doesn't extend beyond the plot area
+        ax.set_axisbelow(True)
+  
         ax.set_ylim(y_lim)
-        ax.tick_params(axis='y', labelsize=7)
+        ax.tick_params(axis='y', labelsize=6)
         ax.set_yticks(y_ticks)
         
         # Add vertical lines at sequence length positions
@@ -259,19 +263,18 @@ def figure(input_path: str, output_path: str):
     ax1_top.set_xlim(ax1.get_xlim())
     ax1_top.set_xticks(seq_len_positions)
     ax1_top.set_xticklabels(seq_len_labels, fontsize=6)
-    ax1_top.tick_params(axis='x', length=3, pad=1)  # Show tick marks on top
+    ax1_top.tick_params(axis='x', length=3, pad=1)
     
-    # Create secondary x-axis on bottom subplot for sequence length tick marks only (no labels)
-    ax2_top = ax2.twiny()
-    ax2_top.set_xlim(ax2.get_xlim())
-    ax2_top.set_xticks(seq_len_positions)
-    ax2_top.set_xticklabels([])  # No labels, just tick marks
-    ax2_top.tick_params(axis='x', length=3, top=True, labeltop=False, pad=1)  # Show tick marks but no labels
-    
-    # Only set x-axis labels on bottom plot
+    # Set x-axis labels only on bottom plot to avoid redundancy
+    ax1.set_xticks(x_positions)
     ax2.set_xticks(x_positions)
     xtick_labels = [f'{bs}' for bs in batch_sizes] * len(seq_lens)
+    ax1.set_xticklabels([])  # Hide labels on top subplot
+    ax1.tick_params(axis='x', bottom=False)  # Hide bottom tick marks on top subplot
     ax2.set_xticklabels(xtick_labels, fontsize=6)
+    ax2.tick_params(axis='x', pad=1)
+    
+
     
     # Get handles and labels from the plot, then sort them together
     handles, labels = ax1.get_legend_handles_labels()
@@ -312,7 +315,7 @@ def figure(input_path: str, output_path: str):
         sorted_labels,
         frameon=True,
         loc='upper center',
-        fontsize=7,
+        fontsize=6,
         ncol=6,
         bbox_to_anchor=(0.5115, 1.32),
         columnspacing=1.15
@@ -321,4 +324,3 @@ def figure(input_path: str, output_path: str):
     plt.tight_layout(pad=0.2)
     plt.savefig(output_path + 'batch_size_breakdown.png', dpi=1200, bbox_inches='tight')
     plt.savefig(output_path + 'batch_size_breakdown.pdf', dpi=1200, bbox_inches='tight')
-    plt.show()

@@ -3,7 +3,7 @@ from archx.utils import get_prod
 
 def input_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)->OrderedDict: 
     performance_dict = OrderedDict()
-    workload_dict = next(iter(workload_dict.values()))['configuration']
+    workload_dict = workload_dict['configuration']
     router_dim = get_prod(architecture_dict['irouter']['instance']) if 'irouter' in architecture_dict else 1
 
     frequency = architecture_dict['ififo']['query']['frequency']
@@ -23,7 +23,7 @@ def input_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=N
 def weight_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)->OrderedDict:
     performance_dict = OrderedDict()
     router_dim = get_prod(architecture_dict['irouter']['instance']) if 'irouter' in architecture_dict else 1
-    workload_dict = next(iter(workload_dict.values()))['configuration']
+    workload_dict = workload_dict['configuration']
     lut_height = workload_dict['lut_height']
     frequency = architecture_dict['round']['query']['frequency']
 
@@ -37,7 +37,8 @@ def weight_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=
     magnitude_register_dim = architecture_dict['magnitude_register']['instance'][-1]
     sign_register_dim = architecture_dict['sign_register']['instance'][-1]
     sign_fifo_dim = architecture_dict['sign_fifo']['instance'][-1]
-    post_comp_dim = architecture_dict['post_comp']['instance'][-1]
+    exp_norm_dim = architecture_dict['exp_norm']['instance'][-1]
+    exp_select_dim = architecture_dict['exp_select']['instance'][-1]
     ofifo_dim = architecture_dict['ofifo']['instance'][-1]
 
     if 'window_select' in architecture_dict:
@@ -61,7 +62,8 @@ def weight_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=
     magnitude_register_dict = OrderedDict({'count': magnitude_register_dim})
     sign_register_dict = OrderedDict({'count': sign_register_dim})
     sign_fifo_dict = OrderedDict({'count': sign_fifo_dim})
-    post_comp_dict = OrderedDict({'count': post_comp_dim})
+    exp_norm_dict = OrderedDict({'count': exp_norm_dim})
+    exp_select_dict = OrderedDict({'count': exp_select_dim})
     ofifo_dict = OrderedDict({'count': ofifo_dim})
 
     if 'window_select' in architecture_dict:
@@ -81,7 +83,8 @@ def weight_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=
                                                 'magnitude_register': magnitude_register_dict,
                                                 'sign_register': sign_register_dict,
                                                 'sign_fifo': sign_fifo_dict,
-                                                'post_comp': post_comp_dict,
+                                                'exp_norm': exp_norm_dict,
+                                                'exp_select': exp_select_dict,
                                                 'ofifo': ofifo_dict})
     
     if 'window_select' in architecture_dict:
@@ -95,7 +98,7 @@ def weight_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=
 
 def weight_reuse_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)->OrderedDict:
     performance_dict = OrderedDict()
-    workload_dict = next(iter(workload_dict.values()))['configuration']
+    workload_dict = workload_dict['configuration']
     frequency = architecture_dict['comparator']['query']['frequency']
     lut_height = workload_dict['lut_height']
     router_dim = get_prod(architecture_dict['irouter']['instance']) if 'irouter' in architecture_dict else 1
@@ -116,7 +119,7 @@ def array_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=N
     router_dim = get_prod(architecture_dict['irouter']['instance']) if 'irouter' in architecture_dict else 1
 
     frequency = architecture_dict['temporal_register']['query']['frequency']
-    cycles = next(iter(workload_dict.values()))['configuration']['cycles']
+    cycles = workload_dict['configuration']['cycles']
 
     temporal_register_dim = get_prod(architecture_dict['temporal_register']['instance'][-2:])
     and_gate_dim = get_prod(architecture_dict['and_gate']['instance'][-2:])
@@ -138,7 +141,7 @@ def array_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=N
 def array_fifo_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)->OrderedDict:
     performance_dict = OrderedDict()
     router_dim = get_prod(architecture_dict['irouter']['instance']) if 'irouter' in architecture_dict else 1
-    cycles = next(iter(workload_dict.values()))['configuration']['cycles']
+    cycles = workload_dict['configuration']['cycles']
 
     frequency = architecture_dict['pe_fifo']['query']['frequency']
 
@@ -159,7 +162,7 @@ def array_fifo_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedD
 def summation(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)->OrderedDict:
     performance_dict = OrderedDict()
     router_dim = get_prod(architecture_dict['irouter']['instance']) if 'irouter' in architecture_dict else 1
-    cycles = next(iter(workload_dict.values()))['configuration']['cycles']
+    cycles = workload_dict['configuration']['cycles']
 
     frequency = architecture_dict['adder']['query']['frequency']
 

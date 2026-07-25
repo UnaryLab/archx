@@ -156,10 +156,10 @@ def figure(input_path: str, output_path: str):
     # Figure settings
     fig_width_pt = 250          # ACM single-column width in points
     fig_width = fig_width_pt / 72  # Convert to inches
-    fig_height = fig_width/1.72  # Adjusted height for readability
+    fig_height = fig_width/1.75  # Adjusted height for readability
     
-    font_title = 6
-    font_tick = 5
+    font_title = 8
+    font_tick = 7
     
     # Create figure with 3 rows, 1 column
     fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(fig_width, fig_height), sharex=True, gridspec_kw={'top': 0.9, 'bottom': 0.2})
@@ -169,7 +169,9 @@ def figure(input_path: str, output_path: str):
         'mugi': "#04740B",
         'carat': "#680C80",
         'systolic': "#0E5EA0",
+        'systolic_figna': "#FF6B6B",  # Red for SA-F
         'simd': "#A05E09",
+        'simd_figna': "#4ECDC4",  # Teal for SD-F
         'tensor': "#AC0D0D"
     }
     
@@ -202,16 +204,16 @@ def figure(input_path: str, output_path: str):
         if network_size:
             label += f" {network_size}"
         
-        # Get base color and apply shading if needed
-        base_color = base_colors.get(arch, 'gray')
-        
-        # Apply different shading based on subarch or network
+        # Create color key based on arch and subarch
         if subarch == 'figna':
-            if '8x8' in network:
-                color = lighten_color(base_color, 0.75)
-            else:
-                color = lighten_color(base_color, 0.25)
-        elif '8x8' in network:
+            color_key = f"{arch}_figna"
+        else:
+            color_key = arch
+            
+        base_color = base_colors.get(color_key, 'gray')
+        
+        # Apply shading based on network for all architectures
+        if '8x8' in network:
             color = lighten_color(base_color, 0.5)
         else:
             color = base_color
@@ -257,17 +259,17 @@ def figure(input_path: str, output_path: str):
         # Within each group, order by architecture type
         arch_priority = {'mugi': 0, 'carat': 1, 'systolic': 2, 'simd': 3, 'tensor': 4}
         
-        # Then by network size
-        network_priority = {'single_node': 0, 'multi_node_2x1': 1, 'multi_node_4x4': 1, 'multi_node_8x8': 2}
-        
-        # Finally by subarch
+        # Then by subarch (mac before figna)
         subarch_priority = {'': 0, 'vlp': 1, 'mac': 2, 'figna': 3}
+        
+        # Finally by network size
+        network_priority = {'single_node': 0, 'multi_node_2x1': 1, 'multi_node_4x4': 1, 'multi_node_8x8': 2}
         
         return (
             group,
             arch_priority.get(arch, 999),
-            network_priority.get(network, 999),
-            subarch_priority.get(subarch, 999)
+            subarch_priority.get(subarch, 999),
+            network_priority.get(network, 999)
         )
     
     sorted_data = sorted(data_rows, key=sort_key)
@@ -341,6 +343,13 @@ def figure(input_path: str, output_path: str):
     x_pos = np.array(x_pos)
     bar_width = 0.8
     
+    # Manual y-tick dictionaries for each subplot
+    manual_yticks = {
+        0: [6, 12, 18],  # ax1 - throughput
+        1: [10, 20, 30],  # ax2 - energy efficiency  
+        2: [1, 2]   # ax3 - power efficiency
+    }
+    
     # Plot throughput (top subplot)
     bars1 = ax1.bar(x_pos, throughput_values, bar_width, 
                     color=colors, alpha=0.8, edgecolor='black', linewidth=0.3,
@@ -348,7 +357,8 @@ def figure(input_path: str, output_path: str):
     ax1.set_title('Norm Throughput', fontsize=font_title, pad = 3)
     ax1.tick_params(axis='y', labelsize=font_tick)
     ax1.grid(True, linestyle='--', alpha=0.7, linewidth=0.3)
-    ax1.yaxis.set_major_formatter(plt.FuncFormatter(lambda val, pos: f'{val:.0f}x'))
+    ax1.set_yticks(manual_yticks[0])
+    ax1.set_yticklabels([f'{int(tick)}x' for tick in manual_yticks[0]])
     ax1.set_xticks([])
     
     # Plot energy efficiency (middle subplot) - removed log scale
@@ -357,7 +367,8 @@ def figure(input_path: str, output_path: str):
     ax2.set_title('Norm Energy Efficiency', fontsize=font_title, pad = 3)
     ax2.tick_params(axis='y', labelsize=font_tick)
     ax2.grid(True, linestyle='--', alpha=0.7, linewidth=0.3)
-    ax2.yaxis.set_major_formatter(plt.FuncFormatter(lambda val, pos: f'{val:.0f}x'))
+    ax2.set_yticks(manual_yticks[1])
+    ax2.set_yticklabels([f'{int(tick)}x' for tick in manual_yticks[1]])
     ax2.set_xticks([])
     
     # Plot power efficiency (bottom subplot)
@@ -366,7 +377,8 @@ def figure(input_path: str, output_path: str):
     ax3.set_title('Norm Power Efficiency', fontsize=font_title, pad = 3)
     ax3.tick_params(axis='y', labelsize=font_tick)
     ax3.grid(True, linestyle='--', alpha=0.7, linewidth=0.3)
-    ax3.yaxis.set_major_formatter(plt.FuncFormatter(lambda val, pos: f'{val:.0f}x'))
+    ax3.set_yticks(manual_yticks[2])
+    ax3.set_yticklabels([f'{int(tick)}x' for tick in manual_yticks[2]])
     
     # Set group tick marks and labels on bottom subplot only
     group_labels = ['64/8/S', '128/16/2', '256/SU/4']
@@ -392,7 +404,7 @@ def figure(input_path: str, output_path: str):
         subarch = item['subarch']
         network = item['network']
         
-        # Create simplified legend label
+        # Create simplified legend label without network dimensions
         if arch == 'mugi':
             legend_key = 'Mugi'
         elif arch == 'carat':
@@ -412,20 +424,13 @@ def figure(input_path: str, output_path: str):
         else:
             legend_key = arch.capitalize()
         
-        # Add network size for all architectures except tensor
-        if arch != 'tensor':
-            if 'multi_node_4x4' in network:
-                legend_key += ' 4x4'
-            elif 'multi_node_8x8' in network:
-                legend_key += ' 8x8'
-        
-        # Store the first occurrence of each legend key
+        # Store the first occurrence of each legend key (no network dimensions)
         if legend_key not in legend_entries:
             legend_entries[legend_key] = item['color']
             legend_handles[legend_key] = bars1[i]
     
-    # Define the desired order for legend
-    legend_order = ['Mugi 4x4', 'Mugi 8x8', 'Carat 4x4', 'Carat 8x8', 'SA 4x4', 'SA 8x8', 'SA-F 4x4', 'SA-F 8x8', 'SD 4x4', 'SD 8x8', 'SD-F 4x4', 'SD-F 8x8', 'Tensor']
+    # Define the desired order for legend (without network dimensions)
+    legend_order = ['Mugi', 'Carat', 'SA', 'SA-F', 'SD', 'SD-F', 'Tensor']
     
     # Create ordered legend handles and labels
     ordered_handles = []
@@ -436,7 +441,7 @@ def figure(input_path: str, output_path: str):
             ordered_labels.append(key)
     
     # Create legend
-    fig.legend(ordered_handles, ordered_labels, ncol=7, fontsize=5.5, 
+    fig.legend(ordered_handles, ordered_labels, ncol=7, fontsize=7, 
               loc='lower center', bbox_to_anchor=(0.5, .95), 
               frameon=True, columnspacing=.5, handlelength=.75, handleheight=0.5, handletextpad=0.3)
     
@@ -447,4 +452,3 @@ def figure(input_path: str, output_path: str):
     # Save figure
     plt.savefig(output_path + 'noc_breakdown.png', dpi=1200, bbox_inches='tight')
     plt.savefig(output_path + 'noc_breakdown.pdf', dpi=1200, bbox_inches='tight')
-    plt.show()
