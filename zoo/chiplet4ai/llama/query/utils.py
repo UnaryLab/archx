@@ -124,7 +124,7 @@ def query_leakage_power(event_graph, metric_dict, workload, event=None, tag=None
         leakage_power =  aggregate_tag_metric(event_graph=event_graph, metric_dict=metric_dict, metric='leakage_power', workload=workload, tag=tag)
     return leakage_power['value'] / 10**3 # mW -> W
 
-def query_area(event_graph, metric_dict, workload=None, tag=None, module=None) -> np.float64:
+def query_area(event_graph, metric_dict, workload=None, tag=None, module=None) -> float:
 
     if module is not None:
         area = aggregate_event_metric(event_graph=event_graph, metric_dict=metric_dict, metric='area', workload=workload, event=module)['value']
