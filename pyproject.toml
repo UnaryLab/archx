@@ -37,6 +37,9 @@ dependencies = [
   "yamlordereddictloader"
 ]
 
+[project.optional-dependencies]
+test = ["pytest"]
+
 # Map script name to the main entry point (archx/main.py -> main())
 [project.scripts]
 archx = "archx.main:main"
