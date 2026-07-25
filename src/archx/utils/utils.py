@@ -2,6 +2,7 @@ import os, sys, yaml, json
 import numpy as np
 
 from collections import OrderedDict
+from typing import Union
 from yamlordereddictloader import SafeDumper
 from yamlordereddictloader import SafeLoader
 from loguru import logger
@@ -269,7 +270,7 @@ def interpolate_oneD_quadratic(desired_x, known):
     return desired_energy
 
 
-def get_input_tuple(input: tuple | int, size: int=2) -> tuple:
+def get_input_tuple(input: Union[tuple, int], size: int=2) -> tuple:
     if isinstance(input, tuple):
         assert len(input) == size, logger.error(f'Invalid size <{str(len(input))}> != <{str(size)}>.')
         return input
