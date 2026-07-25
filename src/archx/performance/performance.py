@@ -4,7 +4,9 @@ import hashlib
 import os
 import pickle
 import sys
+import sysconfig
 import tempfile
+import types
 from collections import OrderedDict
 from collections.abc import Mapping, Sequence
 from loguru import logger
@@ -24,6 +26,16 @@ key_factor = 'factor'
 _function_cache = {}
 _performance_output_cache = {}
 _performance_dependency_cache = {}
+_model_id_cache = {}
+_library_roots = tuple({
+    os.path.realpath(path)
+    for path in (sysconfig.get_paths().get('stdlib'),
+                 sysconfig.get_paths().get('purelib'),
+                 sysconfig.get_paths().get('platlib'),
+                 sys.prefix,
+                 sys.base_prefix)
+    if path
+})
 _cache_version = 12
 _cache_env = 'ARCHX_PERFORMANCE_CACHE_DIR'
 _disable_cache_env = 'ARCHX_DISABLE_PERFORMANCE_CACHE'
@@ -168,14 +180,59 @@ def _cache_hash(payload):
     return hashlib.sha256(pickle.dumps(payload, protocol=pickle.HIGHEST_PROTOCOL)).hexdigest()
 
 
-def _performance_model_id(performance_path: str, event_name: str):
-    full_path = get_path(performance_path)
+def _file_metadata(file_path: str):
+    real_path = os.path.realpath(file_path)
     try:
-        stat = os.stat(full_path)
-        metadata = (os.path.realpath(full_path), stat.st_mtime_ns, stat.st_size)
+        stat = os.stat(real_path)
+        return (real_path, stat.st_mtime_ns, stat.st_size)
     except OSError:
-        metadata = (os.path.realpath(full_path), None, None)
-    return full_path, (_cache_version, event_name, metadata)
+        return (real_path, None, None)
+
+
+def _is_project_file(file_path: str):
+    real_path = os.path.realpath(file_path)
+    return not any(real_path.startswith(root + os.sep) for root in _library_roots)
+
+
+def _model_files(performance_model):
+    """
+    Files whose contents shape a model's result: the module holding it plus the project
+    modules it imports, followed transitively. Library modules are left out, they change
+    only on reinstall.
+    """
+    namespace = getattr(performance_model, '__globals__', {})
+    files = set()
+    if namespace.get('__file__'):
+        files.add(os.path.realpath(namespace['__file__']))
+
+    pending, seen = [namespace], set()
+    while pending:
+        for value in list(pending.pop().values()):
+            if isinstance(value, types.ModuleType):
+                module = value
+            else:
+                module = sys.modules.get(getattr(value, '__module__', None))
+            if module is None or id(module) in seen:
+                continue
+            seen.add(id(module))
+            module_file = getattr(module, '__file__', None)
+            if module_file is None or not _is_project_file(module_file):
+                continue
+            files.add(os.path.realpath(module_file))
+            pending.append(vars(module))
+    return files
+
+
+def _performance_model_id(performance_path: str, event_name: str, performance_model=None):
+    full_path = get_path(performance_path)
+    cache_key = (os.path.realpath(full_path), event_name)
+    if cache_key not in _model_id_cache:
+        files = {os.path.realpath(full_path)}
+        if performance_model is not None:
+            files.update(_model_files(performance_model))
+        metadata = tuple(_file_metadata(path) for path in sorted(files))
+        _model_id_cache[cache_key] = (_cache_version, event_name, metadata)
+    return full_path, _model_id_cache[cache_key]
 
 
 def _dependency_index_path(model_id):
@@ -314,8 +371,8 @@ def simulate_performance_one_event(
         return event_graph
 
     # Load and execute the performance model
-    full_performance_path, model_id = _performance_model_id(performance_path, event_name)
-    performance_model = import_function_from_path(full_performance_path, function=event_name)
+    performance_model = import_function_from_path(performance_path, function=event_name)
+    full_performance_path, model_id = _performance_model_id(performance_path, event_name, performance_model)
     performance_dict = None
     if _performance_cache_enabled():
         for dependencies in _dependency_sets(model_id):
