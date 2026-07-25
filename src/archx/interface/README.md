@@ -7,9 +7,12 @@ A module selects its interface with the `interface:` key inside its `query` (usu
 ## Bundled interfaces
 
 - `cacti7/`: wraps the CACTI7 C++ memory model for SRAM/DRAM. Bundles the CACTI7 source under `include/cacti7/` plus `.cfg` templates; the prebuilt `cacti` binary is an x86-64 Linux executable and is recompiled only when absent.
-- `csv_cmos/`: interpolates area/power/energy of logic modules from CMOS synthesis and place-and-route CSVs under `include/csv/`. `csv_cmos_extract.py` generates those CSVs from synthesis reports; see `csv_cmos/README.md`.
+- `csv_cmos/`: interpolates area/power/energy of logic modules from CMOS synthesis and place-and-route CSVs under `include/csv/`, characterized at 45 nm and 7 nm. `csv_cmos_extract.py` generates those CSVs from synthesis reports; see `csv_cmos/README.md`.
+- `csv_cmos_32nm/`: the same lookup over a 32 nm library under `include/csv/`.
 - `chiplet_cmos/`: CMOS CSV lookup for chiplet-based designs (CSVs under `csv/`).
 - `csv_sc/`: stochastic-computing module CSVs.
+- `csv_h200/`: measured H200 power and runtime per GPU kernel.
+- `csv_riscv/`: per-stage CSVs for a RISC-V core, reporting dynamic energy per instruction where a class lists several.
 
 ## Writing an interface
 

@@ -2,7 +2,7 @@ architecture:
   attribute:
     technology: 32
     frequency: 400
-    interface: csv_cmos
+    interface: csv_cmos_32nm
 
   module:
     memory:
