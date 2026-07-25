@@ -1,5 +1,6 @@
 import sys, os, shutil
 
+import pytest
 from loguru import logger
 
 from archx.architecture import create_architecture_dict, save_architecture_dict
@@ -354,6 +355,8 @@ def test_tag():
 
 
 def test_draw_event_graph_pdf():
+    pytest.importorskip('graphviz', reason='draw_event_graph renders through the optional graphviz package')
+
     fixture_file = os.path.join('tests', run_name+'_visualization', 'example.event_graph_w_perf.json')
     event_graph = load_event_graph(fixture_file)
 
