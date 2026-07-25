@@ -19,12 +19,11 @@ def create_workload_dict(workload_file: str) -> OrderedDict:
     workload_dict = read_yaml(workload_file_full_path)[key_workload]
 
     if key_path not in workload_dict:
-        assert key_name in workload_dict, logger.info(f'No name for workload at file <{workload_file_full_path}>.')
-        assert key_configuration in workload_dict, logger.info(f'No configuration in workload <{workload_dict[key_name]}>.')
+        assert key_name in workload_dict, logger.error(f'No name for workload at file <{workload_file_full_path}>.')
+        assert key_configuration in workload_dict, logger.error(f'No configuration in workload <{workload_dict[key_name]}>.')
     else:
-        new_workload_file = get_path(workload_dict[key_path])
-        workload_dict = create_workload_dict(new_workload_file)[key_workload]
-    
+        workload_dict = create_workload_dict(workload_dict[key_path])
+
     logger.success(f'Create workload dictionary from <{workload_file_full_path}>.')
     return workload_dict
 
