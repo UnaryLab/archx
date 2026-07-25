@@ -16,6 +16,7 @@ key_cache_env = 'ARCHX_INTERFACE_CACHE_DIR'
 key_cache_version = 1
 _interface_module_cache = {}
 _interface_output_cache = {}
+_interface_signature_cache = {}
 _lock_poll_seconds = 0.05
 _lock_timeout_seconds = 300
 
@@ -49,22 +50,36 @@ def _interface_cache_dir():
     return cache_dir
 
 
+def _interface_signature(interface_dir: str):
+    """
+    Fingerprint every file under an interface directory, covering the data it reads
+    (csv tables, cacti configs, compiled binaries) as well as its own python code.
+    Walked once per directory per process.
+    """
+    if interface_dir not in _interface_signature_cache:
+        entries = []
+        for root, dir_names, file_names in os.walk(interface_dir):
+            dir_names[:] = sorted(name for name in dir_names if name != '__pycache__')
+            for file_name in sorted(file_names):
+                file_path = os.path.join(root, file_name)
+                relative_path = os.path.relpath(file_path, interface_dir)
+                try:
+                    stat = os.stat(file_path)
+                    entries.append((relative_path, stat.st_mtime_ns, stat.st_size))
+                except OSError:
+                    entries.append((relative_path, None, None))
+        signature_payload = (os.path.realpath(interface_dir), entries)
+        _interface_signature_cache[interface_dir] = hashlib.sha256(
+            pickle.dumps(signature_payload, protocol=pickle.HIGHEST_PROTOCOL)).hexdigest()
+    return _interface_signature_cache[interface_dir]
+
+
 def _interface_cache_path(cache_key, dst_file: str):
     cache_dir = _interface_cache_dir()
     if cache_dir is None:
         return None
 
-    try:
-        stat = os.stat(dst_file)
-        interface_metadata = (
-            os.path.realpath(dst_file),
-            stat.st_mtime_ns,
-            stat.st_size,
-        )
-    except OSError:
-        interface_metadata = (os.path.realpath(dst_file), None, None)
-
-    key_payload = (key_cache_version, cache_key, interface_metadata)
+    key_payload = (key_cache_version, cache_key, _interface_signature(os.path.dirname(dst_file)))
     cache_hash = hashlib.sha256(pickle.dumps(key_payload, protocol=pickle.HIGHEST_PROTOCOL)).hexdigest()
     return os.path.join(cache_dir, cache_hash + '.pkl')
 
@@ -192,6 +207,7 @@ def register_interface(name: str, interface_dir: str) -> None:
         shutil.copytree(src_dir, dst_dir)
         _interface_module_cache.pop(os.path.realpath(os.path.join(dst_dir, name + '.py')), None)
         _interface_output_cache.clear()
+        _interface_signature_cache.pop(dst_dir, None)
         logger.success(f'Register interface <{name}> from <{src_dir}> to <{dst_dir}>.')
 
 
@@ -202,6 +218,7 @@ def unregister_interface(name: str) -> None:
         shutil.rmtree(dst_dir)
         _interface_module_cache.pop(os.path.realpath(os.path.join(dst_dir, name + '.py')), None)
         _interface_output_cache.clear()
+        _interface_signature_cache.pop(dst_dir, None)
         logger.success(f'Unregister interface <{name}> to <{dst_dir}>.')
     else:
         logger.warning(f'Interface <{name}> does not exist at <{dst_dir}>.')
