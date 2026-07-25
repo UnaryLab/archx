@@ -297,16 +297,6 @@ def _resident_refetch_elements(unique_elements: float, streamed_elements: float,
     refetch_elements = max(0.0, streamed_elements - unique_elements)
     return unique_elements + refetch_elements * (1.0 - fit_fraction)
 
-def _chunk_count(elements: float, capacity_elements: float) -> int:
-    if elements <= 0:
-        return 1
-    return max(1, ceil(elements / max(1.0, capacity_elements)))
-
-def _window_from_chunks(compute_cycles: float, bytes_count: float, chunks: int) -> float:
-    if bytes_count <= 0:
-        return 0
-    return max(1.0, compute_cycles / max(1, chunks))
-
 def _read_active_span_cycles(
     compute_cycles: float,
     demand_elements: float,
@@ -323,7 +313,7 @@ def _read_active_span_cycles(
     startup_span = min(dram_elements, max(1.0, startup_buffer_elements)) / max(1e-12, demand_rate)
     return max(1.0, demand_span + startup_span)
 
-def _ws_schedule(architecture_dict: OrderedDict, batch: int, M: int, K: int, N: int, step_start: int, step_dim: str = None) -> OrderedDict:
+def _ws_schedule(architecture_dict: OrderedDict, batch: int, M: int, K: int, N: int, step_start: int, step_dim: str = None, loop_order: str = 'auto') -> OrderedDict:
     arch = _architecture(architecture_dict)
     step_dim, min_step, max_step, total_steps = _step_config(M, K, N, step_start, step_dim)
 
@@ -411,33 +401,58 @@ def _ws_schedule(architecture_dict: OrderedDict, batch: int, M: int, K: int, N: 
         output_read_elements = batch * M * N * max(0, k_folds - 1)
         max_M, max_K, max_N = M, K, N
 
-    max_input_tile = batch * max_M * min(array_rows, max_K)
+    # Resident working sets per loop order:
+    # k_outer (fold order of _ws_fold_infos): one input K-strip stays resident across the
+    # inner n-folds, but every output partial sum lives across the k-passes.
+    # n_outer: one output N-strip accumulates on-chip across the inner k-folds, but the
+    # whole input is re-streamed per n-fold.
+    max_input_strip = batch * max_M * min(array_rows, max_K)
+    max_input_matrix = batch * max_M * max_K
+    max_output_strip = batch * max_M * min(array_cols, max_N)
+    max_output_matrix = batch * max_M * max_N
     max_weight_tile = batch * min(array_rows, max_K) * min(array_cols, max_N)
-    max_output_tile = batch * max_M * min(array_cols, max_N)
-    input_fit = _fit_fraction(isram_active_elements, max_input_tile)
-    weight_fit = _fit_fraction(wsram_active_elements, max_weight_tile)
-    output_fit = _fit_fraction(osram_active_elements, max_output_tile)
-    input_chunks = _chunk_count(max_input_tile, isram_active_elements)
-    weight_chunks = _chunk_count(max_weight_tile, wsram_active_elements)
-    output_chunks = _chunk_count(max_output_tile, osram_active_elements)
 
-    input_read_elements = _resident_refetch_elements(input_unique_elements, input_sram_elements, input_fit)
+    # One final write per output element per step; the rest are partial-sum re-accesses.
+    output_final_elements = output_write_elements - output_read_elements
+    output_accum_elements = output_read_elements
+
+    def _order_traffic(input_tile, output_tile):
+        input_fit = _fit_fraction(isram_active_elements, input_tile)
+        output_fit = _fit_fraction(osram_active_elements, output_tile)
+        input_read = _resident_refetch_elements(input_unique_elements, input_sram_elements, input_fit)
+        dram_write = output_final_elements + output_accum_elements * (1.0 - output_fit)
+        dram_read = output_accum_elements * (1.0 - output_fit)
+        dram_bytes = input_read * input_bytes + (dram_write + dram_read) * output_bytes
+        return input_tile, output_tile, input_read, dram_write, dram_read, dram_bytes
+
+    order_traffic = {
+        'k_outer': _order_traffic(max_input_strip, max_output_matrix),
+        'n_outer': _order_traffic(max_input_matrix, max_output_strip),
+    }
+    if loop_order == 'auto':
+        # assume the mapper picks the order with less DRAM traffic (weights move once either way)
+        loop_order = min(order_traffic, key=lambda order: order_traffic[order][-1])
+    assert loop_order in order_traffic, \
+        f"loop_order must be one of ['auto', 'k_outer', 'n_outer'], but got {loop_order}"
+    (input_tile, output_tile, input_read_elements,
+     dram_output_write_elements, dram_output_read_elements, _) = order_traffic[loop_order]
+
     weight_read_elements = weight_elements
-    output_spills = max_output_tile > osram_active_elements
-    if not output_spills:
-        output_read_elements = 0
 
     input_read_bytes = input_read_elements * input_bytes
     weight_read_bytes = weight_read_elements * weight_bytes
-    output_read_bytes = output_read_elements * output_bytes
-    output_write_bytes = output_write_elements * output_bytes
+    output_read_bytes = dram_output_read_elements * output_bytes
+    output_write_bytes = dram_output_write_elements * output_bytes
     input_sram_bytes = input_sram_elements * input_bytes
     weight_sram_bytes = weight_read_elements * weight_bytes
-    output_sram_bytes = output_read_bytes + output_write_bytes
+    # accumulation always reads and writes osram; DRAM only sees the non-resident fraction
+    osram_read_bytes = output_accum_elements * output_bytes
+    osram_write_bytes = output_write_elements * output_bytes
+    output_sram_bytes = osram_read_bytes + osram_write_bytes
 
     input_count = input_read_elements / isram_active_elements
     weight_count = weight_read_elements / wsram_active_elements
-    output_read_count = output_read_elements / osram_active_elements
+    output_read_count = output_accum_elements / osram_active_elements
     output_write_count = output_write_elements / osram_active_elements
 
     input_service_cycles = _service_cycles(input_read_bytes, input_prefetch_bytes_per_cycle)
@@ -459,13 +474,14 @@ def _ws_schedule(architecture_dict: OrderedDict, batch: int, M: int, K: int, N: 
         0,
         max(
             _service_cycles(input_sram_bytes, isram_bytes_per_cycle),
-            _service_cycles(output_read_bytes, osram_bytes_per_cycle),
+            _service_cycles(osram_read_bytes, osram_bytes_per_cycle),
         ) - steady_window,
     )
-    output_tail_stall_cycles = max(0, _service_cycles(output_write_bytes, osram_bytes_per_cycle) - (steady_window + output_tail_window))
+    output_tail_stall_cycles = max(0, _service_cycles(osram_write_bytes, osram_bytes_per_cycle) - (steady_window + output_tail_window))
     read_stall_cycles = max(input_read_stall_cycles, weight_read_stall_cycles) + weight_fill_stall_cycles + steady_state_stall_cycles + output_tail_stall_cycles
 
-    input_transfer_window_cycles = _window_from_chunks(compute_cycles, input_read_bytes, input_chunks)
+    # traffic overlaps compute; bandwidths below are averages over the compute span
+    input_transfer_window_cycles = compute_cycles if input_read_bytes > 0 else 0
     weight_transfer_window_cycles = _read_active_span_cycles(
         compute_cycles,
         weight_elements,
@@ -473,15 +489,16 @@ def _ws_schedule(architecture_dict: OrderedDict, batch: int, M: int, K: int, N: 
         wsram_active_elements,
     )
     output_transfer_window_cycles = compute_cycles if output_write_bytes > 0 else 0
-    input_sram_window_cycles = _window_from_chunks(compute_cycles, input_sram_bytes, input_chunks)
-    weight_sram_window_cycles = _window_from_chunks(compute_cycles, weight_sram_bytes, weight_chunks)
-    output_sram_window_cycles = _window_from_chunks(compute_cycles, output_sram_bytes, output_chunks)
+    input_sram_window_cycles = compute_cycles if input_sram_bytes > 0 else 0
+    weight_sram_window_cycles = compute_cycles if weight_sram_bytes > 0 else 0
+    output_sram_window_cycles = compute_cycles if output_sram_bytes > 0 else 0
 
     mapping_efficiency = (sum_K / (sum_k_folds * array_rows)) * (sum_N / (sum_n_folds * array_cols)) if sum_k_folds > 0 and sum_n_folds > 0 else 0
     compute_utilization = (batch * sum_M * sum_K * sum_N / total_steps) / (compute_cycles * array_rows * array_cols) if compute_cycles > 0 else 0
 
     return OrderedDict({
         'total_steps': total_steps,
+        'loop_order': loop_order,
         'input_count': input_count,
         'weight_count': weight_count,
         'output_read_count': output_read_count,
@@ -519,10 +536,10 @@ def _ws_schedule(architecture_dict: OrderedDict, batch: int, M: int, K: int, N: 
         'cycle_runtime_ms': _cycle_runtime_ms(arch),
     })
 
-def gemm(architecture_dict: OrderedDict, batch: int, M: int, K: int, N: int, step_start: int, step_dim: str = None) -> OrderedDict:
+def gemm(architecture_dict: OrderedDict, batch: int, M: int, K: int, N: int, step_start: int, step_dim: str = None, loop_order: str = 'auto') -> OrderedDict:
     performance_dict = OrderedDict()
     arch = _architecture(architecture_dict)
-    schedule = _ws_schedule(architecture_dict, batch, M, K, N, step_start, step_dim)
+    schedule = _ws_schedule(architecture_dict, batch, M, K, N, step_start, step_dim, loop_order)
 
     total_steps = schedule['total_steps']
     input_count = 0
@@ -581,9 +598,9 @@ def gemm(architecture_dict: OrderedDict, batch: int, M: int, K: int, N: int, ste
     })
     return performance_dict
 
-def sram(architecture_dict: OrderedDict, batch: int, M: int, K: int, N: int, step_start: int, step_dim: str = None) -> OrderedDict:
+def sram(architecture_dict: OrderedDict, batch: int, M: int, K: int, N: int, step_start: int, step_dim: str = None, loop_order: str = 'auto') -> OrderedDict:
     performance_dict = OrderedDict()
-    schedule = _ws_schedule(architecture_dict, batch, M, K, N, step_start, step_dim)
+    schedule = _ws_schedule(architecture_dict, batch, M, K, N, step_start, step_dim, loop_order)
     total_steps = schedule['total_steps']
 
     performance_dict['subevent'] = OrderedDict({
@@ -635,9 +652,9 @@ def sram(architecture_dict: OrderedDict, batch: int, M: int, K: int, N: int, ste
 
     return performance_dict
 
-def dram(architecture_dict: OrderedDict, batch: int, M: int, K: int, N: int, step_start: int, step_dim: str = None) -> OrderedDict:
+def dram(architecture_dict: OrderedDict, batch: int, M: int, K: int, N: int, step_start: int, step_dim: str = None, loop_order: str = 'auto') -> OrderedDict:
     performance_dict = OrderedDict()
-    schedule = _ws_schedule(architecture_dict, batch, M, K, N, step_start, step_dim)
+    schedule = _ws_schedule(architecture_dict, batch, M, K, N, step_start, step_dim, loop_order)
 
     total_steps = schedule['total_steps']
     input_read_count = schedule['input_read_bytes']
