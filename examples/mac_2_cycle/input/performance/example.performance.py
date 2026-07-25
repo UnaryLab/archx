@@ -4,13 +4,11 @@ from archx.utils import get_prod
 
 
 def gemm16(architecture_dict: OrderedDict, workload_dict: OrderedDict=None):
-    workload_dict = workload_dict['gemm16']
     performance_dict = gemm(architecture_dict, workload_dict)
     return performance_dict
 
 
 def gemm32(architecture_dict: OrderedDict, workload_dict: OrderedDict=None):
-    workload_dict = workload_dict['gemm32']
     performance_dict = gemm(architecture_dict, workload_dict)
     return performance_dict
 

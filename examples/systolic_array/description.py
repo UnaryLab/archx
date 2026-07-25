@@ -25,8 +25,8 @@ def description(path):
 
     gemm_list = [[4, 4], [8, 8], [16, 16], [32, 32]]
     # operations
-    multiplier = architecture.add_module(name=['multiplier'], instance=gemm_list, tag=['pe', 'mac', 'array'], query={'class': 'multiplier_bfloat16'})
-    adder = architecture.add_module(name=['adder'], instance=gemm_list, tag=['pe', 'mac', 'array'], query={'class': 'adder_bfloat16'})
+    multiplier = architecture.add_module(name='multiplier', instance=gemm_list, tag=['pe', 'mac', 'array'], query={'class': 'multiplier_bfloat16'})
+    adder = architecture.add_module(name='adder', instance=gemm_list, tag=['pe', 'mac', 'array'], query={'class': 'adder_bfloat16'})
 
     # data registers
     control_regs = architecture.add_module(name=['act_en_reg', 'mult_en_reg', 'acc_en_reg', 'weight_path_en_reg', 'weight_en_reg', 'sum_en_reg'], instance=gemm_list, tag=['pe', 'control', 'array'], query={'class': 'register', 'width': 1})
@@ -60,7 +60,7 @@ def description(path):
     ###############   Workload   #################
     ##############################################
     configuration = workload.add_configuration(name='gemm')
-    matrix_dim = configuration.add_parameter(configuration='gemm', parameter_name='matrix_dim', parameter_value=[16, 32, 64, 128], sweep=True)
+    matrix_dim = configuration.add_parameter(parameter_name='matrix_dim', parameter_value=[16, 32, 64, 128], sweep=True)
 
     agraph.direct_constraint(parameters = [adder['instance'],
                                            control_regs['act_en_reg']['instance'],
@@ -73,22 +73,22 @@ def description(path):
                                            data_regs['weight_path_reg']['instance'],
                                            data_regs['sum_reg']['instance'],
                                            data_regs['weight_reg']['instance'],
-                                           fifos['ififo']['depth'],
-                                           fifos['wfifo']['depth'],
-                                           fifos['ofifo']['depth'],
+                                           fifos['ififo']['query']['depth'],
+                                           fifos['wfifo']['query']['depth'],
+                                           fifos['ofifo']['query']['depth'],
                                            output_adder['instance'],
-                                           isram['width'],
-                                           isram['depth'],
-                                           wsram['width'],
-                                           wsram['depth'],
-                                           osram['width'],
-                                           osram['depth'],
+                                           isram['query']['width'],
+                                           isram['query']['depth'],
+                                           wsram['query']['width'],
+                                           wsram['query']['depth'],
+                                           osram['query']['width'],
+                                           osram['query']['depth'],
                                            muxes['act_mux']['instance'],
                                            muxes['weight_mux']['instance'],
                                            muxes['add_mux']['instance'],
                                            muxes['sum_mux']['instance'],
                                            multiplier['instance'],
-                                           matrix_dim['matrix_dim']
+                                           matrix_dim['parameter']
                                         ])
 
     agraph.generate()
