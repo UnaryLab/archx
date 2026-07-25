@@ -1,8 +1,26 @@
-import subprocess, os, time, copy, platform
+import subprocess, os, time, copy, platform, hashlib
 
 from collections import OrderedDict
 
 from loguru import logger
+
+
+def cacti7_signature(
+    mem_type: str,
+    tech_node_nm: str,
+    cfg_dict: OrderedDict,
+    origin_cfg_file: str
+):
+    """
+    Identify a cacti run by everything that shapes its report: the memory type, the
+    technology node, the knobs written into the config, and the contents of the base
+    config. Reports are named after this, so a run whose inputs differ gets its own file.
+    """
+    with open(origin_cfg_file, 'rb') as origin:
+        origin_cfg = origin.read()
+    knobs = sorted((str(key), str(value)) for key, value in cfg_dict.items())
+    payload = repr((mem_type, str(tech_node_nm), knobs)).encode() + origin_cfg
+    return hashlib.sha256(payload).hexdigest()[:12]
 
 
 def cacti7_run(
@@ -229,6 +247,7 @@ def query(name: str, interface: str, query: OrderedDict, input_dir=None, output_
         post_fix = '.sram' + '.width' + str(query['width']) + '.depth' + str(query['depth']) + '.bank' + str(query['bank'])
     elif query_class in ['dram', 'ddr4']:
         post_fix = '.ddr4' + '.size' + str(query['size'])
+    post_fix = post_fix + '.tech' + str(query_technology) + '.' + cacti7_signature(query_class, query_technology, query, origin_cfg_file)
 
     target_cfg_file = os.path.join(output_dir, name + post_fix + '.cacti7.cfg')
     cacti_report = os.path.join(output_dir, name + post_fix + '.cacti7.rpt')
