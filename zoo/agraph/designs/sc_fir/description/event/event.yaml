@@ -1,0 +1,10 @@
+event:
+  fir:
+    performance: zoo/agraph/designs/sc_fir/performance.py
+    subevent:
+    - mult
+    - acc
+    - shift_reg
+    - pnm
+    - b2rc
+    - control

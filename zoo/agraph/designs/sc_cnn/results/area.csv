@@ -1,0 +1,3 @@
+config,arch,area jj,baseline area jj,area_percent_dif
+base,64x64x32,13500864.0,15400000,-12.332051948051948
+with_overhead,64x64x32,15335872.0,15400000,-0.4164155844155844

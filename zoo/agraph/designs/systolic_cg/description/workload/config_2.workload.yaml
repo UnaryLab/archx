@@ -1,0 +1,4 @@
+workload:
+  name: gemm
+  configuration:
+    matrix_dim: 64

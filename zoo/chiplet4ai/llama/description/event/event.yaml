@@ -1,0 +1,839 @@
+event:
+  a_proj_dc:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - a_proj_dc_arr
+    - a_proj_dc_sram
+    - a_proj_dc_dram
+  a_proj_dc_arr:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - array_input_mapping
+    - array_weight_mapping
+    - array_compute_mapping
+  a_proj_dc_dram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - dram_input_read
+    - dram_weight_read
+    - dram_output_read
+    - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
+  a_proj_dc_sram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - sram_input_write_mapping
+    - sram_weight_write_mapping
+    - sram_output_read_mapping
+    - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
+  a_proj_pf:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - a_proj_pf_arr
+    - a_proj_pf_sram
+    - a_proj_pf_dram
+  a_proj_pf_arr:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - array_input_mapping
+    - array_weight_mapping
+    - array_compute_mapping
+  a_proj_pf_dram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - dram_input_read
+    - dram_weight_read
+    - dram_output_read
+    - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
+  a_proj_pf_sram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - sram_input_write_mapping
+    - sram_weight_write_mapping
+    - sram_output_read_mapping
+    - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
+  array_compute:
+    performance: zoo/chiplet4ai/common/performance/array.py
+    subevent:
+    - pe
+    - ofifo
+    - output_adder
+  array_compute_mapping:
+    performance: zoo/chiplet4ai/common/performance/node.py
+    subevent:
+    - array_compute
+    - sram_output_read
+    - sram_output_write
+  array_input:
+    performance: zoo/chiplet4ai/common/performance/array.py
+    subevent:
+    - ififo
+  array_input_mapping:
+    performance: zoo/chiplet4ai/common/performance/node.py
+    subevent:
+    - array_input
+    - sram_input_read
+  array_weight:
+    performance: zoo/chiplet4ai/common/performance/array.py
+    subevent:
+    - wfifo
+    - weight_path_en_reg
+    - weight_en_reg
+    - weight_path_reg
+    - weight_reg
+  array_weight_mapping:
+    performance: zoo/chiplet4ai/common/performance/node.py
+    subevent:
+    - array_weight
+    - sram_weight_read
+  av_dc:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - av_dc_arr
+    - av_dc_sram
+    - av_dc_dram
+  av_dc_arr:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - array_input_mapping
+    - array_weight_mapping
+    - array_compute_mapping
+  av_dc_dram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - dram_input_read
+    - dram_weight_read
+    - dram_output_read
+    - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
+  av_dc_sram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - sram_input_write_mapping
+    - sram_weight_write_mapping
+    - sram_output_read_mapping
+    - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
+  av_pf:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - av_pf_arr
+    - av_pf_sram
+    - av_pf_dram
+  av_pf_arr:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - array_input_mapping
+    - array_weight_mapping
+    - array_compute_mapping
+  av_pf_dram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - dram_input_read
+    - dram_weight_read
+    - dram_output_read
+    - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
+  av_pf_sram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - sram_input_write_mapping
+    - sram_weight_write_mapping
+    - sram_output_read_mapping
+    - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
+  cycle_reference:
+    performance: zoo/chiplet4ai/common/performance/mapping.py
+    subevent:
+    - pe
+  decode:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - layer_dc
+    - lm_head_dc
+  down_proj_dc:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - down_proj_dc_arr
+    - down_proj_dc_sram
+    - down_proj_dc_dram
+  down_proj_dc_arr:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - array_input_mapping
+    - array_weight_mapping
+    - array_compute_mapping
+  down_proj_dc_dram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - dram_input_read
+    - dram_weight_read
+    - dram_output_read
+    - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
+  down_proj_dc_sram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - sram_input_write_mapping
+    - sram_weight_write_mapping
+    - sram_output_read_mapping
+    - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
+  down_proj_pf:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - down_proj_pf_arr
+    - down_proj_pf_sram
+    - down_proj_pf_dram
+  down_proj_pf_arr:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - array_input_mapping
+    - array_weight_mapping
+    - array_compute_mapping
+  down_proj_pf_dram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - dram_input_read
+    - dram_weight_read
+    - dram_output_read
+    - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
+  down_proj_pf_sram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - sram_input_write_mapping
+    - sram_weight_write_mapping
+    - sram_output_read_mapping
+    - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
+  dram_input_read:
+    performance: zoo/chiplet4ai/common/performance/memory.py
+    subevent:
+    - dram
+  dram_input_read_stall:
+    performance: zoo/chiplet4ai/common/performance/mapping.py
+    subevent:
+    - cycle_reference
+  dram_output_read:
+    performance: zoo/chiplet4ai/common/performance/memory.py
+    subevent:
+    - dram
+  dram_output_write:
+    performance: zoo/chiplet4ai/common/performance/memory.py
+    subevent:
+    - dram
+  dram_output_write_stall:
+    performance: zoo/chiplet4ai/common/performance/mapping.py
+    subevent:
+    - cycle_reference
+  dram_weight_read:
+    performance: zoo/chiplet4ai/common/performance/memory.py
+    subevent:
+    - dram
+  dram_weight_read_stall:
+    performance: zoo/chiplet4ai/common/performance/mapping.py
+    subevent:
+    - cycle_reference
+  gate_proj_dc:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - gate_proj_dc_arr
+    - gate_proj_dc_sram
+    - gate_proj_dc_dram
+  gate_proj_dc_arr:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - array_input_mapping
+    - array_weight_mapping
+    - array_compute_mapping
+  gate_proj_dc_dram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - dram_input_read
+    - dram_weight_read
+    - dram_output_read
+    - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
+  gate_proj_dc_sram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - sram_input_write_mapping
+    - sram_weight_write_mapping
+    - sram_output_read_mapping
+    - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
+  gate_proj_pf:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - gate_proj_pf_arr
+    - gate_proj_pf_sram
+    - gate_proj_pf_dram
+  gate_proj_pf_arr:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - array_input_mapping
+    - array_weight_mapping
+    - array_compute_mapping
+  gate_proj_pf_dram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - dram_input_read
+    - dram_weight_read
+    - dram_output_read
+    - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
+  gate_proj_pf_sram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - sram_input_write_mapping
+    - sram_weight_write_mapping
+    - sram_output_read_mapping
+    - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
+  layer_dc:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - proj_q_dc
+    - proj_k_dc
+    - proj_v_dc
+    - qkt_dc
+    - av_dc
+    - a_proj_dc
+    - up_proj_dc
+    - gate_proj_dc
+    - down_proj_dc
+  layer_pf:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - proj_q_pf
+    - proj_k_pf
+    - proj_v_pf
+    - qkt_pf
+    - av_pf
+    - a_proj_pf
+    - up_proj_pf
+    - gate_proj_pf
+    - down_proj_pf
+  llama:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - prefill
+    - decode
+  llama_3_70b:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - llama
+    - llama_array
+  llama_3_8b:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - llama
+    - llama_array
+  llama_array:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - llama_pf_array
+    - llama_dc_array
+    - lm_head_pf_arr
+    - lm_head_dc_arr
+  llama_dc_array:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - proj_q_dc_arr
+    - proj_k_dc_arr
+    - proj_v_dc_arr
+    - qkt_dc_arr
+    - av_dc_arr
+    - a_proj_dc_arr
+    - up_proj_dc_arr
+    - gate_proj_dc_arr
+    - down_proj_dc_arr
+  llama_pf_array:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - proj_q_pf_arr
+    - proj_k_pf_arr
+    - proj_v_pf_arr
+    - qkt_pf_arr
+    - av_pf_arr
+    - a_proj_pf_arr
+    - up_proj_pf_arr
+    - gate_proj_pf_arr
+    - down_proj_pf_arr
+  lm_head_dc:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - lm_head_dc_arr
+    - lm_head_dc_sram
+    - lm_head_dc_dram
+  lm_head_dc_arr:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - array_input_mapping
+    - array_weight_mapping
+    - array_compute_mapping
+  lm_head_dc_dram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - dram_input_read
+    - dram_weight_read
+    - dram_output_read
+    - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
+  lm_head_dc_sram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - sram_input_write_mapping
+    - sram_weight_write_mapping
+    - sram_output_read_mapping
+    - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
+  lm_head_pf:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - lm_head_pf_arr
+    - lm_head_pf_sram
+    - lm_head_pf_dram
+  lm_head_pf_arr:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - array_input_mapping
+    - array_weight_mapping
+    - array_compute_mapping
+  lm_head_pf_dram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - dram_input_read
+    - dram_weight_read
+    - dram_output_read
+    - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
+  lm_head_pf_sram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - sram_input_write_mapping
+    - sram_weight_write_mapping
+    - sram_output_read_mapping
+    - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
+  prefill:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - layer_pf
+    - lm_head_pf
+  proj_k_dc:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - proj_k_dc_arr
+    - proj_k_dc_sram
+    - proj_k_dc_dram
+  proj_k_dc_arr:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - array_input_mapping
+    - array_weight_mapping
+    - array_compute_mapping
+  proj_k_dc_dram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - dram_input_read
+    - dram_weight_read
+    - dram_output_read
+    - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
+  proj_k_dc_sram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - sram_input_write_mapping
+    - sram_weight_write_mapping
+    - sram_output_read_mapping
+    - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
+  proj_k_pf:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - proj_k_pf_arr
+    - proj_k_pf_sram
+    - proj_k_pf_dram
+  proj_k_pf_arr:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - array_input_mapping
+    - array_weight_mapping
+    - array_compute_mapping
+  proj_k_pf_dram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - dram_input_read
+    - dram_weight_read
+    - dram_output_read
+    - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
+  proj_k_pf_sram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - sram_input_write_mapping
+    - sram_weight_write_mapping
+    - sram_output_read_mapping
+    - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
+  proj_q_dc:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - proj_q_dc_arr
+    - proj_q_dc_sram
+    - proj_q_dc_dram
+  proj_q_dc_arr:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - array_input_mapping
+    - array_weight_mapping
+    - array_compute_mapping
+  proj_q_dc_dram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - dram_input_read
+    - dram_weight_read
+    - dram_output_read
+    - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
+  proj_q_dc_sram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - sram_input_write_mapping
+    - sram_weight_write_mapping
+    - sram_output_read_mapping
+    - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
+  proj_q_pf:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - proj_q_pf_arr
+    - proj_q_pf_sram
+    - proj_q_pf_dram
+  proj_q_pf_arr:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - array_input_mapping
+    - array_weight_mapping
+    - array_compute_mapping
+  proj_q_pf_dram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - dram_input_read
+    - dram_weight_read
+    - dram_output_read
+    - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
+  proj_q_pf_sram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - sram_input_write_mapping
+    - sram_weight_write_mapping
+    - sram_output_read_mapping
+    - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
+  proj_v_dc:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - proj_v_dc_arr
+    - proj_v_dc_sram
+    - proj_v_dc_dram
+  proj_v_dc_arr:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - array_input_mapping
+    - array_weight_mapping
+    - array_compute_mapping
+  proj_v_dc_dram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - dram_input_read
+    - dram_weight_read
+    - dram_output_read
+    - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
+  proj_v_dc_sram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - sram_input_write_mapping
+    - sram_weight_write_mapping
+    - sram_output_read_mapping
+    - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
+  proj_v_pf:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - proj_v_pf_arr
+    - proj_v_pf_sram
+    - proj_v_pf_dram
+  proj_v_pf_arr:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - array_input_mapping
+    - array_weight_mapping
+    - array_compute_mapping
+  proj_v_pf_dram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - dram_input_read
+    - dram_weight_read
+    - dram_output_read
+    - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
+  proj_v_pf_sram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - sram_input_write_mapping
+    - sram_weight_write_mapping
+    - sram_output_read_mapping
+    - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
+  qkt_dc:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - qkt_dc_arr
+    - qkt_dc_sram
+    - qkt_dc_dram
+  qkt_dc_arr:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - array_input_mapping
+    - array_weight_mapping
+    - array_compute_mapping
+  qkt_dc_dram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - dram_input_read
+    - dram_weight_read
+    - dram_output_read
+    - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
+  qkt_dc_sram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - sram_input_write_mapping
+    - sram_weight_write_mapping
+    - sram_output_read_mapping
+    - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
+  qkt_pf:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - qkt_pf_arr
+    - qkt_pf_sram
+    - qkt_pf_dram
+  qkt_pf_arr:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - array_input_mapping
+    - array_weight_mapping
+    - array_compute_mapping
+  qkt_pf_dram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - dram_input_read
+    - dram_weight_read
+    - dram_output_read
+    - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
+  qkt_pf_sram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - sram_input_write_mapping
+    - sram_weight_write_mapping
+    - sram_output_read_mapping
+    - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
+  sram_input_read:
+    performance: zoo/chiplet4ai/common/performance/memory.py
+    subevent:
+    - isram
+  sram_input_write:
+    performance: zoo/chiplet4ai/common/performance/memory.py
+    subevent:
+    - isram
+  sram_input_write_mapping:
+    performance: zoo/chiplet4ai/common/performance/node.py
+    subevent:
+    - sram_input_write
+  sram_output_read:
+    performance: zoo/chiplet4ai/common/performance/memory.py
+    subevent:
+    - osram
+  sram_output_read_mapping:
+    performance: zoo/chiplet4ai/common/performance/node.py
+    subevent:
+    - sram_output_read
+  sram_output_tail_stall:
+    performance: zoo/chiplet4ai/common/performance/mapping.py
+    subevent:
+    - cycle_reference
+  sram_output_write:
+    performance: zoo/chiplet4ai/common/performance/memory.py
+    subevent:
+    - osram
+  sram_output_write_mapping:
+    performance: zoo/chiplet4ai/common/performance/node.py
+    subevent:
+    - sram_output_write
+  sram_steady_state_stall:
+    performance: zoo/chiplet4ai/common/performance/mapping.py
+    subevent:
+    - cycle_reference
+  sram_weight_fill_stall:
+    performance: zoo/chiplet4ai/common/performance/mapping.py
+    subevent:
+    - cycle_reference
+  sram_weight_read:
+    performance: zoo/chiplet4ai/common/performance/memory.py
+    subevent:
+    - wsram
+  sram_weight_write:
+    performance: zoo/chiplet4ai/common/performance/memory.py
+    subevent:
+    - wsram
+  sram_weight_write_mapping:
+    performance: zoo/chiplet4ai/common/performance/node.py
+    subevent:
+    - sram_weight_write
+  up_proj_dc:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - up_proj_dc_arr
+    - up_proj_dc_sram
+    - up_proj_dc_dram
+  up_proj_dc_arr:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - array_input_mapping
+    - array_weight_mapping
+    - array_compute_mapping
+  up_proj_dc_dram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - dram_input_read
+    - dram_weight_read
+    - dram_output_read
+    - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
+  up_proj_dc_sram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - sram_input_write_mapping
+    - sram_weight_write_mapping
+    - sram_output_read_mapping
+    - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall
+  up_proj_pf:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - up_proj_pf_arr
+    - up_proj_pf_sram
+    - up_proj_pf_dram
+  up_proj_pf_arr:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - array_input_mapping
+    - array_weight_mapping
+    - array_compute_mapping
+  up_proj_pf_dram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - dram_input_read
+    - dram_weight_read
+    - dram_output_read
+    - dram_output_write
+    - dram_input_read_stall
+    - dram_weight_read_stall
+    - dram_output_write_stall
+  up_proj_pf_sram:
+    performance: zoo/chiplet4ai/llama/llama_model.py
+    subevent:
+    - sram_input_write_mapping
+    - sram_weight_write_mapping
+    - sram_output_read_mapping
+    - sram_output_write_mapping
+    - sram_weight_fill_stall
+    - sram_steady_state_stall
+    - sram_output_tail_stall

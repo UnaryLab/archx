@@ -1,0 +1,10 @@
+event:
+  vgg16:
+    performance: zoo/agraph/designs/sc_cnn/performance.py
+    subevent:
+    - mac
+    - mac_splitter
+    - input_splitter
+    - weight_splitter
+    - nrdo
+    - ptl

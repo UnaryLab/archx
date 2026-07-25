@@ -1,0 +1,62 @@
+architecture:
+  attribute:
+    frequency: 400
+    interface: csv_riscv
+    technology: 45
+  module:
+    compute:
+      instance:
+      - 1
+      query:
+        class: compute
+      tag:
+      - processor
+    decode:
+      instance:
+      - 1
+      query:
+        class: ID
+      tag:
+      - processor
+    execute:
+      instance:
+      - 1
+      query:
+        class: EX
+      tag:
+      - processor
+    forward:
+      instance:
+      - 1
+      query:
+        class: f
+      tag:
+      - processor
+    hd:
+      instance:
+      - 1
+      query:
+        class: HD
+      tag:
+      - processor
+    instr_fetch:
+      instance:
+      - 1
+      query:
+        class: IF
+      tag:
+      - processor
+    mem:
+      instance:
+      - 1
+      query:
+        class: MEM
+      tag:
+      - processor
+    wb:
+      instance:
+      - 1
+      query:
+        class: WB
+      tag:
+      - processor

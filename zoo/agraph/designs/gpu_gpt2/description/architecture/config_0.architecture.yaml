@@ -1,0 +1,492 @@
+architecture:
+  attribute:
+    interface: csv_h200
+  module:
+    k0001:
+      instance:
+      - 1
+      query:
+        class: k0001_gpt2
+        n_kernels: 12
+      tag:
+      - kernel
+    k0002:
+      instance:
+      - 1
+      query:
+        class: k0002_gpt2
+        n_kernels: 12
+      tag:
+      - kernel
+    k0003:
+      instance:
+      - 1
+      query:
+        class: k0003_gpt2
+        n_kernels: 12
+      tag:
+      - kernel
+    k0004:
+      instance:
+      - 1
+      query:
+        class: k0004_gpt2
+        n_kernels: 12
+      tag:
+      - kernel
+    k0005:
+      instance:
+      - 1
+      query:
+        class: k0005_gpt2
+        n_kernels: 48
+      tag:
+      - kernel
+    k0006:
+      instance:
+      - 1
+      query:
+        class: k0006_gpt2
+        n_kernels: 24
+      tag:
+      - kernel
+    k0007:
+      instance:
+      - 1
+      query:
+        class: k0007_gpt2
+        n_kernels: 12
+      tag:
+      - kernel
+    k0008:
+      instance:
+      - 1
+      query:
+        class: k0008_gpt2
+        n_kernels: 12
+      tag:
+      - kernel
+    k0009:
+      instance:
+      - 1
+      query:
+        class: k0009_gpt2
+        n_kernels: 12
+      tag:
+      - kernel
+    k0010:
+      instance:
+      - 1
+      query:
+        class: k0010_gpt2
+        n_kernels: 12
+      tag:
+      - kernel
+    k0011:
+      instance:
+      - 1
+      query:
+        class: k0011_gpt2
+        n_kernels: 12
+      tag:
+      - kernel
+    k0012:
+      instance:
+      - 1
+      query:
+        class: k0012_gpt2
+        n_kernels: 25
+      tag:
+      - kernel
+    k0013:
+      instance:
+      - 1
+      query:
+        class: k0013_gpt2
+        n_kernels: 12
+      tag:
+      - kernel
+    k0014:
+      instance:
+      - 1
+      query:
+        class: k0014_gpt2
+        n_kernels: 12
+      tag:
+      - kernel
+    k0015:
+      instance:
+      - 1
+      query:
+        class: k0015_gpt2
+        n_kernels: 12
+      tag:
+      - kernel
+    k0016:
+      instance:
+      - 1
+      query:
+        class: k0016_gpt2
+        n_kernels: 12
+      tag:
+      - kernel
+    k0017:
+      instance:
+      - 1
+      query:
+        class: k0017_gpt2
+        n_kernels: 25
+      tag:
+      - kernel
+    k0018:
+      instance:
+      - 1
+      query:
+        class: k0018_gpt2
+        n_kernels: 12
+      tag:
+      - kernel
+    k0019:
+      instance:
+      - 1
+      query:
+        class: k0019_gpt2
+        n_kernels: 12
+      tag:
+      - kernel
+    k0020:
+      instance:
+      - 1
+      query:
+        class: k0020_gpt2
+        n_kernels: 12
+      tag:
+      - kernel
+    k0021:
+      instance:
+      - 1
+      query:
+        class: k0021_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0022:
+      instance:
+      - 1
+      query:
+        class: k0022_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0023:
+      instance:
+      - 1
+      query:
+        class: k0023_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0024:
+      instance:
+      - 1
+      query:
+        class: k0024_gpt2
+        n_kernels: 27
+      tag:
+      - kernel
+    k0025:
+      instance:
+      - 1
+      query:
+        class: k0025_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0026:
+      instance:
+      - 1
+      query:
+        class: k0026_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0027:
+      instance:
+      - 1
+      query:
+        class: k0027_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0028:
+      instance:
+      - 1
+      query:
+        class: k0028_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0029:
+      instance:
+      - 1
+      query:
+        class: k0029_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0030:
+      instance:
+      - 1
+      query:
+        class: k0030_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0031:
+      instance:
+      - 1
+      query:
+        class: k0031_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0032:
+      instance:
+      - 1
+      query:
+        class: k0032_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0033:
+      instance:
+      - 1
+      query:
+        class: k0033_gpt2
+        n_kernels: 3
+      tag:
+      - kernel
+    k0034:
+      instance:
+      - 1
+      query:
+        class: k0034_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0035:
+      instance:
+      - 1
+      query:
+        class: k0035_gpt2
+        n_kernels: 2
+      tag:
+      - kernel
+    k0036:
+      instance:
+      - 1
+      query:
+        class: k0036_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0037:
+      instance:
+      - 1
+      query:
+        class: k0037_gpt2
+        n_kernels: 2
+      tag:
+      - kernel
+    k0038:
+      instance:
+      - 1
+      query:
+        class: k0038_gpt2
+        n_kernels: 4
+      tag:
+      - kernel
+    k0040:
+      instance:
+      - 1
+      query:
+        class: k0040_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0041:
+      instance:
+      - 1
+      query:
+        class: k0041_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0042:
+      instance:
+      - 1
+      query:
+        class: k0042_gpt2
+        n_kernels: 2
+      tag:
+      - kernel
+    k0043:
+      instance:
+      - 1
+      query:
+        class: k0043_gpt2
+        n_kernels: 2
+      tag:
+      - kernel
+    k0044:
+      instance:
+      - 1
+      query:
+        class: k0044_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0045:
+      instance:
+      - 1
+      query:
+        class: k0045_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0046:
+      instance:
+      - 1
+      query:
+        class: k0046_gpt2
+        n_kernels: 2
+      tag:
+      - kernel
+    k0047:
+      instance:
+      - 1
+      query:
+        class: k0047_gpt2
+        n_kernels: 2
+      tag:
+      - kernel
+    k0048:
+      instance:
+      - 1
+      query:
+        class: k0048_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0049:
+      instance:
+      - 1
+      query:
+        class: k0049_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0050:
+      instance:
+      - 1
+      query:
+        class: k0050_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0051:
+      instance:
+      - 1
+      query:
+        class: k0051_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0052:
+      instance:
+      - 1
+      query:
+        class: k0052_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0053:
+      instance:
+      - 1
+      query:
+        class: k0053_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0054:
+      instance:
+      - 1
+      query:
+        class: k0054_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0055:
+      instance:
+      - 1
+      query:
+        class: k0055_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0056:
+      instance:
+      - 1
+      query:
+        class: k0056_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0057:
+      instance:
+      - 1
+      query:
+        class: k0057_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0058:
+      instance:
+      - 1
+      query:
+        class: k0058_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0059:
+      instance:
+      - 1
+      query:
+        class: k0059_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0060:
+      instance:
+      - 1
+      query:
+        class: k0060_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0061:
+      instance:
+      - 1
+      query:
+        class: k0061_gpt2
+        n_kernels: 1
+      tag:
+      - kernel
+    k0062:
+      instance:
+      - 1
+      query:
+        class: k0062_gpt2
+        n_kernels: 1
+      tag:
+      - kernel

@@ -1,0 +1,10 @@
+event:
+  butterfly:
+    performance: zoo/agraph/designs/fft_fg/performance.py
+    subevent:
+    - regA
+    - regB
+    - multiplier
+    - adderA
+    - adderB
+    - not_gate

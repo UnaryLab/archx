@@ -1,0 +1,28 @@
+event:
+  gemm:
+    performance: zoo/agraph/designs/systolic_cg/performance.py
+    subevent:
+    - input_reads
+    - weight_reads
+    - output_writes
+    - input_array
+  input_array:
+    performance: zoo/agraph/designs/systolic_cg/performance.py
+    subevent:
+    - ififo
+    - wfifo
+    - ofifo
+    - output_adder
+    - pe
+  input_reads:
+    performance: zoo/agraph/designs/systolic_cg/performance.py
+    subevent:
+    - isram
+  output_writes:
+    performance: zoo/agraph/designs/systolic_cg/performance.py
+    subevent:
+    - osram
+  weight_reads:
+    performance: zoo/agraph/designs/systolic_cg/performance.py
+    subevent:
+    - wsram

@@ -1,0 +1,15 @@
+architecture:
+  attribute:
+    frequency: 400
+    interface: csv_cmos
+    technology: 45
+  module:
+    pe:
+      instance:
+      - 4
+      - 3
+      query:
+        class: fft_pe
+      tag:
+      - pe
+      - array

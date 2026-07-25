@@ -1,0 +1,177 @@
+event:
+  add:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - k0001
+    - k0014
+    - k0017
+    - k0016
+    - k0058
+    - k0059
+  addmm:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - k0008
+    - k0010
+    - k0011
+    - k0020
+  any:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - k0032
+  arange:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - k0045
+    - k0047
+  argmax:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - k0027
+  bitwise_and:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - k0021
+    - k0034
+    - k0049
+  bitwise_not:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - k0057
+  bmm:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - k0009
+    - k0007
+  cat:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - k0006
+    - k0035
+  copy:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - k0019
+    - k0018
+    - k0029
+    - k0036
+    - k0037
+    - k0052
+  cumsum:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - k0028
+    - k0040
+    - k0062
+  div:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - k0003
+  eq:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - k0044
+    - k0050
+    - k0051
+    - k0054
+  fill:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - k0038
+    - k0043
+    - k0046
+    - k0061
+  gather:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - k0026
+    - k0025
+  ge:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - k0060
+  gt:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - k0024
+  index:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - k0030
+  le:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - k0031
+  masked_fill:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - k0055
+  mm:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - k0023
+  mul:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - k0005
+    - k0013
+    - k0033
+    - k0048
+  native_layer_norm:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - k0012
+  qwen2.5:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - addmm
+    - softmax
+    - add
+    - tanh
+    - bmm
+    - where
+    - mul
+    - div
+    - gather
+    - cat
+    - copy
+    - native_layer_norm
+    - bitwise_and
+    - mm
+    - le
+    - argmax
+    - masked_fill
+    - sub
+    - gt
+    - cumsum
+    - index
+    - any
+    - fill
+    - sum
+    - eq
+    - arange
+    - bitwise_not
+    - ge
+  softmax:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - k0004
+  sub:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - k0053
+    - k0042
+    - k0056
+  sum:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - k0041
+  tanh:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - k0015
+  where:
+    performance: zoo/agraph/designs/gpu_qwen2.5/performance.py
+    subevent:
+    - k0002
+    - k0022

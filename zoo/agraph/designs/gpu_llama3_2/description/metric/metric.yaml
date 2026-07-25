@@ -1,0 +1,10 @@
+metric:
+  energy:
+    aggregation: summation
+    unit: uJ
+  power:
+    aggregation: summation
+    unit: W
+  runtime:
+    aggregation: summation
+    unit: ms
