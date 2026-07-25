@@ -1,3 +1,2 @@
-workload: # parent nodes
-  gemm32:
-    path: examples/mac_1_cycle_factor/input/workload/gemm32_lvl2.workload.yaml
+workload:
+  path: examples/mac_1_cycle_factor/input/workload/gemm32_lvl2.workload.yaml

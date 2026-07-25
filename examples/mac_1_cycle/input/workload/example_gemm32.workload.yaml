@@ -1,0 +1,2 @@
+workload:
+  path: examples/mac_1_cycle/input/workload/gemm32_lvl1.workload.yaml
