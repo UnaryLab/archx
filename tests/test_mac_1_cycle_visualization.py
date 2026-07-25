@@ -1,21 +1,19 @@
-# following two lines are used in testing
 import sys, os, shutil
 
 from loguru import logger
 
 from archx.architecture import create_architecture_dict, save_architecture_dict
-from archx.event import create_event_graph, save_event_graph
+from archx.event import create_event_graph, save_event_graph, load_event_graph
 from archx.metric import create_metric_dict, save_metric_dict, aggregate_event_metric, create_event_metrics, query_module_metric, aggregate_tag_metric
 from archx.workload import create_workload_dict, save_workload_dict
-from archx.performance import simulate_performance_all_events, simulate_performance_one_event
-from archx.utils import get_path
+from archx.performance import simulate_performance_all_events
+from archx.utils import get_path, draw_event_graph
 
 
-# set up run_name
 run_name = 'mac_1_cycle'
 
 input_root = 'examples/' + run_name + '/input/'
-output_root = 'tests/' + run_name + '_rerun_perf/'
+output_root = 'tests/' + run_name + '_visualization' + '/'
 
 arch_input_file = input_root + 'architecture/example.architecture.yaml'
 arch_dict_output_file = output_root + 'example.architecture_dict.yaml'
@@ -24,7 +22,7 @@ metric_input_file = input_root + 'metric/example.metric.yaml'
 metric_dict_output_file = output_root + 'example.metric_dict.yaml'
 
 event_input_file = input_root + 'event/example.event.yaml'
-event_graph_w_perf_output_file = output_root + 'example.event_graph_w_perf.json'
+event_graph_output_file = output_root + 'example.event_graph_w_perf.json'
 
 workload_input_file = input_root + 'workload/example.workload.yaml'
 workload_dict_output_file = output_root + 'example.workload_dict.yaml'
@@ -46,7 +44,7 @@ save_workload_dict(workload_dict=workload_dict, save_path=workload_dict_output_f
 
 logger.info(f'\n----------------------------------------------\nStep 4: Creat event graph\n----------------------------------------------\n')
 event_graph = create_event_graph(event_input_file)
-save_event_graph(event_graph=event_graph, save_path=event_graph_w_perf_output_file)
+save_event_graph(event_graph=event_graph, save_path=event_graph_output_file)
 
 logger.info(f'\n----------------------------------------------\nStep 5: Update metrics for events and modules\n----------------------------------------------\n')
 event_graph = create_event_metrics(event_graph, architecture_dict, metric_dict, run_dir=output_root)
@@ -61,8 +59,6 @@ event_graph_gemm32 = create_event_graph(input_root + 'event/example_gemm32.event
 event_graph_gemm32 = create_event_metrics(event_graph_gemm32, architecture_dict, metric_dict, run_dir=output_root)
 event_graph_gemm32 = simulate_performance_all_events(event_graph_gemm32, architecture_dict, workload_dict_gemm32)
 
-event_name = 'gemm16'
-event_graph = simulate_performance_one_event(event_graph, architecture_dict, workload_dict, event_name)
 
 
 def test_area():
@@ -113,7 +109,7 @@ def test_area():
 
 def test_leakage_power():
     logger.info(f'\n----------------------------------------------\nStep 7: Aggregate results\n----------------------------------------------\n')
-    
+
     index = 0
 
     index += 1
@@ -169,7 +165,7 @@ def test_dynamic_energy():
     logger.info(f'\n\nTest <{index}>: Aggregate <{metric}> for event <{event}> in workload <{workload}>.')
     result = aggregate_event_metric(event_graph=event_graph, metric_dict=metric_dict, metric=metric, workload=workload, event=event)
     logger.success(f'result <{result}>.')
-    
+
     index += 1
     metric = 'dynamic_energy'
     workload = 'gemm16'
@@ -185,7 +181,7 @@ def test_dynamic_energy():
     logger.info(f'\n\nTest <{index}>: Aggregate <{metric}> for event <{event}> in workload <{workload}>.')
     result = aggregate_event_metric(event_graph=event_graph, metric_dict=metric_dict, metric=metric, workload=workload, event=event)
     logger.success(f'result <{result}>.')
-    
+
     index += 1
     metric = 'dynamic_energy'
     workload = 'gemm16'
@@ -225,7 +221,7 @@ def test_dynamic_energy():
     logger.info(f'\n\nTest <{index}>: Aggregate <{metric}> for event <{event}>.')
     result = aggregate_event_metric(event_graph=event_graph, metric_dict=metric_dict, metric=metric, workload=workload, event=event)
     logger.success(f'result <{result}>.')
-    
+
     index += 1
     metric = 'dynamic_energy'
     workload = None
@@ -324,7 +320,6 @@ def test_module():
     index = 0
     index += 1
     metric = 'dynamic_energy'
-    workload = None
     module = 'sram'
     logger.info(f'\n\nTest <{index}>: Query <{metric}> for module <{module}>.')
     result = query_module_metric(event_graph=event_graph, metric_dict=metric_dict, metric=metric, module=module, operation='read')
@@ -332,7 +327,6 @@ def test_module():
 
     index += 1
     metric = 'dynamic_energy'
-    workload = None
     module = 'multiplier'
     logger.info(f'\n\nTest <{index}>: Query <{metric}> for module <{module}>.')
     result = query_module_metric(event_graph=event_graph, metric_dict=metric_dict, metric=metric, module=module, operation='read')
@@ -359,6 +353,22 @@ def test_tag():
     logger.success(f'result <{result}>.')
 
 
+def test_draw_event_graph_pdf():
+    fixture_file = os.path.join('tests', run_name+'_visualization', 'example.event_graph_w_perf.json')
+    event_graph = load_event_graph(fixture_file)
+
+    output = os.path.join('tests', run_name+'_visualization', 'example.event_graph_w_perf.pdf')
+    draw_event_graph(event_graph, output)
+
+    assert os.path.exists(output), f'PDF not created at {output}'
+    assert os.path.getsize(output) > 0, 'PDF file is empty'
+    # os.remove(output)
+
+
+if __name__ == '__main__':
+    test_draw_event_graph_pdf()
+
+
 def test_cleanup():
     path = get_path(output_root)
     shutil.rmtree(path)
@@ -372,5 +382,5 @@ if __name__ == '__main__':
     test_runtime()
     test_module()
     test_tag()
+    test_draw_event_graph_pdf()
     test_cleanup()
-

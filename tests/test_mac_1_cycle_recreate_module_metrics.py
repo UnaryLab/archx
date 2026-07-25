@@ -3,8 +3,6 @@ import sys, os, shutil
 
 from loguru import logger
 
-import graph_tool.all as gt
-
 from archx.architecture import create_architecture_dict, save_architecture_dict
 from archx.event import create_event_graph, save_event_graph
 from archx.metric import create_metric_dict, save_metric_dict, aggregate_event_metric, create_event_metrics, query_module_metric, aggregate_tag_metric, create_module_metrics
@@ -26,8 +24,7 @@ metric_input_file = input_root + 'metric/example.metric.yaml'
 metric_dict_output_file = output_root + 'example.metric_dict.yaml'
 
 event_input_file = input_root + 'event/example.event.yaml'
-event_graph_w_perf_output_file = output_root + 'example.event_graph_w_perf.gt'
-event_graph_w_perf_output_pdf = output_root + 'example.event_graph_w_perf.pdf'
+event_graph_w_perf_output_file = output_root + 'example.event_graph_w_perf.json'
 
 workload_input_file = input_root + 'workload/example.workload.yaml'
 workload_dict_output_file = output_root + 'example.workload_dict.yaml'
@@ -57,13 +54,14 @@ event_graph = create_module_metrics(event_graph, architecture_dict, run_dir=outp
 
 logger.info(f'\n----------------------------------------------\nStep 6: Simulate performance\n----------------------------------------------\n')
 event_graph = simulate_performance_all_events(event_graph, architecture_dict, workload_dict)
-gt.graph_draw(event_graph, 
-        vertex_text=event_graph.vp.event, 
-        vertex_font_size=10, 
-        edge_text=event_graph.ep.count,
-        edge_font_size=10,
-        output_size=(800, 800),
-        output=event_graph_w_perf_output_pdf)
+
+# gemm32 is a second workload: under the flat workload schema one run carries one
+# workload, so it gets its own workload file, event file and graph.
+workload_dict_gemm32 = create_workload_dict(input_root + 'workload/example_gemm32.workload.yaml')
+event_graph_gemm32 = create_event_graph(input_root + 'event/example_gemm32.event.yaml')
+event_graph_gemm32 = create_event_metrics(event_graph_gemm32, architecture_dict, metric_dict, run_dir=output_root)
+event_graph_gemm32 = simulate_performance_all_events(event_graph_gemm32, architecture_dict, workload_dict_gemm32)
+
 
 
 def test_area():
@@ -262,7 +260,7 @@ def test_cycle_count():
     workload = 'gemm32'
     event = 'mac_array'
     logger.info(f'\n\nTest <{index}>: Aggregate <{metric}> for event <{event}> in workload <{workload}>.')
-    result = aggregate_event_metric(event_graph=event_graph, metric_dict=metric_dict, metric=metric, workload=workload, event=event)
+    result = aggregate_event_metric(event_graph=event_graph_gemm32, metric_dict=metric_dict, metric=metric, workload=workload, event=event)
     logger.success(f'result <{result}>.')
 
     index += 1
@@ -300,7 +298,7 @@ def test_runtime():
     workload = 'gemm32'
     event = 'mac_array'
     logger.info(f'\n\nTest <{index}>: Aggregate <{metric}> for event <{event}> in workload <{workload}>.')
-    result = aggregate_event_metric(event_graph=event_graph, metric_dict=metric_dict, metric=metric, workload=workload, event=event)
+    result = aggregate_event_metric(event_graph=event_graph_gemm32, metric_dict=metric_dict, metric=metric, workload=workload, event=event)
     logger.success(f'result <{result}>.')
 
     index += 1

@@ -1,7 +1,4 @@
-# following two lines are used in testing
 import sys, os, shutil
-
-import graph_tool.all as gt
 
 from loguru import logger
 
@@ -14,27 +11,29 @@ def test_create_event_graph():
     event_graph = create_event_graph(event_file)
 
     create_dir('tests/test_event/')
-    
-    gt.graph_draw(event_graph, 
-            vertex_text = event_graph.vp.event, 
-            vertex_font_size=10, 
-            edge_pen_width = event_graph.ep.count,
-            output_size=(800, 800),
-            output='tests/test_event/weighted_graph.pdf')
 
-    ckpt_file = 'tests/test_event/example.event.gt'
+    ckpt_file = 'tests/test_event/example.event.json'
     save_event_graph(event_graph, ckpt_file)
     event_graph_ckpt = load_event_graph(ckpt_file)
 
-    gt.graph_draw(event_graph, 
-            vertex_text = event_graph.vp.event, 
-            vertex_font_size=10, 
-            edge_pen_width = event_graph.ep.count,
-            output_size=(800, 800),
-            output='tests/test_event/weighted_graph_ckpt.pdf')
+    # Verify the checkpoint round-trips correctly: same node names and edges
+    nodes_orig = set(event_graph.get_all_node_names())
+    nodes_ckpt = set(event_graph_ckpt.get_all_node_names())
+    assert nodes_orig == nodes_ckpt, f'Node mismatch: {nodes_orig} != {nodes_ckpt}'
 
-    # check whether two graphs are isomorphic
-    assert gt.isomorphism(event_graph, event_graph_ckpt)
+    edges_orig = set()
+    for src in event_graph.get_all_node_names():
+        for tgt in event_graph.get_out_neighbors(src):
+            edges_orig.add((src, tgt))
+
+    edges_ckpt = set()
+    for src in event_graph_ckpt.get_all_node_names():
+        for tgt in event_graph_ckpt.get_out_neighbors(src):
+            edges_ckpt.add((src, tgt))
+
+    assert edges_orig == edges_ckpt, f'Edge mismatch: {edges_orig} != {edges_ckpt}'
+
+    logger.success('Graph checkpoint round-trip verified.')
 
 
 def test_cleanup():
@@ -45,4 +44,3 @@ def test_cleanup():
 if __name__ == "__main__":
     test_create_event_graph()
     test_cleanup()
-

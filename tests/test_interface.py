@@ -10,11 +10,11 @@ from archx.utils import get_path, create_dir
 def test_query_interface_csv_cmos():
     module = 'ireg'
     query = {
-        'class': 'multiplier_reg',
+        'class': 'multiplier',
         'interface': 'csv_cmos',
-        'technology': 32,
+        'technology': 45,
         'frequency': 400,
-        'bitwidth': 32
+        'width': 32
     }
     output = query_interface(module, query)
     logger.info('test_query_interface_csv_cmos: ', output)
@@ -25,7 +25,7 @@ def test_query_interface_cacti7_sram():
     query = {
         'class': 'sram',
         'interface': 'cacti7',
-        'technology': 32,
+        'technology': 45,
         'frequency': 400,
         'width': 16,
         'depth': 512,
@@ -43,7 +43,7 @@ def test_query_interface_cacti7_dram():
     query = {
         'class': 'dram',
         'interface': 'cacti7',
-        'technology': 32,
+        'technology': 45,
         'frequency': 400,
         'bandwidth': 25.6,
         'size': 1073741824 # 1GB in bytes
