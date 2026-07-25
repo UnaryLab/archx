@@ -1,4 +1,3 @@
-from collections import OrderedDict
 from loguru import logger
 
 from archx._core import ArchxGraph

@@ -1,9 +1,8 @@
 import csv, os, copy
 
 from collections import OrderedDict
-from loguru import logger
 
-from archx.utils import get_path, interpolate_oneD_linear, interpolate_oneD_quadratic
+from archx.utils import get_path
 
 
 skip_list = ['technology', 'frequency', 'interpolation', 'dynamic_uw', 'leakage_uw', 'area_mm2']

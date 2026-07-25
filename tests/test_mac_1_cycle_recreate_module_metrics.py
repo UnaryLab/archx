@@ -1,5 +1,5 @@
 # following two lines are used in testing
-import sys, os, shutil
+import sys, shutil
 
 from loguru import logger
 
@@ -7,7 +7,7 @@ from archx.architecture import create_architecture_dict, save_architecture_dict
 from archx.event import create_event_graph, save_event_graph
 from archx.metric import create_metric_dict, save_metric_dict, aggregate_event_metric, create_event_metrics, query_module_metric, aggregate_tag_metric, create_module_metrics
 from archx.workload import create_workload_dict, save_workload_dict
-from archx.performance import simulate_performance_all_events, simulate_performance_one_event
+from archx.performance import simulate_performance_all_events
 from archx.utils import get_path
 
 

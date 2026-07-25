@@ -1,5 +1,5 @@
 # following two lines are used in testing
-import sys, os, shutil
+import sys, shutil
 
 from loguru import logger
 
