@@ -25,9 +25,6 @@ jobs:
             test: true               # native: macos-latest runner is arm64
           - os: macos-latest
             target: x86_64           # cross-compiled, not runnable on the runner
-          - os: windows-latest
-            target: x86_64
-            test: true               # native: runner is x86_64 Windows
     steps:
       - uses: actions/checkout@v4
 
