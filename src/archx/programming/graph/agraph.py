@@ -493,7 +493,7 @@ def _gui(df, path):
         logo_label.image = logo_photo  # Keep a reference
         logo_label.pack(side=tk.LEFT, padx=(0, 10))
     except Exception as e:
-        print(f"Could not load logo: {e}")  # Print error for debugging
+        logger.warning(f'Could not load logo: {e}.')
     
     # Title label
     title_label = ttk.Label(title_frame, text='Configuration Selection', style='Title.TLabel')
@@ -579,9 +579,7 @@ def _gui(df, path):
                                 selectbackground=ACCENT, selectforeground='white',
                                 borderwidth=0, highlightthickness=0, relief='flat')
     arch_listbox.pack(fill=tk.Y, expand=True)
-    
-    # No longer needed: add_arch_config and remove_arch_config
-    
+
     def populate_tree(tree, parent, data, prefix=''):
         """Recursively populate treeview with dict/list data."""
         if isinstance(data, dict):
@@ -694,9 +692,7 @@ def _gui(df, path):
                                 selectbackground=ACCENT, selectforeground='white',
                                 borderwidth=0, highlightthickness=0, relief='flat')
     work_listbox.pack(fill=tk.Y, expand=True)
-    
-    # No longer needed: add_work_config and remove_work_config
-    
+
     def update_work_preview(*args):
         # Show preview for the selected config in the dropdown
         for item in work_tree.get_children():

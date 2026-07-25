@@ -25,7 +25,6 @@ def gemm(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)->Order
 
     input_mappings = (m / array_dim) * (k / array_dim) * (n)
     weight_mappings = (m / array_dim) * (k / array_dim) * (n)
-    # weight_mappings = (k / array_dim) * (n)
 
     isram_reads_dict = OrderedDict({'count': isram_reads})
     wsram_reads_dict = OrderedDict({'count': wsram_reads})
