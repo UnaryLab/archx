@@ -1,7 +1,0 @@
-architecture:
-  module:
-    adder:
-      tag: accumulator
-      instance: height
-      query:
-        class: adderbf16

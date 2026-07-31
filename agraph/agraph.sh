@@ -2,10 +2,15 @@ set -e
 
 # Register the interface bundles. The framework ships no interface data; each
 # design queries these characterization libraries at run time, so they must be
-# registered into archx first. Re-running is safe (existing ones are skipped).
+# registered into archx first. Skip any interface that is already registered.
+iface_root=$(python -c "import os, archx.interface.interface as m; print(os.path.dirname(m.__file__))")
 for iface in agraph/interface/*/; do
     name=$(basename "$iface")
-    archx -ireg -iname "$name" -idir "$iface"
+    if [ -d "$iface_root/$name" ]; then
+        echo "Interface $name already registered, skipping."
+    else
+        archx -ireg -iname "$name" -idir "$iface"
+    fi
 done
 
 for dir in agraph/designs/*/; do
