@@ -1,7 +1,24 @@
 # Generated Archx yaml files and configuration files
-**/descrption/
+**/description/
 **/runs/
 .claude/
+
+# A-Graph case studies: regenerate everything, ship source only.
+# Generated per-design intermediates (configurations.csv, runs.txt, runs/,
+# per-run yaml/json), query outputs, and figures. `agraph/runtime/` holds the
+# external EDA measurements and is an input, so it stays tracked.
+agraph/designs/*/description/
+agraph/designs/*/results/
+agraph/res/figures/
+
+# Interface bundles registered into the framework at run time. The tracked
+# source of truth lives in agraph/interface/; agraph.sh copies these into
+# src/archx/interface/ via `archx -ireg`, so ignore the registered copies.
+src/archx/interface/cacti7/
+src/archx/interface/csv_cmos/
+src/archx/interface/csv_sc/
+src/archx/interface/csv_riscv/
+src/archx/interface/csv_h200/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
