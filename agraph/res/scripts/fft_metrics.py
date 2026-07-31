@@ -212,5 +212,5 @@ try:
         ))
     doc.save(pdf_path, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
     doc.close()
-except Exception as e:
-    print(f"Warning: Could not crop PDF: {e}")
+except Exception:
+    pass

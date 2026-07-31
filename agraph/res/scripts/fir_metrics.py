@@ -107,8 +107,8 @@ try:
         width, height = im.size
         cropped = im.crop((0, crop_top, width, height - crop_bottom))
         cropped.save(png_path)
-except Exception as e:
-    print(f"Warning: Could not crop image: {e}")
+except Exception:
+    pass
 
 # Post-process: crop top and bottom of PDF (in points)
 crop_top_pt = 7  # points to crop from top
@@ -126,5 +126,5 @@ try:
         ))
     doc.save(pdf_path, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
     doc.close()
-except Exception as e:
-    print(f"Warning: Could not crop PDF: {e}")
+except Exception:
+    pass

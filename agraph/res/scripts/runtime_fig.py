@@ -27,11 +27,13 @@ for filename in os.listdir(runtime_path):
 
 runtime_df = pd.read_csv(runtime_path + 'eda_runtime_csv.csv')
 
-tnn_runtime = runtime_data.get('tnn', None) / 3 if runtime_data.get('tnn', None) else None
-fft_course_runtime = runtime_data.get('fft_course_grain', None) / 4 if runtime_data.get('fft_course_grain', None) else None
-fft_fine_runtime = runtime_data.get('fft_fine_grain', None) / 4 if runtime_data.get('fft_fine_grain', None) else None
-systolic_course_runtime = runtime_data.get('systolic_course_grain', None) / 4 if runtime_data.get('systolic_course_grain', None) else None
-systolic_fine_runtime = runtime_data.get('systolic_fine_grain', None) / 4 if runtime_data.get('systolic_fine_grain', None) else None
+# The .txt files hold the per-config A-Graph runtime (agraph.sh divides the
+# timed sweep by the arch-config count when it writes them).
+tnn_runtime = runtime_data.get('tnn', None)
+fft_course_runtime = runtime_data.get('fft_course_grain', None)
+fft_fine_runtime = runtime_data.get('fft_fine_grain', None)
+systolic_course_runtime = runtime_data.get('systolic_course_grain', None)
+systolic_fine_runtime = runtime_data.get('systolic_fine_grain', None)
 
 
 # Helper function to convert time string (H:MM:SS) to seconds
@@ -191,8 +193,8 @@ ax_main.set_yscale('log')
 ax_main.yaxis.set_minor_locator(plt.LogLocator(subs=np.arange(2, 10)))
 ax_main.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'$10^{{{int(np.log10(x))}}}$' if x > 0 else '0'))
 ax_main.set_ylabel('Runtime (s)', fontsize=8, labelpad=-3)
-ax_main.set_ylim(10, 1e7)
-ax_main.set_yticks([0.1, 1, 10, 100, 1000, 10000, 100000, 1000000, 1e7])
+ax_main.set_ylim(1e-2, 1e7)
+ax_main.set_yticks([0.01, 0.1, 1, 10, 100, 1000, 10000, 100000, 1000000, 1e7])
 
 # Set tick parameters after setting scale
 ax_main.tick_params(axis='y', labelsize=8, pad=0.5, direction='in', which='major', width=0.5, length=4)
@@ -202,8 +204,8 @@ ax_main.tick_params(axis='y', which='minor', direction='in', width=0.3, length=2
 ax_main.axhline(y=10, color='gray', linestyle='-', linewidth=0.4, alpha=0.7, zorder=1)
 
 # Time format labels - adjust positions and colors as needed
-time_format_hms_pos = (0.75, 0.35)  # (x, y) in axes coordinates (0-1 range)
-time_format_ms_pos = (0.75, 0.23)   # (x, y) in axes coordinates (0-1 range)
+time_format_hms_pos = (0.75, 0.34)  # (x, y) in axes coordinates (0-1 range)
+time_format_ms_pos = (0.75, 0.27)   # (x, y) in axes coordinates (0-1 range)
 time_format_hms_color = 'grey'     # Color for t=hh:mm:ss label
 time_format_ms_color = 'grey'      # Color for t=ms label
 
@@ -508,5 +510,5 @@ try:
         ))
     doc.save(pdf_path, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
     doc.close()
-except Exception as e:
-    print(f"Warning: Could not crop PDF: {e}")
+except Exception:
+    pass
