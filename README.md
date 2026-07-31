@@ -158,110 +158,53 @@ def gemm(architecture_dict, workload_dict=None):
 
 It receives the parsed architecture and workload dicts and returns, per subevent, the call `count` (and optionally an `operation` such as `read`/`write` for multi-operation modules like SRAM). It may also return `specified` metrics directly (e.g. `{'cycle_count': {'value': 1., 'unit': 'cycles'}}`). See `examples/mac_1_cycle/input/performance/example.performance.py` for a complete model.
 
-## Running
+## Artifact Evaluation (HPCA 2027)
 
-### Single run
+This branch (`agraph_hpca_2027`) is the artifact for our HPCA 2027 submission. It reproduces every case-study result from source inside a Docker container: nothing is pre-generated. The image builds Archx from source, registers the hardware interfaces, runs all case-study designs under `agraph/designs/`, and regenerates the figures and validation tables.
+
+### Requirements
+- Docker. The artifact is CPU-only; no GPU or CUDA is required.
+- An x86-64 Linux host is recommended (the CACTI7 interface compiles from C++ source inside the image).
+
+### Build
 ```bash
-archx -r <run_dir> \
-      -a arch.yaml -m metric.yaml -w workload.yaml -e event.yaml \
-      -c <run_dir>/graph.json \
-      [-t] [-s] [-d] [-l DEBUG] [-p <dir>]
+docker build -t archx-agraph .
 ```
 
-- `-c` is the checkpoint the populated A-Graph is saved to (must end in `.json`).
-- `-t` mirrors the log to the terminal (a logfile is always written into the run dir).
-- `-s` also dumps the parsed architecture/metric/workload/event dicts as YAML into the run dir.
-- `-d` deletes the run dir first if it exists.
-- `-p` adds a directory to `sys.path` so performance models can import local helpers.
+This installs a pinned Rust toolchain, compiles the Rust A-Graph core via Maturin, installs the Python dependencies (framework deps from `pyproject.toml`, plus `agraph/requirements.txt` for the figure/table scripts), and copies the case studies in. The case-study runs happen at container run time, not during the build.
 
-### Querying results
-Load the checkpoint and aggregate any metric at any event:
-
-```python
-from archx.event import load_event_graph
-from archx.metric import create_metric_dict, aggregate_event_metric
-
-event_graph = load_event_graph('<run_dir>/graph.json')
-metric_dict = create_metric_dict('metric.yaml')
-
-result = aggregate_event_metric(event_graph=event_graph, metric_dict=metric_dict,
-                                metric='dynamic_energy', workload='gemm', event='gemm')
-# -> OrderedDict({'value': ..., 'unit': 'nJ'})
-```
-
-`aggregate_tag_metric` aggregates over all modules sharing an architecture `tag`, and `query_module_metric` reads a single module's raw metrics.
-
-### Design-space sweeps
-A Python *description file* defining a `description(path)` function (built on `archx.programming`, which uses OR-Tools CP-SAT to enumerate valid configurations under constraints) drives batch exploration:
-
+### Run
 ```bash
-archx -r <run_dir> -compile description.py        # generate configurations.csv
-archx -r <run_dir> -extract configurations.csv    # csv -> runs.txt
-archx -r <run_dir> -f configurations.csv          # Tkinter GUI to filter -> runs.txt
-archx -r <run_dir> -x runs.txt                    # execute all runs in parallel
+mkdir -p out/figures out/tables
+docker run --rm \
+    -v "$PWD/out/figures:/opt/archx/agraph/res/figures" \
+    -v "$PWD/out/tables:/opt/archx/agraph/res/tables" \
+    archx-agraph
 ```
 
-`-compile ... -full` chains all of the above in one command (add `-ff` to insert the GUI filter step). `-x` fans the runs out across all CPU cores; failing runs are collected in `failed_runs.txt`.
+The container executes `agraph/agraph.sh`, which:
 
-### Writing a description file
+1. registers the hardware-characterization interfaces (`agraph/interface/`) into Archx,
+2. compiles and runs every design under `agraph/designs/`, writing per-run results, and
+3. regenerates the figures and validation tables.
 
-A description file builds the same four inputs as a single run, but programmatically, and declares which parameters to sweep. Any list-valued `instance` or `query` entry, and any workload parameter added with `sweep=True`, becomes a sweep axis; constraints prune invalid combinations before anything is written to disk.
+Only the two output directories are mounted, so the plotting scripts baked into the image stay intact. Generated figures land in `out/figures/`, validation tables in `out/tables/`.
 
-```python
-from archx.programming.graph.agraph import AGraph
+The script runs under `set -e` and must complete with exit code `0`. Any non-zero exit is a genuine reproduction failure, not an expected warning.
 
+### Reproduced outputs
 
-def description(path):
-    agraph = AGraph(path=path)
-    architecture = agraph.architecture
-    event = agraph.event
-    metric = agraph.metric
-    workload = agraph.workload
+| Case study | Output |
+| --- | --- |
+| FFT (coarse / fine grain) | `out/figures/fft_metrics_comparison.pdf` |
+| TNN (coarse / fine grain) | `out/figures/tnn_metrics.pdf` |
+| Systolic array (coarse / fine grain) | `out/figures/systolic_metrics_comparison.pdf` |
+| Stochastic-computing FIR | `out/figures/fir_metrics_comparison.pdf` |
+| Modeling-runtime comparison | `out/figures/runtime_comparison.pdf` |
+| RISC-V GEMM validation | `out/tables/riscv_gemm.txt` |
+| GPU GPT-2 validation | `out/tables/gpu_gpt2.txt` |
 
-    # Architecture: list values become sweep axes.
-    architecture.add_attributes(technology=[45], frequency=400, interface='csv_cmos')
-    pe = architecture.add_module(name='pe', instance=[[16, 16], [32, 32], [64, 64]], tag=['onchip', 'compute'], query={'class': 'mac'})
-    sram = architecture.add_module(name='sram', instance=[1], tag=['memory'], query={'interface': 'cacti7', 'class': 'sram', 'bank': [32, 64, 128], 'width': 16, 'depth': [512, 1024, 2048]})
-
-    # Events: the A-Graph structure, same as the event YAML.
-    event.add_event(name='gemm', subevent=['mac_array', 'sram_rd', 'sram_wr'], performance='performance.py')
-    event.add_event(name='mac_array', subevent=['pe'], performance='performance.py')
-    event.add_event(name='sram_rd', subevent=['sram'], performance='performance.py')
-    event.add_event(name='sram_wr', subevent=['sram'], performance='performance.py')
-
-    # Metrics.
-    metric.add_metric(name='area', unit='mm^2', aggregation='module')
-    metric.add_metric(name='dynamic_energy', unit='nJ', aggregation='summation')
-    metric.add_metric(name='runtime', unit='ms', aggregation='specified')
-
-    # Workloads: sweep=True parameters become sweep axes.
-    gemm = workload.add_configuration(name='gemm')
-    gemm.add_parameter(parameter_name='m', parameter_value=[256, 512, 1024], sweep=True)
-    gemm.add_parameter(parameter_name='k', parameter_value=512)
-    gemm.add_parameter(parameter_name='n', parameter_value=512)
-
-    # Constraints prune the cross product of all axes.
-    # direct_constraint: the listed parameters sweep together by index
-    # (the i-th PE shape only pairs with the i-th bank count).
-    agraph.direct_constraint([pe['instance'], sram['query']['bank']])
-    # conditional_constraint: keep only combinations whose actual values
-    # satisfy an arbitrary condition (here: SRAM capacity capped at 4 Mib).
-    agraph.conditional_constraint(a=sram['query']['bank'], b=sram['query']['depth'], condition=lambda bank, depth: bank * depth * 16 <= 2**22)
-
-    agraph.generate()
-    return agraph
-```
-
-The handles returned by `add_module` index into the swept parameters (`pe['instance']`, `sram['query']['bank']`); passing a list of names (e.g. `name=['isram', 'wsram']`) creates several identically-parameterized modules, indexed as `srams['wsram']['query']['bank']`. `agraph.generate()` solves the constraint model and writes the per-configuration YAML files (`architecture/`, `workload/`, `event/`, `metric/`) plus `configurations.csv` into the run directory; `-extract` then turns the CSV into one `archx` command line per configuration in `runs.txt`.
-
-For a complete real-world description (multi-module arrays, partition and multi-variable conditional constraints), see `chiplet4ai/llama/description.py`.
-
-### Interface management
-```bash
-archx -ireg  -iname <name> -idir <dir>   # register a new hardware interface
-archx -iureg -iname <name>               # unregister
-archx -icopy -iname <name> -idir <dir>   # copy an installed interface out
-```
+Each figure is also written as a `.png` alongside the `.pdf`. The entry point for the whole flow is `agraph/agraph.sh`; see the `agraph/` tree for the design descriptions, performance models, interface bundles, and plotting scripts.
 
 ## Hardware interfaces
 
