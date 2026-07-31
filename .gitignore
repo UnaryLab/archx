@@ -10,6 +10,7 @@
 agraph/designs/*/description/
 agraph/designs/*/results/
 agraph/res/figures/
+agraph/designs/gpu_qwen2_5/
 
 # Interface bundles registered into the framework at run time. The tracked
 # source of truth lives in agraph/interface/; agraph.sh copies these into
