@@ -16,6 +16,7 @@ the figures and validation tables.
 ## Install
 ```bash
 git clone https://github.com/UnaryLab/archx.git
+cd archx
 git fetch origin
 git switch agraph_hpca_2027
 ```
