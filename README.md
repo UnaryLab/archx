@@ -1,8 +1,8 @@
 # Archx: A-Graph Case Studies (HPCA 2027 Artifact)
 
 This branch (`agraph_hpca_2027`) is the artifact for our HPCA 2027 submission. It
-reproduces every case-study result from source inside a Docker container: nothing
-is pre-generated. The image builds Archx (an event-based cost-modeling framework
+reproduces every case-study result from source inside a Docker container.
+The image builds Archx (an event-based cost-modeling framework
 built around the **A-Graph** abstraction) from source, registers the hardware
 interfaces, runs all case-study designs under `agraph/designs/`, and regenerates
 the figures and validation tables.
