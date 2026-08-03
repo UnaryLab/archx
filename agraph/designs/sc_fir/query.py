@@ -126,8 +126,8 @@ for config in configs:
         throughput_df = pd.DataFrame(columns=['arch', 'bitwidth', f'throughput {throughput["unit"]}', f'baseline_throughput {throughput["unit"]}', 'throughput_percent_dif'])
 
     if split_power_df is None:
-        split_power_df = pd.DataFrame(columns=['arch', 'bitwidth', f'dynamic_power {power["unit"]}', f'leakage_power {power['unit']}', f'baseline dynamic power {power["unit"]}', 
-                                         f'baseline leakage power {power['unit']}', 'dynamic power percent_dif', 'leakage power percent_dif'])
+        split_power_df = pd.DataFrame(columns=['arch', 'bitwidth', f'dynamic_power {power["unit"]}', f'leakage_power {power["unit"]}', f'baseline dynamic power {power["unit"]}', 
+                                         f'baseline leakage power {power["unit"]}', 'dynamic power percent_dif', 'leakage power percent_dif'])
         
     if power_df is None:
         power_df = pd.DataFrame(columns=['arch', 'bitwidth', f'power {power["unit"]}', f'baseline power {power["unit"]}', 'power_percent_dif'])
