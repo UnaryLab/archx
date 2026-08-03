@@ -13,6 +13,13 @@ the figures and validation tables.
 - An x86-64 Linux host is recommended (the CACTI7 interface compiles from C++
   source inside the image).
 
+## Install
+```bash
+git clone https://github.com/UnaryLab/archx.git
+git fetch origin
+git switch agraph_hpca_2027
+```
+
 ## Build
 
 ```bash
