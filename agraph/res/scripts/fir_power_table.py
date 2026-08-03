@@ -72,3 +72,21 @@ table = rf'''\begin{{table}}[!t]
 
 with open(out_path, 'w') as f:
     f.write(table)
+
+# Companion CSV with the same results (raw values, no LaTeX) for easy reading.
+import re
+
+csv_dir = 'agraph/res/csv/'
+os.makedirs(csv_dir, exist_ok=True)
+
+
+def _plain(s):
+    s = s.replace(r'\mu', 'u').replace(r'\times', 'x')
+    s = re.sub(r'\\[a-zA-Z]+|[${}^]', '', s)
+    return re.sub(r'\s+', ' ', s).strip()
+
+
+csv_records = [{'metric': _plain(lbl), 'archx': row[a_col] * scale,
+                'baseline': row[b_col] * scale, 'relative_error_percent': row[e_col]}
+               for lbl, a_col, b_col, e_col, scale in ROWS]
+pd.DataFrame(csv_records).to_csv(csv_dir + 'fir_power.csv', index=False)

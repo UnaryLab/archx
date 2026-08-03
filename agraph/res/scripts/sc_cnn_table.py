@@ -74,3 +74,14 @@ table = rf'''\begin{{table}}[!t]
 
 with open(out_path, 'w') as f:
     f.write(table)
+
+# Companion CSV with the same results (raw values, no LaTeX) for easy reading.
+csv_dir = 'agraph/res/csv/'
+os.makedirs(csv_dir, exist_ok=True)
+csv_records = [
+    {'metric': 'Area w/o overhead (JJ)', 'archx': base_row['area jj'], 'baseline': base_row['baseline area jj'], 'relative_error_percent': base_row['area_percent_dif']},
+    {'metric': 'Area w/ overhead (JJ)',  'archx': ovh_row['area jj'],  'baseline': ovh_row['baseline area jj'],  'relative_error_percent': ovh_row['area_percent_dif']},
+    {'metric': 'Power (W)',              'archx': power_archx,          'baseline': power_base,                   'relative_error_percent': power_pct},
+    {'metric': 'Throughput (TMACs)',    'archx': thr_archx,            'baseline': thr_base,                     'relative_error_percent': thr_pct},
+]
+pd.DataFrame(csv_records).to_csv(csv_dir + 'sc_cnn.csv', index=False)

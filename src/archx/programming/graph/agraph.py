@@ -2,6 +2,9 @@ from ortools.sat.python import cp_model
 from loguru import logger
 import pandas as pd
 import os
+import tkinter as tk
+from tkinter import ttk
+from PIL import Image, ImageTk
 from itertools import product
 
 from archx.programming.object.architecture import Architecture
@@ -371,13 +374,6 @@ def _generate_runs(df, path):
             f.write(line + '\n')
 
 def _gui(df, path):
-    # Tk/PIL-ImageTk are only needed for this interactive GUI, so import them
-    # lazily -- headless/batch runs (e.g. the Docker artifact) never hit this
-    # path and thus don't require a Tk runtime to be installed.
-    import tkinter as tk
-    from tkinter import ttk
-    from PIL import Image, ImageTk
-
     # Read configurations from CSV
     # Get unique values for arch_config and work_config
     arch_configs = sorted(df['arch_config'].unique().tolist())

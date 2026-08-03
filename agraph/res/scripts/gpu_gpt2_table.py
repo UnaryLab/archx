@@ -76,3 +76,23 @@ table = rf'''\begin{{table}}[!t]
 
 with open(out_path, 'w') as f:
     f.write(table)
+
+# Companion CSV with the same results (raw values, no LaTeX) for easy reading.
+import re
+
+csv_dir = 'agraph/res/csv/'
+os.makedirs(csv_dir, exist_ok=True)
+
+
+def _plain(s):
+    s = s.replace(r'\mu', 'u').replace(r'\times', 'x')
+    s = re.sub(r'\\[a-zA-Z]+|[${}^]', '', s)
+    return re.sub(r'\s+', ' ', s).strip()
+
+
+csv_records = []
+for lbl, csv, scale, style in ROWS:
+    row = pd.read_csv(results + csv).iloc[0]
+    csv_records.append({'metric': _plain(lbl), 'archx': row['archx'] * scale,
+                        'baseline': row['pnr'] * scale, 'relative_error_percent': row['percent_error']})
+pd.DataFrame(csv_records).to_csv(csv_dir + 'gpu_gpt2.csv', index=False)

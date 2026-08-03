@@ -37,6 +37,7 @@ studies in. The case-study runs happen at container run time, not during the bui
 docker run --rm \
     -v "$PWD/out/figures:/opt/archx/agraph/res/figures" \
     -v "$PWD/out/tables:/opt/archx/agraph/res/tables" \
+    -v "$PWD/out/csv:/opt/archx/agraph/res/csv" \
     archx-agraph
 ```
 

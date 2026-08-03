@@ -110,3 +110,21 @@ table = rf'''\begin{{table}}[!t]
 
 with open(out_path, 'w') as f:
     f.write(table)
+
+# Companion CSV with the same results (raw values, no LaTeX) for easy reading:
+# one row per array config.
+csv_dir = 'agraph/res/csv/'
+os.makedirs(csv_dir, exist_ok=True)
+csv_records = [{
+    'array_dim': array_dims[i],
+    'matrix_dim': f'{mds[i]}x{mds[i]}x{mds[i]}',
+    'throughput_gflops': throughput[i],
+    'compute_area_um2': area['archx'][i] * 1000,
+    'compute_denergy_nj': energy['archx'][i],
+    'compute_lpower_mw': power['archx'][i],
+    'total_sram_kb': sram_kb[i],
+    'sram_area_um2': memory['memory_area'][i] * 1000,
+    'sram_denergy_nj': memory['memory_dynamic_energy'][i],
+    'sram_lpower_mw': memory['memory_leakage_power'][i],
+} for i in range(n)]
+pd.DataFrame(csv_records).to_csv(csv_dir + 'sys_thr.csv', index=False)

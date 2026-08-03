@@ -66,3 +66,11 @@ table = rf'''\begin{{table}}[!t]
 
 with open(out_path, 'w') as f:
     f.write(table)
+
+# Companion CSV with the same results (raw values, no LaTeX) for easy reading:
+# one row per module, area in JJ and power in mW.
+csv_dir = 'agraph/res/csv/'
+os.makedirs(csv_dir, exist_ok=True)
+csv_records = [{'module': h, 'area_jj': float(area[k]), 'power_mw': float(power[k]) * 1e3}
+               for k, h in MODULES]
+pd.DataFrame(csv_records).to_csv(csv_dir + 'sc_cnn_breakdown.csv', index=False)
