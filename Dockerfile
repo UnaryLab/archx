@@ -2,12 +2,12 @@
 # CPU-only cost modeling; no CUDA or GPU required.
 #
 # Build:  docker build -t archx-agraph .
-# Run:    mkdir -p out/figures out/tables
-#         docker run --rm \
+# Run:    docker run --rm \
 #             -v "$PWD/out/figures:/opt/archx/agraph/res/figures" \
 #             -v "$PWD/out/tables:/opt/archx/agraph/res/tables" \
 #             archx-agraph
-#         (mount only the output subdirs so the baked-in res/scripts stay intact)
+#         (-v auto-creates the host output dirs if missing; mount only the
+#          output subdirs so the baked-in res/scripts stay intact)
 FROM python:3.11-slim-bookworm
 
 # System deps:

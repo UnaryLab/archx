@@ -34,12 +34,14 @@ studies in. The case-study runs happen at container run time, not during the bui
 ## Run
 
 ```bash
-mkdir -p out/figures out/tables
 docker run --rm \
     -v "$PWD/out/figures:/opt/archx/agraph/res/figures" \
     -v "$PWD/out/tables:/opt/archx/agraph/res/tables" \
     archx-agraph
 ```
+
+The `-v` flag auto-creates the `out/figures` and `out/tables` host directories if
+they don't exist, so no `mkdir` is needed beforehand.
 
 The container executes `agraph/agraph.sh`, which:
 
