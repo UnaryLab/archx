@@ -2,7 +2,6 @@ from matplotlib import pyplot as plt
 from copy import deepcopy
 import pandas as pd
 import os
-from PIL import Image
 import fitz  # PyMuPDF
 
 fir_path = 'agraph/designs/sc_fir/results/'
@@ -93,22 +92,9 @@ if not os.path.exists('agraph/res/figures'):
     os.makedirs('agraph/res/figures')
 
 # Save figure
-png_path = 'agraph/res/figures/fir_metrics_comparison.png'
 pdf_path = 'agraph/res/figures/fir_metrics_comparison.pdf'
 
-plt.savefig(png_path, dpi=1200, bbox_inches='tight', facecolor='white')
 plt.savefig(pdf_path, dpi=1200, bbox_inches='tight', facecolor='white')
-
-# Post-process: crop top and bottom of PNG
-crop_top = 28   # pixels to crop from top
-crop_bottom = 28  # pixels to crop from bottom
-try:
-    with Image.open(png_path) as im:
-        width, height = im.size
-        cropped = im.crop((0, crop_top, width, height - crop_bottom))
-        cropped.save(png_path)
-except Exception:
-    pass
 
 # Post-process: crop top and bottom of PDF (in points)
 crop_top_pt = 7  # points to crop from top

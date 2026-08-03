@@ -68,6 +68,6 @@ exit is a genuine reproduction failure, not an expected warning.
 | RISC-V GEMM validation | `out/tables/riscv_gemm.txt` |
 | GPU GPT-2 validation | `out/tables/gpu_gpt2.txt` |
 
-Each figure is also written as a `.png` alongside the `.pdf`. The entry point for
+Each figure is written as a `.pdf`. The entry point for
 the whole flow is `agraph/agraph.sh`; see the `agraph/` tree for the design
 descriptions, performance models, interface bundles, and plotting scripts.

@@ -188,11 +188,9 @@ plt.tight_layout(pad=1.0)
 if not os.path.exists('agraph/res/figures'):
     os.makedirs('agraph/res/figures')
 
-png_path = 'agraph/res/figures/tnn_metrics.png'
 pdf_path = 'agraph/res/figures/tnn_metrics.pdf'
 
 # Save the figure
-plt.savefig(png_path, dpi=300, bbox_inches='tight', facecolor='white')
 plt.savefig(pdf_path, dpi=300, bbox_inches='tight', facecolor='white')
 
 crop_top_pt = 7  # points to crop from top
