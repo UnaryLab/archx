@@ -41,18 +41,19 @@ docker run --rm \
     archx-agraph
 ```
 
-The `-v` flag auto-creates the `out/figures` and `out/tables` host directories if
-they don't exist, so no `mkdir` is needed beforehand.
+The `-v` flag auto-creates the `out/figures`, `out/tables`, and `out/csv` host
+directories if they don't exist, so no `mkdir` is needed beforehand.
 
 The container executes `agraph/agraph.sh`, which:
 
 1. registers the hardware-characterization interfaces (`agraph/interface/`) into Archx,
 2. compiles and runs every design under `agraph/designs/`, writing per-run results, and
-3. regenerates the figures and validation tables.
+3. regenerates the figures, validation tables, and the machine-readable CSVs behind them.
 
-Only the two output directories are mounted, so the plotting scripts baked into
+Only the three output directories are mounted, so the plotting scripts baked into
 the image stay intact. Generated figures land in `out/figures/`, validation tables
-in `out/tables/`.
+in `out/tables/`, and the machine-readable CSVs behind the figures and tables in
+`out/csv/`.
 
 The script runs under `set -e` and must complete with exit code `0`. Any non-zero
 exit is a genuine reproduction failure, not an expected warning.
@@ -69,6 +70,9 @@ exit is a genuine reproduction failure, not an expected warning.
 | RISC-V GEMM validation | `out/tables/riscv_gemm.txt` |
 | GPU GPT-2 validation | `out/tables/gpu_gpt2.txt` |
 
-Each figure is written as a `.pdf`. The entry point for
+Each figure is written as a `.pdf`. The numbers behind the validation tables are
+also emitted as machine-readable CSVs under `out/csv/` (`fir_power.csv`,
+`gpu_gpt2.csv`, `riscv_gemm.csv`, `sc_cnn.csv`, `sc_cnn_breakdown.csv`,
+`sys_thr.csv`). The entry point for
 the whole flow is `agraph/agraph.sh`; see the `agraph/` tree for the design
 descriptions, performance models, interface bundles, and plotting scripts.
