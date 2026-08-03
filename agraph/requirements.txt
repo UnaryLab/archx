@@ -1,7 +1,3 @@
-# Extra Python deps used only by the A-Graph case-study scripts (figures and
-# tables). The core archx framework pulls its own deps from pyproject.toml;
-# these are not framework dependencies, so they live here instead.
-#   matplotlib  -> res/scripts/*_metrics.py, runtime_fig.py
-#   pymupdf     -> the `fitz` import that crops the generated PDFs
 matplotlib
 pymupdf
+beautifulsoup4
