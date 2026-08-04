@@ -47,18 +47,87 @@ The container executes `agraph/agraph.sh`, which:
 
 ## Reproduced outputs
 
-| Case study | Target | Paper Figure / Table | Output |
-| Figures |
-| --- | --- | --- | --- |
-| Runtime                  | CMOS            | Figure 8  | `out/figures/runtime_comparison.pdf`  |
-| FIR Bitwidth             | Superconducting | Figure 9  | `out/figures/fir_validation.pdf`      |
-| TNN                      | Neuromorphic    | Figure 10 | `out/figures/tnn_validation.pdf`      |
-| FFT                      | CMOS            | Figure 11 | `out/figures/fft_validation.pdf`      |
-| Systolic array           | CMOS            | Figure 12 | `out/figures/systolic_validation.pdf` |
-| Tables |
-| FIR Power                | Superconducting | Table 3   | `out/csv/fir_validation.txt`          |
-| CNN                      | Superconducting | Table 4   | `out/csv/cnn_validation.txt`          |
-| CNN breakdown            | Superconducting | Table 5   | `out/csv/cnn_breakdown.txt`           |
-| Systolic array breakdown | CMOS            | Table 6   | `out/csv/systolic_breakdown.txt`      |
-| RISC-V                   | CMOS            | Table 7   | `out/csv/riscv_validation.txt`        |
-| GPU GPT-2                | CMOS            | Table 8   | `out/csv/gpu_gpt2_validation.txt`     |
+Markdown, you can make Figures and Tables span the entire width by using a separator row with a single cell and an HTML <th colspan="4"> (GitHub-flavored Markdown supports inline HTML).
+
+<table>
+  <tr>
+    <th>Case study</th>
+    <th>Target</th>
+    <th>Paper Figure / Table</th>
+    <th>Output</th>
+  </tr>
+
+  <tr>
+    <th colspan="4">Figures</th>
+  </tr>
+  <tr>
+    <td>Runtime</td>
+    <td>CMOS</td>
+    <td>Figure 8</td>
+    <td><code>out/figures/runtime_comparison.pdf</code></td>
+  </tr>
+  <tr>
+    <td>FIR Bitwidth</td>
+    <td>Superconducting</td>
+    <td>Figure 9</td>
+    <td><code>out/figures/fir_validation.pdf</code></td>
+  </tr>
+  <tr>
+    <td>TNN</td>
+    <td>Neuromorphic</td>
+    <td>Figure 10</td>
+    <td><code>out/figures/tnn_validation.pdf</code></td>
+  </tr>
+  <tr>
+    <td>FFT</td>
+    <td>CMOS</td>
+    <td>Figure 11</td>
+    <td><code>out/figures/fft_validation.pdf</code></td>
+  </tr>
+  <tr>
+    <td>Systolic array</td>
+    <td>CMOS</td>
+    <td>Figure 12</td>
+    <td><code>out/figures/systolic_validation.pdf</code></td>
+  </tr>
+
+  <tr>
+    <th colspan="4">Tables</th>
+  </tr>
+  <tr>
+    <td>FIR Power</td>
+    <td>Superconducting</td>
+    <td>Table 3</td>
+    <td><code>out/csv/fir_validation.txt</code></td>
+  </tr>
+  <tr>
+    <td>CNN</td>
+    <td>Superconducting</td>
+    <td>Table 4</td>
+    <td><code>out/csv/cnn_validation.txt</code></td>
+  </tr>
+  <tr>
+    <td>CNN breakdown</td>
+    <td>Superconducting</td>
+    <td>Table 5</td>
+    <td><code>out/csv/cnn_breakdown.txt</code></td>
+  </tr>
+  <tr>
+    <td>Systolic array breakdown</td>
+    <td>CMOS</td>
+    <td>Table 6</td>
+    <td><code>out/csv/systolic_breakdown.txt</code></td>
+  </tr>
+  <tr>
+    <td>RISC-V</td>
+    <td>CMOS</td>
+    <td>Table 7</td>
+    <td><code>out/csv/riscv_validation.txt</code></td>
+  </tr>
+  <tr>
+    <td>GPU GPT-2</td>
+    <td>CMOS</td>
+    <td>Table 8</td>
+    <td><code>out/csv/gpu_gpt2_validation.txt</code></td>
+  </tr>
+</table>
