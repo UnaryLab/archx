@@ -46,7 +46,7 @@ The container executes `agraph/agraph.sh`, which:
 
 ## Reproduced outputs
 
-Markdown, you can make Figures and Tables span the entire width by using a separator row with a single cell and an HTML <th colspan="4"> (GitHub-flavored Markdown supports inline HTML).
+All casestudy figures and tables are reproduced in this artifact. Tables have two outputs, one matching the LaTex code to compile the table, and a csv output for readability.
 
 <table>
   <tr>
