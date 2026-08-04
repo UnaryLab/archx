@@ -17,7 +17,7 @@ the figures and validation tables.
 ```bash
 git clone https://github.com/UnaryLab/archx.git
 cd archx
-git switch -c agraph_hpca_2027 --track origin/agraph_hpca_2027
+git switch -c hpca_2027_ae --track origin/hpca_2027_ae
 ```
 
 ## Build
