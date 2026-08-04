@@ -36,7 +36,6 @@ studies in.
 ```bash
 docker run --rm \
     -v "$PWD/out/figures:/opt/archx/agraph/res/figures" \
-    -v "$PWD/out/tables:/opt/archx/agraph/res/tables" \
     -v "$PWD/out/csv:/opt/archx/agraph/res/csv" \
     archx-agraph
 ```
