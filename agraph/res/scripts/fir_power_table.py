@@ -15,7 +15,7 @@ BITWIDTH = 8
 results = 'agraph/designs/sc_fir/results/'
 out_dir = 'agraph/res/tables/'
 os.makedirs(out_dir, exist_ok=True)
-out_path = out_dir + 'fir_power.txt'
+out_path = out_dir + 'fir_validation.txt'
 
 caption = 'Validation of FIR power results.'
 label = 'tab:fir_power'
@@ -89,4 +89,4 @@ def _plain(s):
 csv_records = [{'metric': _plain(lbl), 'archx': row[a_col] * scale,
                 'baseline': row[b_col] * scale, 'relative_error_percent': row[e_col]}
                for lbl, a_col, b_col, e_col, scale in ROWS]
-pd.DataFrame(csv_records).to_csv(csv_dir + 'fir_power.csv', index=False)
+pd.DataFrame(csv_records).to_csv(csv_dir + 'fir_validation.csv', index=False)

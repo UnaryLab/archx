@@ -10,7 +10,7 @@ import pandas as pd
 results = 'agraph/designs/sc_cnn/results/'
 out_dir = 'agraph/res/tables/'
 os.makedirs(out_dir, exist_ok=True)
-out_path = out_dir + 'sc_cnn_breakdown.txt'
+out_path = out_dir + 'cnn_breakdown.txt'
 
 caption = ('Validation of CNN array breakdown.\n'
            '    S denotes splitters.\n'
@@ -73,4 +73,4 @@ csv_dir = 'agraph/res/csv/'
 os.makedirs(csv_dir, exist_ok=True)
 csv_records = [{'module': h, 'area_jj': float(area[k]), 'power_mw': float(power[k]) * 1e3}
                for k, h in MODULES]
-pd.DataFrame(csv_records).to_csv(csv_dir + 'sc_cnn_breakdown.csv', index=False)
+pd.DataFrame(csv_records).to_csv(csv_dir + 'cnn_breakdown.csv', index=False)

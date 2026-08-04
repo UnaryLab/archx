@@ -9,7 +9,7 @@ import pandas as pd
 results = 'agraph/designs/sc_cnn/results/'
 out_dir = 'agraph/res/tables/'
 os.makedirs(out_dir, exist_ok=True)
-out_path = out_dir + 'sc_cnn.txt'
+out_path = out_dir + 'cnn_validation.txt'
 
 caption = ('Validation of CNN Results.\n'
            r'    3D PE array has a dimension of $64\times64\times32$.')
@@ -84,4 +84,4 @@ csv_records = [
     {'metric': 'Power (W)',              'archx': power_archx,          'baseline': power_base,                   'relative_error_percent': power_pct},
     {'metric': 'Throughput (TMACs)',    'archx': thr_archx,            'baseline': thr_base,                     'relative_error_percent': thr_pct},
 ]
-pd.DataFrame(csv_records).to_csv(csv_dir + 'sc_cnn.csv', index=False)
+pd.DataFrame(csv_records).to_csv(csv_dir + 'cnn_validation.csv', index=False)

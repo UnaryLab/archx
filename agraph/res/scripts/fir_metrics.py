@@ -92,7 +92,7 @@ if not os.path.exists('agraph/res/figures'):
     os.makedirs('agraph/res/figures')
 
 # Save figure
-pdf_path = 'agraph/res/figures/fir_metrics_comparison.pdf'
+pdf_path = 'agraph/res/figures/fir_validation.pdf'
 
 plt.savefig(pdf_path, dpi=1200, bbox_inches='tight', facecolor='white')
 

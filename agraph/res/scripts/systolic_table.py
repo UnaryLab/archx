@@ -14,7 +14,7 @@ base = 'agraph/designs/systolic_cg/'
 results = base + 'results/'
 out_dir = 'agraph/res/tables/'
 os.makedirs(out_dir, exist_ok=True)
-out_path = out_dir + 'sys_thr.txt'
+out_path = out_dir + 'systolic_breakdown.txt'
 
 caption = ('Systolic array configuration and full \\thiswork results.\n'
            '    Array dimension is the shape of the systolic array.\n'
@@ -127,4 +127,4 @@ csv_records = [{
     'sram_denergy_nj': memory['memory_dynamic_energy'][i],
     'sram_lpower_mw': memory['memory_leakage_power'][i],
 } for i in range(n)]
-pd.DataFrame(csv_records).to_csv(csv_dir + 'sys_thr.csv', index=False)
+pd.DataFrame(csv_records).to_csv(csv_dir + 'systolic_breakdown.csv', index=False)

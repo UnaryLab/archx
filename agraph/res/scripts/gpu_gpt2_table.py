@@ -16,7 +16,7 @@ import pandas as pd
 results = 'agraph/designs/gpu_gpt2/results/'
 out_dir = 'agraph/res/tables/'
 os.makedirs(out_dir, exist_ok=True)
-out_path = out_dir + 'gpu_gpt2.txt'
+out_path = out_dir + 'gpu_gpt2_validation.txt'
 
 caption = 'Validation of GPU GPT-2 Results.'
 label = 'tab:gpu_gpt2'
@@ -95,4 +95,4 @@ for lbl, csv, scale, style in ROWS:
     row = pd.read_csv(results + csv).iloc[0]
     csv_records.append({'metric': _plain(lbl), 'archx': row['archx'] * scale,
                         'baseline': row['pnr'] * scale, 'relative_error_percent': row['percent_error']})
-pd.DataFrame(csv_records).to_csv(csv_dir + 'gpu_gpt2.csv', index=False)
+pd.DataFrame(csv_records).to_csv(csv_dir + 'gpu_gpt2_validation.csv', index=False)

@@ -208,7 +208,7 @@ plt.tight_layout(pad=1.0)
 if not os.path.exists('agraph/res/figures'):
     os.makedirs('agraph/res/figures')
 
-pdf_path = 'agraph/res/figures/systolic_metrics_comparison.pdf'
+pdf_path = 'agraph/res/figures/systolic_validation.pdf'
 # Save the figure
 plt.savefig(pdf_path, dpi=300, bbox_inches='tight', facecolor='white')
 

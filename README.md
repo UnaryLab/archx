@@ -29,7 +29,7 @@ docker build -t archx-agraph .
 This installs a pinned Rust toolchain, compiles the Rust A-Graph core via Maturin,
 installs the Python dependencies (framework deps from `pyproject.toml`, plus
 `agraph/requirements.txt` for the figure/table scripts), and copies the case
-studies in. The case-study runs happen at container run time, not during the build.
+studies in.
 
 ## Run
 
@@ -41,38 +41,24 @@ docker run --rm \
     archx-agraph
 ```
 
-The `-v` flag auto-creates the `out/figures`, `out/tables`, and `out/csv` host
-directories if they don't exist, so no `mkdir` is needed beforehand.
+The docker container will generate each case study's result at runtime.
 
 The container executes `agraph/agraph.sh`, which:
 
-1. registers the hardware-characterization interfaces (`agraph/interface/`) into Archx,
-2. compiles and runs every design under `agraph/designs/`, writing per-run results, and
-3. regenerates the figures, validation tables, and the machine-readable CSVs behind them.
-
-Only the three output directories are mounted, so the plotting scripts baked into
-the image stay intact. Generated figures land in `out/figures/`, validation tables
-in `out/tables/`, and the machine-readable CSVs behind the figures and tables in
-`out/csv/`.
-
-The script runs under `set -e` and must complete with exit code `0`. Any non-zero
-exit is a genuine reproduction failure, not an expected warning.
-
 ## Reproduced outputs
 
-| Case study | Output |
-| --- | --- |
-| FFT (coarse / fine grain) | `out/figures/fft_metrics_comparison.pdf` |
-| TNN (coarse / fine grain) | `out/figures/tnn_metrics.pdf` |
-| Systolic array (coarse / fine grain) | `out/figures/systolic_metrics_comparison.pdf` |
-| Stochastic-computing FIR | `out/figures/fir_metrics_comparison.pdf` |
-| Modeling-runtime comparison | `out/figures/runtime_comparison.pdf` |
-| RISC-V GEMM validation | `out/tables/riscv_gemm.txt` |
-| GPU GPT-2 validation | `out/tables/gpu_gpt2.txt` |
-
-Each figure is written as a `.pdf`. The numbers behind the validation tables are
-also emitted as machine-readable CSVs under `out/csv/` (`fir_power.csv`,
-`gpu_gpt2.csv`, `riscv_gemm.csv`, `sc_cnn.csv`, `sc_cnn_breakdown.csv`,
-`sys_thr.csv`). The entry point for
-the whole flow is `agraph/agraph.sh`; see the `agraph/` tree for the design
-descriptions, performance models, interface bundles, and plotting scripts.
+| Case study | Target | Paper Figure / Table | Output |
+| Figures |
+| --- | --- | --- | --- |
+| Runtime                  | CMOS            | Figure 8  | `out/figures/runtime_comparison.pdf`  |
+| FIR Bitwidth             | Superconducting | Figure 9  | `out/figures/fir_validation.pdf`      |
+| TNN                      | Neuromorphic    | Figure 10 | `out/figures/tnn_validation.pdf`      |
+| FFT                      | CMOS            | Figure 11 | `out/figures/fft_validation.pdf`      |
+| Systolic array           | CMOS            | Figure 12 | `out/figures/systolic_validation.pdf` |
+| Tables |
+| FIR Power                | Superconducting | Table 3   | `out/csv/fir_validation.txt`          |
+| CNN                      | Superconducting | Table 4   | `out/csv/cnn_validation.txt`          |
+| CNN breakdown            | Superconducting | Table 5   | `out/csv/cnn_breakdown.txt`           |
+| Systolic array breakdown | CMOS            | Table 6   | `out/csv/systolic_breakdown.txt`      |
+| RISC-V                   | CMOS            | Table 7   | `out/csv/riscv_validation.txt`        |
+| GPU GPT-2                | CMOS            | Table 8   | `out/csv/gpu_gpt2_validation.txt`     |
