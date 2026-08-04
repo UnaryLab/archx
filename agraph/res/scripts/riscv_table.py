@@ -2,14 +2,14 @@
 
 Reads the per-metric result CSVs written by designs/riscv/query.py (each has
 columns archx / pnr / percent_error) and emits a booktabs table comparing archx
-against the baseline to res/csv/riscv_validation.txt.
+against the baseline to res/tables/txt/riscv_validation.txt.
 """
 import math
 import os
 import pandas as pd
 
 results = 'agraph/designs/riscv/results/'
-out_dir = 'agraph/res/csv/'
+out_dir = 'agraph/res/tables/txt/'
 os.makedirs(out_dir, exist_ok=True)
 out_path = out_dir + 'riscv_validation.txt'
 
@@ -76,7 +76,7 @@ with open(out_path, 'w') as f:
 # Companion CSV with the same results (raw values, no LaTeX) for easy reading.
 import re
 
-csv_dir = 'agraph/res/csv/'
+csv_dir = 'agraph/res/tables/csv/'
 os.makedirs(csv_dir, exist_ok=True)
 
 

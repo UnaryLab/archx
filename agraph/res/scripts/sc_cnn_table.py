@@ -1,13 +1,13 @@
 """Generate the LaTeX validation table for the SC-CNN study.
 
 Reads designs/sc_cnn/results/{area,power,throughput}.csv and emits a booktabs
-table (archx vs baseline + relative error) to res/csv/cnn_validation.txt.
+table (archx vs baseline + relative error) to res/tables/txt/cnn_validation.txt.
 """
 import os
 import pandas as pd
 
 results = 'agraph/designs/sc_cnn/results/'
-out_dir = 'agraph/res/csv/'
+out_dir = 'agraph/res/tables/txt/'
 os.makedirs(out_dir, exist_ok=True)
 out_path = out_dir + 'cnn_validation.txt'
 
@@ -76,7 +76,7 @@ with open(out_path, 'w') as f:
     f.write(table)
 
 # Companion CSV with the same results (raw values, no LaTeX) for easy reading.
-csv_dir = 'agraph/res/csv/'
+csv_dir = 'agraph/res/tables/csv/'
 os.makedirs(csv_dir, exist_ok=True)
 csv_records = [
     {'metric': 'Area w/o overhead (JJ)', 'archx': base_row['area jj'], 'baseline': base_row['baseline area jj'], 'relative_error_percent': base_row['area_percent_dif']},

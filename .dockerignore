@@ -18,7 +18,7 @@ dist/
 agraph/designs/*/description/
 agraph/designs/*/results/
 agraph/res/figures/
-agraph/res/csv/
+agraph/res/tables/
 
 # Design removed from the artifact but kept locally
 agraph/designs/gpu_qwen2_5/

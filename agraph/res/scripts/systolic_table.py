@@ -3,7 +3,7 @@
 Reads designs/systolic_cg/results/{area,energy,power,memory,runtime}.csv (one
 row per array config, keyed by array dimension) plus each config's workload.yaml
 for the GEMM matrix dimension, and emits a booktabs table to
-res/csv/systolic_breakdown.txt. Metrics are one column per array config.
+res/tables/txt/systolic_breakdown.txt. Metrics are one column per array config.
 """
 import glob
 import os
@@ -12,7 +12,7 @@ import yaml
 
 base = 'agraph/designs/systolic_cg/'
 results = base + 'results/'
-out_dir = 'agraph/res/csv/'
+out_dir = 'agraph/res/tables/txt/'
 os.makedirs(out_dir, exist_ok=True)
 out_path = out_dir + 'systolic_breakdown.txt'
 
@@ -113,7 +113,7 @@ with open(out_path, 'w') as f:
 
 # Companion CSV with the same results (raw values, no LaTeX) for easy reading:
 # one row per array config.
-csv_dir = 'agraph/res/csv/'
+csv_dir = 'agraph/res/tables/csv/'
 os.makedirs(csv_dir, exist_ok=True)
 csv_records = [{
     'array_dim': array_dims[i],

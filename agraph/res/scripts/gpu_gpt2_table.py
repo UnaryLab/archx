@@ -2,7 +2,7 @@
 
 Reads the per-metric result CSVs written by designs/gpu_gpt2/query.py (each has
 columns archx / pnr / percent_error) and emits a booktabs table comparing archx
-against the baseline to res/csv/gpu_gpt2_validation.txt.
+against the baseline to res/tables/txt/gpu_gpt2_validation.txt.
 
 Note: gpt2 computes energy (J), power (W), and runtime (s). The example table
 shared for this study mislabeled the power/runtime rows as "Dynamic energy" and
@@ -14,7 +14,7 @@ import os
 import pandas as pd
 
 results = 'agraph/designs/gpu_gpt2/results/'
-out_dir = 'agraph/res/csv/'
+out_dir = 'agraph/res/tables/txt/'
 os.makedirs(out_dir, exist_ok=True)
 out_path = out_dir + 'gpu_gpt2_validation.txt'
 
@@ -80,7 +80,7 @@ with open(out_path, 'w') as f:
 # Companion CSV with the same results (raw values, no LaTeX) for easy reading.
 import re
 
-csv_dir = 'agraph/res/csv/'
+csv_dir = 'agraph/res/tables/csv/'
 os.makedirs(csv_dir, exist_ok=True)
 
 

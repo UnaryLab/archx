@@ -36,7 +36,7 @@ studies in.
 ```bash
 docker run --rm \
     -v "$PWD/out/figures:/opt/archx/agraph/res/figures" \
-    -v "$PWD/out/csv:/opt/archx/agraph/res/csv" \
+    -v "$PWD/out/tables:/opt/archx/agraph/res/tables" \
     archx-agraph
 ```
 
@@ -97,36 +97,36 @@ Markdown, you can make Figures and Tables span the entire width by using a separ
     <td>FIR Power</td>
     <td>Superconducting</td>
     <td>Table 3</td>
-    <td><code>out/csv/fir_validation.txt</code></td>
+    <td><code>out/tables/txt/fir_validation.txt</code></td>
   </tr>
   <tr>
     <td>CNN</td>
     <td>Superconducting</td>
     <td>Table 4</td>
-    <td><code>out/csv/cnn_validation.txt</code></td>
+    <td><code>out/tables/txt/cnn_validation.txt</code></td>
   </tr>
   <tr>
     <td>CNN breakdown</td>
     <td>Superconducting</td>
     <td>Table 5</td>
-    <td><code>out/csv/cnn_breakdown.txt</code></td>
+    <td><code>out/tables/txt/cnn_breakdown.txt</code></td>
   </tr>
   <tr>
     <td>Systolic array breakdown</td>
     <td>CMOS</td>
     <td>Table 6</td>
-    <td><code>out/csv/systolic_breakdown.txt</code></td>
+    <td><code>out/tables/txt/systolic_breakdown.txt</code></td>
   </tr>
   <tr>
     <td>RISC-V</td>
     <td>CMOS</td>
     <td>Table 7</td>
-    <td><code>out/csv/riscv_validation.txt</code></td>
+    <td><code>out/tables/txt/riscv_validation.txt</code></td>
   </tr>
   <tr>
     <td>GPU GPT-2</td>
     <td>CMOS</td>
     <td>Table 8</td>
-    <td><code>out/csv/gpu_gpt2_validation.txt</code></td>
+    <td><code>out/tables/txt/gpu_gpt2_validation.txt</code></td>
   </tr>
 </table>

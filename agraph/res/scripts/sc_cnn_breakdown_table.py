@@ -2,13 +2,13 @@
 
 Reads designs/sc_cnn/results/{area_breakdown,power_breakdown}.csv (per-module
 area in JJ and power in W) and emits a booktabs table to
-res/csv/cnn_breakdown.txt.
+res/tables/txt/cnn_breakdown.txt.
 """
 import os
 import pandas as pd
 
 results = 'agraph/designs/sc_cnn/results/'
-out_dir = 'agraph/res/csv/'
+out_dir = 'agraph/res/tables/txt/'
 os.makedirs(out_dir, exist_ok=True)
 out_path = out_dir + 'cnn_breakdown.txt'
 
@@ -69,7 +69,7 @@ with open(out_path, 'w') as f:
 
 # Companion CSV with the same results (raw values, no LaTeX) for easy reading:
 # one row per module, area in JJ and power in mW.
-csv_dir = 'agraph/res/csv/'
+csv_dir = 'agraph/res/tables/csv/'
 os.makedirs(csv_dir, exist_ok=True)
 csv_records = [{'module': h, 'area_jj': float(area[k]), 'power_mw': float(power[k]) * 1e3}
                for k, h in MODULES]

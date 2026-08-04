@@ -2,7 +2,7 @@
 
 Reads designs/sc_fir/results/split_power.csv (dynamic/leakage power vs baseline,
 one row per bitwidth) and emits a booktabs table for a single bitwidth operating
-point to res/csv/fir_validation.txt.
+point to res/tables/txt/fir_validation.txt.
 """
 import math
 import os
@@ -13,7 +13,7 @@ import pandas as pd
 BITWIDTH = 8
 
 results = 'agraph/designs/sc_fir/results/'
-out_dir = 'agraph/res/csv/'
+out_dir = 'agraph/res/tables/txt/'
 os.makedirs(out_dir, exist_ok=True)
 out_path = out_dir + 'fir_validation.txt'
 
@@ -76,7 +76,7 @@ with open(out_path, 'w') as f:
 # Companion CSV with the same results (raw values, no LaTeX) for easy reading.
 import re
 
-csv_dir = 'agraph/res/csv/'
+csv_dir = 'agraph/res/tables/csv/'
 os.makedirs(csv_dir, exist_ok=True)
 
 
