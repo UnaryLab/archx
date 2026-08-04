@@ -91,42 +91,60 @@ Markdown, you can make Figures and Tables span the entire width by using a separ
   </tr>
 
   <tr>
-    <th colspan="4">Tables</th>
-  </tr>
-  <tr>
-    <td>FIR Power</td>
-    <td>Superconducting</td>
-    <td>Table 3</td>
-    <td><code>out/tables/txt/fir_validation.txt</code></td>
-  </tr>
-  <tr>
-    <td>CNN</td>
-    <td>Superconducting</td>
-    <td>Table 4</td>
-    <td><code>out/tables/txt/cnn_validation.txt</code></td>
-  </tr>
-  <tr>
-    <td>CNN breakdown</td>
-    <td>Superconducting</td>
-    <td>Table 5</td>
-    <td><code>out/tables/txt/cnn_breakdown.txt</code></td>
-  </tr>
-  <tr>
-    <td>Systolic array breakdown</td>
-    <td>CMOS</td>
-    <td>Table 6</td>
-    <td><code>out/tables/txt/systolic_breakdown.txt</code></td>
-  </tr>
-  <tr>
-    <td>RISC-V</td>
-    <td>CMOS</td>
-    <td>Table 7</td>
-    <td><code>out/tables/txt/riscv_validation.txt</code></td>
-  </tr>
-  <tr>
-    <td>GPU GPT-2</td>
-    <td>CMOS</td>
-    <td>Table 8</td>
-    <td><code>out/tables/txt/gpu_gpt2_validation.txt</code></td>
-  </tr>
+  <th colspan="4">Tables</th>
+</tr>
+<tr>
+  <td>FIR Power</td>
+  <td>Superconducting</td>
+  <td>Table 3</td>
+  <td>
+    <code>out/tables/txt/fir_validation.txt</code><br>
+    <code>out/tables/csv/fir_validation.csv</code>
+  </td>
+</tr>
+<tr>
+  <td>CNN</td>
+  <td>Superconducting</td>
+  <td>Table 4</td>
+  <td>
+    <code>out/tables/txt/cnn_validation.txt</code><br>
+    <code>out/tables/csv/cnn_validation.csv</code>
+  </td>
+</tr>
+<tr>
+  <td>CNN breakdown</td>
+  <td>Superconducting</td>
+  <td>Table 5</td>
+  <td>
+    <code>out/tables/txt/cnn_breakdown.txt</code><br>
+    <code>out/tables/csv/cnn_breakdown.csv</code>
+  </td>
+</tr>
+<tr>
+  <td>Systolic array breakdown</td>
+  <td>CMOS</td>
+  <td>Table 6</td>
+  <td>
+    <code>out/tables/txt/systolic_breakdown.txt</code><br>
+    <code>out/tables/csv/systolic_breakdown.csv</code>
+  </td>
+</tr>
+<tr>
+  <td>RISC-V</td>
+  <td>CMOS</td>
+  <td>Table 7</td>
+  <td>
+    <code>out/tables/txt/riscv_validation.txt</code><br>
+    <code>out/tables/csv/riscv_validation.csv</code>
+  </td>
+</tr>
+<tr>
+  <td>GPU GPT-2</td>
+  <td>CMOS</td>
+  <td>Table 8</td>
+  <td>
+    <code>out/tables/txt/gpu_gpt2_validation.txt</code><br>
+    <code>out/tables/csv/gpu_gpt2_validation.csv</code>
+  </td>
+</tr>
 </table>
