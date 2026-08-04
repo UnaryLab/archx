@@ -17,7 +17,7 @@ the figures and validation tables.
 ```bash
 git clone https://github.com/UnaryLab/archx.git
 cd archx
-git switch -c _2027_ae --track origin/_2027_ae
+git switch -c 2027_ae --track origin/2027_ae
 ```
 
 ## Build
