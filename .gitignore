@@ -10,7 +10,6 @@
 agraph/designs/*/description/
 agraph/designs/*/results/
 agraph/res/figures/
-agraph/res/tables/
 agraph/res/csv/
 agraph/designs/gpu_qwen2_5/
 

@@ -18,7 +18,6 @@ dist/
 agraph/designs/*/description/
 agraph/designs/*/results/
 agraph/res/figures/
-agraph/res/tables/
 agraph/res/csv/
 
 # Design removed from the artifact but kept locally

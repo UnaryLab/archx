@@ -2,13 +2,13 @@
 
 Reads designs/sc_cnn/results/{area_breakdown,power_breakdown}.csv (per-module
 area in JJ and power in W) and emits a booktabs table to
-res/tables/sc_cnn_breakdown.txt.
+res/csv/cnn_breakdown.txt.
 """
 import os
 import pandas as pd
 
 results = 'agraph/designs/sc_cnn/results/'
-out_dir = 'agraph/res/tables/'
+out_dir = 'agraph/res/csv/'
 os.makedirs(out_dir, exist_ok=True)
 out_path = out_dir + 'cnn_breakdown.txt'
 

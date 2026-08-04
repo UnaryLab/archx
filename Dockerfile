@@ -4,11 +4,11 @@
 # Build:  docker build -t archx-agraph .
 # Run:    docker run --rm \
 #             -v "$PWD/out/figures:/opt/archx/agraph/res/figures" \
-#             -v "$PWD/out/tables:/opt/archx/agraph/res/tables" \
 #             -v "$PWD/out/csv:/opt/archx/agraph/res/csv" \
 #             archx-agraph
 #         (-v auto-creates the host output dirs if missing; mount only the
-#          output subdirs so the baked-in res/scripts stay intact)
+#          output subdirs so the baked-in res/scripts stay intact. Figures land
+#          in res/figures; the validation tables land in res/csv.)
 FROM python:3.11-slim-bookworm
 
 # System deps:

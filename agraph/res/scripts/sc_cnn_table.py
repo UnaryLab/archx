@@ -1,13 +1,13 @@
 """Generate the LaTeX validation table for the SC-CNN study.
 
 Reads designs/sc_cnn/results/{area,power,throughput}.csv and emits a booktabs
-table (archx vs baseline + relative error) to res/tables/sc_cnn.txt.
+table (archx vs baseline + relative error) to res/csv/cnn_validation.txt.
 """
 import os
 import pandas as pd
 
 results = 'agraph/designs/sc_cnn/results/'
-out_dir = 'agraph/res/tables/'
+out_dir = 'agraph/res/csv/'
 os.makedirs(out_dir, exist_ok=True)
 out_path = out_dir + 'cnn_validation.txt'
 

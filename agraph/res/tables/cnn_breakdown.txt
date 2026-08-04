@@ -1,0 +1,18 @@
+\begin{table}[!t]
+    \centering
+    \caption{Validation of CNN array breakdown.
+    S denotes splitters.
+    NDRO is for Non-Destructive Readout memory.}
+    \begin{adjustbox}{max width=\linewidth}
+    \begin{tabular}{cccccc}
+        \toprule
+        \textbf{Module} & \textbf{MAC} & \textbf{MAC S} & \textbf{Weight S} & \textbf{Input S} & \textbf{NDRO} \\
+        \cmidrule{1-6}
+        \textbf{Area (JJ)} & 12.3M & 393.2K & 393.2K & 393.2K & 448 \\
+        \cmidrule{1-6}
+        \textbf{Power (mW)} & 3801.09 & 784.86 & 784.86 & 784.86 & 0.63 \\
+        \bottomrule
+    \end{tabular}
+    \end{adjustbox}
+    \label{tab:sc_cnn_breakdown}
+\end{table}
