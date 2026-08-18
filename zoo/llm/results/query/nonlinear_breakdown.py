@@ -1,4 +1,4 @@
-from zoo.llm.results.query.utils import query_performance_nonlinear_metrics, compute_throughput_efficiancy, load_yaml, geomean
+from zoo.llm.results.query.utils import query_performance_nonlinear_metrics, compute_throughput_efficiancy, load_yaml, geomean, MissingRunError
 import pandas as pd
 import os
 import numpy as np
@@ -40,7 +40,10 @@ def query(input_path, output_path):
                         module = mugi_throughput_module if arch == 'mugi' else approximate_throughtput_module if subarch in ['pwl', 'taylor'] else baseline_throughput_module
                         termination_path = 'full_termination' if arch == 'mugi' else ''
                         run_path = os.path.normpath(f'{input_path}{arch}/{network}/{subarch}/{arch_dim}/{model}/{max_seq_len}/{batch_size}/{termination_path}/')
-                        yaml_dict = load_yaml(run_path)
+                        try:
+                            yaml_dict = load_yaml(run_path)
+                        except MissingRunError:
+                            continue
 
                         event_graph = yaml_dict['event_graph']
                         metric_dict = yaml_dict['metric_dict']
@@ -56,6 +59,8 @@ def query(input_path, output_path):
                         softmax_list.append(sm_throughput_eff_dict)
                         silu_list.append(silu_throughput_eff_dict)
 
+                    if not softmax_list:
+                        continue
                     sm_throughput_eff_dict = geomean(softmax_list)
                     silu_throughput_eff_dict = geomean(silu_list)
 
@@ -80,6 +85,17 @@ def query(input_path, output_path):
         (nonlinear_breakdown_df['subarch'] == 'mac') &
         (nonlinear_breakdown_df['arch_dim'] == '16x16')
     ]
+
+    if baseline_df.empty:
+        # the pinned baseline dimension is not in the generated sweep; fall back to
+        # the smallest dimension that exists for the same baseline design
+        fallback_df = nonlinear_breakdown_df[
+            (nonlinear_breakdown_df['arch'] == 'systolic') &
+            (nonlinear_breakdown_df['subarch'] == 'mac')
+        ]
+        fallback_dim = sorted(fallback_df['arch_dim'].unique(), key=lambda dim: int(dim.split('x')[0]))[0]
+        print(f'  [notice] pinned baseline dimension not in the sweep; normalizing to systolic/mac/{fallback_dim}.')
+        baseline_df = fallback_df[fallback_df['arch_dim'] == fallback_dim]
 
     numeric_columns = baseline_df.select_dtypes(include=['number']).columns
     columns_to_merge = ['max_seq_len', 'function'] + list(numeric_columns)

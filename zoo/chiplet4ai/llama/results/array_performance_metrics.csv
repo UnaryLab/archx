@@ -1,3 +1,0 @@
-model,array_dim,batch_size,cycle_count
-llama_3_70b,512x512,32,5207264018592.0
-llama_3_8b,512x512,32,1414833630288.0002

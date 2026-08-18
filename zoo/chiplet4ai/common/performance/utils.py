@@ -23,24 +23,6 @@ def _step_dims(M: int, K: int, N: int, step: int, step_dim: str):
     )
 
 # region: sram traffic
-def _fit_2d_tile(rows: int, cols: int, min_rows: int, min_cols: int, capacity_elements: int) -> tuple[int, int]:
-    rows_t = max(1, min(rows, min_rows))
-    cols_t = max(1, min(cols, max(min_cols, capacity_elements // rows_t)))
-
-    if rows_t * cols_t > capacity_elements:
-        cols_t = max(1, capacity_elements // rows_t)
-
-    if rows_t * cols_t > capacity_elements:
-        rows_t = max(1, capacity_elements // cols_t)
-
-    while rows_t < rows and (rows_t + 1) * cols_t <= capacity_elements:
-        rows_t += 1
-
-    while cols_t < cols and rows_t * (cols_t + 1) <= capacity_elements:
-        cols_t += 1
-
-    return rows_t, cols_t
-
 def _sram_bits(architecture_dict: OrderedDict, sram_name: str) -> int:
     query = architecture_dict['architecture'][sram_name]['query']
     return int(query['width'] * query['bank'] * query['depth'])

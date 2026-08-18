@@ -6,7 +6,18 @@ class Workload():
         self.parameter_enumerator = parameter_enumerator
         self.configurations = []
 
-    def add_configuration(self, name: str):
+    def add_configuration(self, name):
+        assert isinstance(name, (str, list)), "'name' parameter must be of type 'str' or a list of 'str'."
+
+        if isinstance(name, list):
+            config_dict = {}
+            for config_name in name:
+                config_dict[config_name] = self._configuration(config_name)
+            return config_dict
+        else:
+            return self._configuration(name)
+
+    def _configuration(self, name: str):
         assert isinstance(name, str), "'name' parameter must be of type 'str'."
         assert all(config.name != name for config in self.configurations), f"Configuration '{name}' already exists in workload."
 
@@ -32,7 +43,24 @@ class Workload():
             workload_dict['workload']['configuration'][param_name] = copy_value
         
         return workload_dict
-            
+
+    def add_parameters(self, configs: list, parameter_name: str, parameter_value, sweep: bool = None):
+        assert isinstance(configs, list), "'configs' parameter must be of type 'list'."
+        assert all(isinstance(name, Configuration) for name in configs), "'configs' parameter must be a list of 'Configuration' objects."
+
+        param_dict = {}
+
+        for name in configs:
+            param_dict[name] = name.add_parameter(parameter_name=parameter_name, parameter_value=parameter_value, sweep=sweep)
+
+        # a shared parameter is one logical parameter declared for several configurations:
+        # record the siblings so constraints written against one configuration's copy are
+        # applied to each configuration's own solve (workloads never sweep across configs)
+        group = {config.name: param['parameter'] for config, param in param_dict.items()}
+        for parameter in group.values():
+            self.parameter_enumerator.shared_parameters[parameter] = group
+
+        return param_dict
 
 class Configuration():
     def __init__(self, name: str, parameter_enumerator):

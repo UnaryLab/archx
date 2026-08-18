@@ -1,4 +1,4 @@
-from zoo.llm.results.query.utils import query_execution_time, compute_latency, load_yaml
+from zoo.llm.results.query.utils import query_execution_time, compute_latency, load_yaml, MissingRunError
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import pandas as pd
@@ -40,7 +40,10 @@ def query(input_path, output_path):
                     termination_path = 'full_termination' if arch == 'mugi' else ''
                     kv_path = kv_paths if model in ['llama_2_70b_GQA'] else ''
                     run_path = os.path.normpath(f'{input_path}{arch}/{network}/{subarch}/{arch_dim}/{model}/{max_seq_len}/{batch_size}/{kv_path}/{termination_path}/')
-                    yaml_dict = load_yaml(run_path)
+                    try:
+                        yaml_dict = load_yaml(run_path)
+                    except MissingRunError:
+                        continue
 
                     event_graph = yaml_dict['event_graph']
                     metric_dict = yaml_dict['metric_dict']

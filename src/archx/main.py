@@ -133,6 +133,14 @@ def handle_interface_command(args):
     return False
 
 
+def default_run_dir_from_compile(args):
+    """When compiling without an explicit <-r>, derive the run directory from the
+    compile file path by dropping its extension (e.g. .../description.py -> .../description/)."""
+    if args.compile is not None and args.run_dir is None:
+        args.run_dir = os.path.splitext(args.compile)[0]
+        logger.info(f'No <-r> given; defaulting run directory to <{args.run_dir}> from compile path <{args.compile}>.')
+
+
 def prepare_run_dir(args, log=True):
     assert args.run_dir is not None, logger.error(f'Run directory is required via <-r> or <-run_dir>.')
     if not os.path.isdir(args.run_dir):
@@ -362,6 +370,7 @@ def main():
 
     print_banner()
     configure_import_path(args)
+    default_run_dir_from_compile(args)
     delete_run_dir_if_requested(args)
 
     if handle_interface_command(args):

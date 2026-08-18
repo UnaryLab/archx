@@ -15,9 +15,11 @@ error_log="failed_runs.txt"
 
 echo $2
 
-while IFS= read -r line; do
-    # Run archx and check its exit status
-    archx $line $2 &
+while IFS= read -r line <&3; do
+    # Run archx and check its exit status. The runs file is read on fd 3 and each
+    # child gets stdin=/dev/null, so no child can consume the list being read by
+    # this loop (which silently truncates the batch).
+    archx $line $2 < /dev/null &
     pid=$!
     pids[$counter]=$pid
     cmds[$counter]="$line $2"
@@ -37,7 +39,7 @@ while IFS= read -r line; do
         pids=()
         cmds=()
     fi
-done < "$1"
+done 3< "$1"
 
 # Check remaining processes
 for i in ${!pids[@]}; do

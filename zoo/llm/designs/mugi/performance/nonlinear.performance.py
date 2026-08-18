@@ -1,7 +1,15 @@
 from collections import OrderedDict
 from archx.utils import get_prod
 
-def input_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)->OrderedDict: 
+# NOTE: The two subarchitectures (lut, vlp) are folded into a single AGraph design.
+# Every subarch-specific module (lut_register, lut_decoder, window_select) is always present
+# in architecture_dict; the inactive one is instance-gated to [0] (so its area and count vanish).
+# weight_nonlinear therefore selects which module dimensions to read from the swept 'subarch'
+# workload flag rather than from module presence (which is now always true) -- reading a gated
+# [0] instance at a deep index would raise IndexError.
+
+
+def input_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)->OrderedDict:
     performance_dict = OrderedDict()
     workload_dict = workload_dict['configuration']
     router_dim = get_prod(architecture_dict['irouter']['instance']) if 'irouter' in architecture_dict else 1
@@ -24,6 +32,7 @@ def weight_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=
     performance_dict = OrderedDict()
     router_dim = get_prod(architecture_dict['irouter']['instance']) if 'irouter' in architecture_dict else 1
     workload_dict = workload_dict['configuration']
+    subarch = workload_dict['subarch']
     lut_height = workload_dict['lut_height']
     frequency = architecture_dict['round']['query']['frequency']
 
@@ -41,12 +50,15 @@ def weight_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=
     exp_select_dim = architecture_dict['exp_select']['instance'][-1]
     ofifo_dim = architecture_dict['ofifo']['instance'][-1]
 
-    if 'window_select' in architecture_dict:
-        window_select_dim = architecture_dict['window_select']['instance'][-1]
-    if 'lut_register' in architecture_dict:
-        lut_register_dim = architecture_dict['lut_register']['instance'][-2] * architecture_dict['lut_register']['instance'][-4]
-    if 'lut_decoder' in architecture_dict:
-        lut_decoder_dim = architecture_dict['lut_decoder']['instance'][-1]
+    # subarch-gated modules: only the active subarch's modules carry a nonzero count.
+    if subarch == 'lut':
+        window_select_count = 0
+        lut_register_count = architecture_dict['lut_register']['instance'][-2] * architecture_dict['lut_register']['instance'][-4]
+        lut_decoder_count = architecture_dict['lut_decoder']['instance'][-1] * lut_height
+    else:  # vlp
+        window_select_count = architecture_dict['window_select']['instance'][-1]
+        lut_register_count = 0
+        lut_decoder_count = 0
 
     cycle_count = lut_height / router_dim
     performance_dict['cycle_count'] = OrderedDict({'value': cycle_count, 'unit': 'cycle'})
@@ -66,12 +78,10 @@ def weight_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=
     exp_select_dict = OrderedDict({'count': exp_select_dim})
     ofifo_dict = OrderedDict({'count': ofifo_dim})
 
-    if 'window_select' in architecture_dict:
-        window_select_dict = OrderedDict({'count': window_select_dim})
-    if 'lut_register' in architecture_dict:
-        lut_register_dict = OrderedDict({'count': lut_register_dim})
-    if 'lut_decoder' in architecture_dict:
-        lut_decoder_dict = OrderedDict({'count': lut_decoder_dim * lut_height})
+    # both subarchs' modules are always emitted; the inactive one carries count 0.
+    window_select_dict = OrderedDict({'count': window_select_count})
+    lut_register_dict = OrderedDict({'count': lut_register_count})
+    lut_decoder_dict = OrderedDict({'count': lut_decoder_count})
 
     performance_dict['subevent'] = OrderedDict({'round': round_dict,
                                                 'sign_mantissa_register': sign_mantissa_register_dict,
@@ -86,13 +96,10 @@ def weight_nonlinear(architecture_dict: OrderedDict, workload_dict: OrderedDict=
                                                 'exp_norm': exp_norm_dict,
                                                 'exp_select': exp_select_dict,
                                                 'ofifo': ofifo_dict})
-    
-    if 'window_select' in architecture_dict:
-        performance_dict['subevent']['window_select'] = window_select_dict
-    if 'lut_register' in architecture_dict:
-        performance_dict['subevent']['lut_register'] = lut_register_dict
-    if 'lut_decoder' in architecture_dict:
-        performance_dict['subevent']['lut_decoder'] = lut_decoder_dict
+
+    performance_dict['subevent']['window_select'] = window_select_dict
+    performance_dict['subevent']['lut_register'] = lut_register_dict
+    performance_dict['subevent']['lut_decoder'] = lut_decoder_dict
 
     return performance_dict
 

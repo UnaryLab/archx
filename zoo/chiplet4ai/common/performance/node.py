@@ -1,5 +1,13 @@
 from collections import OrderedDict
 
+from chiplet4ai.common.performance.mapping import _buffer_elements
+
+def _active_elements(architecture_dict: OrderedDict, sram_name: str) -> float:
+    # Same active-buffer definition mapping.py uses for its fit tests and count divisors,
+    # so node.py's access counts cannot diverge from it when active_fraction != 0.5.
+    # float() preserves the type of the previous `bank / 2` expression.
+    return float(_buffer_elements(architecture_dict, sram_name)[0])
+
 def array_input_mapping(architecture_dict: OrderedDict, workload_dict: OrderedDict) -> OrderedDict:
     performance_dict = OrderedDict()
 
@@ -47,11 +55,10 @@ def sram_input_write_mapping(architecture_dict: OrderedDict, workload_dict: Orde
     performance_dict = OrderedDict()
 
     # architecture parameters
-    isram_bank = architecture_dict['isram']['query']['bank'] / 2
-    isram_depth = architecture_dict['isram']['query']['depth']
-    
+    isram_elements = _active_elements(architecture_dict, 'isram')
+
     performance_dict['subevent'] = OrderedDict({
-        'sram_input_write': {'count': isram_depth * isram_bank, 'factor': {'cycle_count': 1/(isram_depth * isram_bank), 'runtime': 1/(isram_depth * isram_bank)}},
+        'sram_input_write': {'count': isram_elements, 'factor': {'cycle_count': 1/isram_elements, 'runtime': 1/isram_elements}},
     })
     return performance_dict
 
@@ -59,11 +66,10 @@ def sram_weight_write_mapping(architecture_dict: OrderedDict, workload_dict: Ord
     performance_dict = OrderedDict()
 
     # architecture parameters
-    wsram_bank = architecture_dict['wsram']['query']['bank'] / 2
-    wsram_depth = architecture_dict['wsram']['query']['depth']
-    
+    wsram_elements = _active_elements(architecture_dict, 'wsram')
+
     performance_dict['subevent'] = OrderedDict({
-        'sram_weight_write': {'count': wsram_depth * wsram_bank, 'factor': {'cycle_count': 1/(wsram_depth * wsram_bank), 'runtime': 1/(wsram_depth * wsram_bank)}},
+        'sram_weight_write': {'count': wsram_elements, 'factor': {'cycle_count': 1/wsram_elements, 'runtime': 1/wsram_elements}},
     })
     return performance_dict
 
@@ -71,11 +77,10 @@ def sram_output_write_mapping(architecture_dict: OrderedDict, workload_dict: Ord
     performance_dict = OrderedDict()
 
     # architecture parameters
-    osram_bank = architecture_dict['osram']['query']['bank'] / 2
-    osram_depth = architecture_dict['osram']['query']['depth']
-    
+    osram_elements = _active_elements(architecture_dict, 'osram')
+
     performance_dict['subevent'] = OrderedDict({
-        'sram_output_write': {'count': osram_depth * osram_bank, 'factor': {'cycle_count': 1/(osram_depth * osram_bank), 'runtime': 1/(osram_depth * osram_bank)}},
+        'sram_output_write': {'count': osram_elements, 'factor': {'cycle_count': 1/osram_elements, 'runtime': 1/osram_elements}},
     })
     return performance_dict
 
@@ -83,10 +88,9 @@ def sram_output_read_mapping(architecture_dict: OrderedDict, workload_dict: Orde
     performance_dict = OrderedDict()
 
     # architecture parameters
-    osram_bank = architecture_dict['osram']['query']['bank'] / 2
-    osram_depth = architecture_dict['osram']['query']['depth']
-    
+    osram_elements = _active_elements(architecture_dict, 'osram')
+
     performance_dict['subevent'] = OrderedDict({
-        'sram_output_read': {'count': osram_depth * osram_bank, 'factor': {'cycle_count': 1/(osram_depth * osram_bank), 'runtime': 1/(osram_depth * osram_bank)}},
+        'sram_output_read': {'count': osram_elements, 'factor': {'cycle_count': 1/osram_elements, 'runtime': 1/osram_elements}},
     })
     return performance_dict

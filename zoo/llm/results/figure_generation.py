@@ -6,7 +6,7 @@ import os, sys, warnings
 
 logger.remove()
 
-input_path = './zoo/llm/runs/'
+input_path = './zoo/llm/designs/'
 csv_path = './zoo/llm/results/csv/'
 fig_path = './zoo/llm/results/figs/'
 table_path = './zoo/llm/results/tables/'

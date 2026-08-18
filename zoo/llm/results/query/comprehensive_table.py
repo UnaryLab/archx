@@ -1,17 +1,18 @@
-from zoo.llm.results.query.utils import query_area, query_performance_gemm_metrics, query_performance_nonlinear_metrics, load_yaml, compute_throughput_efficiancy, query_execution_time
+from zoo.llm.results.query.utils import query_area, query_performance_gemm_metrics, query_performance_nonlinear_metrics, load_yaml, compute_throughput_efficiancy, query_execution_time, MissingRunError
 import pandas as pd
 from collections import OrderedDict
 import os
 
 def query(input_path, output_path):
-    network_list = ['single_node', 'multi_node_4x4', 'multi_node_8x8']
-    tensor_network_list = ['single_node', 'multi_node_2x1', 'multi_node_2x2']
+    # exactly the paper's design-comparison set: SN + SN-S, plus the 4x4 (2x1 tensor) NoC points
+    network_list = ['single_node', 'multi_node_4x4']
+    tensor_network_list = ['single_node', 'multi_node_2x1']
 
     vlp_list = ['mugi', 'carat']
-    vlp_arch_dim_list = ['64x8', '128x8', '256x8']
+    vlp_arch_dim_list = ['128x8', '256x8']
 
     baseline_list = ['systolic', 'simd']
-    baseline_arch_dim_list = ['8x8', '16x16', '64x64']
+    baseline_arch_dim_list = ['16x16', '64x64']
     baseline_subarch_list = ['mac', 'figna']
 
     throughput_module = OrderedDict({
@@ -34,17 +35,8 @@ def query(input_path, output_path):
         for network in network_list if arch != 'tensor' else tensor_network_list:
             for subarch in (baseline_subarch_list if arch in baseline_list else ['vlp'] if arch == 'mugi' else ['']):
                 for arch_dim in (vlp_arch_dim_list if arch in vlp_list else baseline_arch_dim_list if arch in baseline_list else ['8x16x16'] if arch == 'tensor' else ['']):
+                    # the 64x64 scale-up and 128x8 dimensions appear single-node only
                     if arch_dim in ['64x64', '128x8'] and network != 'single_node':
-                        continue
-                    if arch_dim in ['8x8', '64x8'] and network == 'single_node':
-                        continue
-                    if arch_dim in ['256x8', '16x16'] and network == 'multi_node_8x8':
-                        continue
-                    if network == 'multi_node_8x8':
-                        continue
-                    if arch_dim in ['64x8', '8x8'] and network == 'multi_node_4x4':
-                        continue
-                    if network == 'multi_node_2x2':
                         continue
 
                     gemm_module = throughput_module[arch]['gemm']
@@ -52,7 +44,10 @@ def query(input_path, output_path):
                     
                     termination_path = 'full_termination' if arch == 'mugi' else ''
                     run_path = os.path.normpath(f'{input_path}{arch}/{network}/{subarch}/{arch_dim}/{model}/{max_seq_len}/{batch_size}/kv_heads_8/{termination_path}/')
-                    yaml_dict = load_yaml(run_path)
+                    try:
+                        yaml_dict = load_yaml(run_path)
+                    except MissingRunError:
+                        continue
 
                     event_graph = yaml_dict['event_graph']
                     metric_dict = yaml_dict['metric_dict']
@@ -139,18 +134,20 @@ def table(input_path: str, output_path: str):
         area = row['area']
         energy_efficiency = row['energy_efficiency']
         power_efficiency = row['power_efficiency']
+        # the paper folds the mesh into the design cell ("4 x 4 \name (256)") and
+        # labels the single-node tensor row plainly as "Tensor"
         if 'multi_node' in network:
-            network_label = network.split('_')[2].split('x')
-            network_label = ' & ' + network_label[0] + ' x ' + network_label[1]
-        else:
-            network_label = ''
+            mesh = network.split('_')[2].split('x')
+            design = mesh[0] + ' x ' + mesh[1] + ' ' + design
+        elif arch_label == 'Tensor':
+            design = 'Tensor'
 
-        string = f"{network_label} & {design} & {throughput:.2f} & {area:.2f} & {energy_efficiency:.2f} & {power_efficiency:.2f} \\\\"
+        string = f" & {design} & {throughput:.2f} & {area:.2f} & {energy_efficiency:.2f} & {power_efficiency:.2f} \\\\"
         if arch_label in ['\\name', 'Carat'] and network == 'single_node':
             vlp_single_node_list.append(string)
-        elif arch_label in ['SA', 'SD'] and network == 'single_node' and dim_label in ['8x8', '16x16']:
+        elif arch_label in ['SA', 'SD'] and network == 'single_node' and dim_label == '16x16':
             baseline_single_node_list.append(string)
-        elif arch_label in ['SA', 'SD'] and network == 'single_node' and dim_label in ['64x64']:
+        elif arch_label in ['SA', 'SD'] and network == 'single_node' and dim_label == '64x64':
             baseline_sa_list.append(string)
         elif arch_label in ['\\name', 'Carat'] and network != 'single_node':
             vlp_multi_node_list.append(string)
@@ -173,23 +170,14 @@ def table(input_path: str, output_path: str):
         f.write(' & Arch & Throughput & Area & Energy Efficiency & Power Efficiency \\\\\n')
         f.write(' &      & Tokens/s & mm^2 & Tokens/s/uJ & Tokens/s/W \\\\\n')
     with open(output_path + 'comprehensive_table.txt', 'a') as f:
-        for string in vlp_single_node_list:
+        # group and row order follow the paper's design-comparison table:
+        # SN, then SN-S (scale-up baselines + tensor), then NoC
+        for string in vlp_single_node_list + baseline_single_node_list:
             f.write(string + '\n')
-        for string in baseline_single_node_list:
+        f.write('\\midrule\n')
+        for string in baseline_sa_list + tensor_single_node_list:
             f.write(string + '\n')
-        for string in baseline_sa_list:
-            f.write(string + '\n')
-        # for string in tensor_single_node_list:
-        #     f.write(string + '\n')
-        for string in vlp_multi_node_list:
-            f.write(string + '\n')
-        for string in sa_multi_node_list:
-            f.write(string + '\n')
-        for string in sa_f_multi_node_list:
-            f.write(string + '\n')
-        for string in sd_multi_node_list:
-            f.write(string + '\n')
-        for string in sd_f_multi_node_list:
-            f.write(string + '\n')
-        for string in tensor_multi_node_list:
+        f.write('\\midrule\n')
+        for string in (vlp_multi_node_list + sa_multi_node_list + sa_f_multi_node_list
+                       + sd_multi_node_list + sd_f_multi_node_list + tensor_multi_node_list):
             f.write(string + '\n')

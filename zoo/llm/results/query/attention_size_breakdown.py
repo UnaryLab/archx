@@ -1,4 +1,4 @@
-from zoo.llm.results.query.utils import query_throughput_energy_metrics, load_yaml, compute_throughput, geomean
+from zoo.llm.results.query.utils import query_throughput_energy_metrics, load_yaml, compute_throughput, geomean, MissingRunError
 import pandas as pd
 from matplotlib import pyplot as plt
 import numpy as np
@@ -50,7 +50,10 @@ def query(input_path, output_path):
 
                                 termination_path = 'full_termination' if arch == 'mugi' else ''
                                 run_path = os.path.normpath(f'{input_path}{arch}/{network}/{subarch}/{arch_dim}/{model}/{max_seq_len}/{batch_size}/{gqa_size}/{termination_path}/')
-                                yaml_dict = load_yaml(run_path)
+                                try:
+                                    yaml_dict = load_yaml(run_path)
+                                except MissingRunError:
+                                    continue
 
                                 event_graph = yaml_dict['event_graph']
                                 metric_dict = yaml_dict['metric_dict']
@@ -89,6 +92,18 @@ def query(input_path, output_path):
         (attention_size_breakdown_df['arch_dim'] == '8x8') &
         (attention_size_breakdown_df['attn_size'] == 'attn_size_1')
     ]
+
+    if baseline_df.empty:
+        # the pinned baseline dimension is not in the generated sweep; fall back to
+        # the smallest dimension that exists for the same baseline design
+        fallback_df = attention_size_breakdown_df[
+            (attention_size_breakdown_df['arch'] == 'systolic') &
+            (attention_size_breakdown_df['subarch'] == 'mac') &
+            (attention_size_breakdown_df['attn_size'] == 'attn_size_1')
+        ]
+        fallback_dim = sorted(fallback_df['arch_dim'].unique(), key=lambda dim: int(dim.split('x')[0]))[0]
+        print(f'  [notice] pinned baseline dimension not in the sweep; normalizing to systolic/mac/{fallback_dim}.')
+        baseline_df = fallback_df[fallback_df['arch_dim'] == fallback_dim]
 
     merge_list = ['max_seq_len']
     numeric_columns = baseline_df.select_dtypes(include=['number']).columns

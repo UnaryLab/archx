@@ -6,6 +6,7 @@ class ParameterEnumerator:
         self.parameters = {}  # IntVar -> {desc, type, name, param_name}
         self.var_to_values = {}  # IntVar -> values list (for fast lookup)
         self.name_to_var = {}  # var name string -> IntVar (for reverse lookup)
+        self.shared_parameters = {}  # IntVar -> {workload configuration name: sibling IntVar}
     
     def add_parameter(self, name: str, param_name: str, value, type: str, sweep: bool, desc: str):
         """

@@ -1,4 +1,4 @@
-from zoo.llm.results.query.utils import query_performance_metrics, compute_throughput_efficiancy, load_yaml
+from zoo.llm.results.query.utils import query_performance_metrics, compute_throughput_efficiancy, load_yaml, MissingRunError
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import pandas as pd
@@ -39,7 +39,10 @@ def query(input_path, output_path):
                     termination_path = 'full_termination' if arch == 'mugi' else ''
                     kv_path = kv_paths if model in ['llama_2_70b_GQA'] else ''
                     run_path = os.path.normpath(f'{input_path}{arch}/{network}/{subarch}/{arch_dim}/{model}/{max_seq_len}/{batch_size}/{kv_path}/{termination_path}/')
-                    yaml_dict = load_yaml(run_path)
+                    try:
+                        yaml_dict = load_yaml(run_path)
+                    except MissingRunError:
+                        continue
 
                     event_graph = yaml_dict['event_graph']
                     metric_dict = yaml_dict['metric_dict']
@@ -85,6 +88,18 @@ def query(input_path, output_path):
         (gemm_breakdown_df['arch_dim'] == '16x16') &
         (gemm_breakdown_df['model'] == 'llama_2_7b')
     ]
+
+    if baseline_df.empty:
+        # the pinned baseline dimension is not in the generated sweep; fall back to
+        # the smallest dimension that exists for the same baseline design
+        fallback_df = gemm_breakdown_df[
+            (gemm_breakdown_df['arch'] == 'systolic') &
+            (gemm_breakdown_df['subarch'] == 'mac') &
+            (gemm_breakdown_df['model'] == 'llama_2_7b')
+        ]
+        fallback_dim = sorted(fallback_df['arch_dim'].unique(), key=lambda dim: int(dim.split('x')[0]))[0]
+        print(f'  [notice] pinned baseline dimension not in the sweep; normalizing to systolic/mac/{fallback_dim}.')
+        baseline_df = fallback_df[fallback_df['arch_dim'] == fallback_dim]
 
     matching_columns = ['layer']
 
@@ -168,6 +183,9 @@ def figure(input_path: str, output_path: str):
                             (df['model'] != 'llama_2_70b_GQA')
                         ]
                     values = values[key_label].values.flatten().tolist()
+                    # pad models missing from the gated sweep so every bar group has one slot per x label
+                    expected = len(x_labels) if layer == 'attn' else len(x_labels) - 1
+                    values = (values + [np.nan] * expected)[:expected]
 
                     data_df[key][layer][model + ' (' + size + ')'] = values
 

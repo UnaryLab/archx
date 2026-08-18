@@ -1,4 +1,4 @@
-from zoo.llm.results.query.utils import query_throughput_energy_metrics, load_yaml, compute_throughput, geomean
+from zoo.llm.results.query.utils import query_throughput_energy_metrics, load_yaml, compute_throughput, geomean, MissingRunError
 import pandas as pd
 from matplotlib import pyplot as plt
 import numpy as np
@@ -50,7 +50,10 @@ def query(input_path, output_path):
 
                                 termination_path = 'full_termination' if arch == 'mugi' else ''
                                 run_path = os.path.normpath(f'{input_path}{arch}/{network}/{subarch}/{arch_dim}/{model}/{max_seq_len}/{batch_size}/{termination_path}/')
-                                yaml_dict = load_yaml(run_path)
+                                try:
+                                    yaml_dict = load_yaml(run_path)
+                                except MissingRunError:
+                                    continue
 
                                 event_graph = yaml_dict['event_graph']
                                 metric_dict = yaml_dict['metric_dict']
@@ -67,6 +70,8 @@ def query(input_path, output_path):
                                 throughput_eff_dict['energy_per_token'] = (gemm_performance_metrics_dict['energy'] + nonlinear_performance_metrics_dict['energy']) / int(max_seq_len.split('_')[-1])
                                 geomean_list.append(throughput_eff_dict)
 
+                            if not geomean_list:
+                                continue
                             throughput_eff_geomean_dict = geomean(geomean_list)
                             batch_size_breakdown_dict = OrderedDict({
                                 'arch': arch,
@@ -90,6 +95,18 @@ def query(input_path, output_path):
         (batch_size_breakdown_df['arch_dim'] == '8x8') &
         (batch_size_breakdown_df['batch_size'] == 'batch_size_1')
     ]
+
+    if baseline_df.empty:
+        # the 8x8 single-node baseline is not in the generated sweep; fall back to the
+        # smallest systolic/mac dimension that exists
+        fallback_df = batch_size_breakdown_df[
+            (batch_size_breakdown_df['arch'] == 'systolic') &
+            (batch_size_breakdown_df['subarch'] == 'mac') &
+            (batch_size_breakdown_df['batch_size'] == 'batch_size_1')
+        ]
+        fallback_dim = sorted(fallback_df['arch_dim'].unique(), key=lambda dim: int(dim.split('x')[0]))[0]
+        print(f'  [notice] baseline systolic/mac/8x8 not in the sweep; normalizing to systolic/mac/{fallback_dim}.')
+        baseline_df = fallback_df[fallback_df['arch_dim'] == fallback_dim]
 
     merge_list = ['max_seq_len']
     numeric_columns = baseline_df.select_dtypes(include=['number']).columns
@@ -141,7 +158,9 @@ def figure(input_path: str, output_path: str):
         '64x8': 'v',
         '256x8': 's',
         '8x8': 'v',
-        '16x16': 's'
+        '16x16': 's',
+        '32x32': 'v',
+        '64x64': 's'
     }
     
     batch_sizes = [1, 2, 4, 8, 16, 32]

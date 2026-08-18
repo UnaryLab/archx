@@ -1,5 +1,5 @@
 # Generated Archx yaml files and configuration files
-**/descrption/
+**/description/
 **/runs/
 
 # Byte-compiled / optimized / DLL files
@@ -218,12 +218,11 @@ tests/test_*/
 
 
 # CACTI7 build artifacts (the per-platform cacti-<system>-<machine> binaries are tracked)
-src/archx/interface/cacti7/include/cacti7/cacti
-src/archx/interface/cacti7/include/cacti7/cacti_*
-src/archx/interface/cacti7/include/cacti7/obj_dbg/
-src/archx/interface/cacti7/include/cacti7/obj_opt/
+src/archx/interface/cacti7/
+src/archx/interface/cacti7/
+src/archx/interface/cacti7/
+src/archx/interface/cacti7/
 
-# zoo/llm generated inputs (produced by zoo/llm/scripts/generate_dicts.py from template/)
-zoo/llm/*/architecture/generated/
-zoo/llm/*/event/generated/
-zoo/llm/*/workload/generated/
+failed_runs.txt
+.claude/
+.vscode/
