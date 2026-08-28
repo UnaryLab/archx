@@ -1,12 +1,19 @@
 # Mugi: Value Level Parallelism for Efficient LLMs
 Mugi introduces a single, cohesive architecture leveraging value-level parallelism for both general matrix multiplication (GEMM) and nonlinear operations.
 
-To learn more, feel free to read out (paper)[https://dl.acm.org/doi/10.1145/3779212.3790189]
+To learn more, feel free to read our [paper](https://dl.acm.org/doi/10.1145/3779212.3790189)
 
 ## Artifact Evaluation
 To run the artifact to reproduce our results, please first install Archx [here](../../README.md).
 
-After installing, you can call the script
+After installing, you can call the script from the [archx base directory](../../)
+
+```
+bash zoo/mugi/script.sh
+```
+
+## Results
+After running the script, figures can be found [here](results/figs/) and tables can be found [here](results/tables/).
 
 ## Zenodo
 A zenodo submission exists at https://zenodo.org/records/18063514
