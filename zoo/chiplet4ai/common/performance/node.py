@@ -2,11 +2,6 @@ from collections import OrderedDict
 
 from chiplet4ai.common.performance.mapping import _buffer_elements
 
-def _active_elements(architecture_dict: OrderedDict, sram_name: str) -> float:
-    # Same active-buffer definition mapping.py uses for its fit tests and count divisors,
-    # so node.py's access counts cannot diverge from it when active_fraction != 0.5.
-    # float() preserves the type of the previous `bank / 2` expression.
-    return float(_buffer_elements(architecture_dict, sram_name)[0])
 
 def array_input_mapping(architecture_dict: OrderedDict, workload_dict: OrderedDict) -> OrderedDict:
     performance_dict = OrderedDict()

@@ -163,7 +163,7 @@ def prepare_run_dir(args, log=True):
 
 def configure_logging(args):
     logger.remove()
-    output_log = args.run_dir + '/archx' + '-' + str(time.time()) + '.log'
+    output_log = args.run_dir + '/log/archx' + '-' + str(time.time()) + '.log'
     logger.add(output_log, level=args.log_level)
 
     from archx import set_log_level

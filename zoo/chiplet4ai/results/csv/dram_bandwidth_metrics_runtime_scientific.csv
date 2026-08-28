@@ -1,0 +1,9 @@
+model,array_dim,batch_size,max_seq_len,frequency,sram_size,dram_bandwidth,total_data_moved,window_cycle_count,average_bandwidth,peak_bandwidth,peak_phase,burst_bandwidth,burst_gemm
+deepseek_v4,256x128,32,1048576,1000,83886080,256,1.175e+18,4.585e+15,256.2,335.3,prefill,528.6,proj_k_pf
+deepseek_v4,256x128,32,1048576,2000,83886080,256,1.175e+18,4.585e+15,512.4,670.6,prefill,1057.2,proj_k_pf
+llama_3_1_405b,32x128,32,131072,1000,83886080,256,2.501e+17,9.699e+14,257.8,402.1,prefill,441.2,lm_head_dc
+llama_3_1_405b,32x128,32,131072,2000,83886080,256,2.501e+17,9.699e+14,515.7,804.3,prefill,882.4,lm_head_dc
+llama_3_1_70b,32x128,32,131072,1000,83886080,256,1.089e+17,4.237e+14,256.9,396.1,prefill,441.3,lm_head_dc
+llama_3_1_70b,32x128,32,131072,2000,83886080,256,1.089e+17,4.237e+14,513.9,792.2,prefill,882.6,lm_head_dc
+llama_3_1_8b,32x128,32,131072,1000,83886080,256,3.814e+16,1.486e+14,256.7,385.0,prefill,441.6,lm_head_dc
+llama_3_1_8b,32x128,32,131072,2000,83886080,256,3.814e+16,1.486e+14,513.3,770.0,prefill,883.2,lm_head_dc

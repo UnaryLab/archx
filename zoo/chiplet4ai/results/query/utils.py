@@ -161,3 +161,199 @@ def query_area(event_graph, metric_dict, workload=None, tag=None, module=None) -
         area = aggregate_tag_metric(event_graph=event_graph, metric_dict=metric_dict, metric='area', workload=workload, tag=tag)['value']
 
     return area
+
+
+# ---------------------------------------------------------------------------------------
+# DRAM bandwidth demand. Shared by fig_4_query, which reports it for one design point, and
+# fig_6_query, which reports it across the whole array-shape grid so fig_4's point can be
+# selected on it. One implementation, so the two can never disagree about what the number
+# means -- fig_4_query cross-checks its own result against fig_6's CSV for the point it
+# picks.
+# ---------------------------------------------------------------------------------------
+
+# memory.py bills one DRAM event per byte, so an edge count is a byte count.
+DRAM_LANES = ['dram_input_read', 'dram_weight_read', 'dram_output_read', 'dram_output_write']
+
+def gemm_phase(gemm):
+    """'prefill' or 'decode' for a GEMM event name.
+
+    model.py names every GEMM with a `_pf` / `_dc` suffix, which is the only phase marker
+    in the graph; anything else is a naming change this function must be told about.
+    """
+    if gemm.endswith('_pf'):
+        return 'prefill'
+    if gemm.endswith('_dc'):
+        return 'decode'
+    raise ValueError(f'GEMM {gemm!r} has neither a _pf nor a _dc suffix; '
+                     f'it cannot be placed in a phase')
+
+def gemm_demand(event_graph, metric_dict, workload_name):
+    """Per-GEMM (name, phase, bytes, window cycles), the tuple every reduction is built on.
+
+    The window is max(array compute cycles, SRAM port cycles). DRAM is deliberately
+    EXCLUDED, being the thing being sized: including it would let the window stretch to
+    accommodate whatever traffic there is, and the answer would always be 'the declared
+    channel is adequate'.
+    """
+    demand = []
+
+    for name in sorted(event_graph.get_all_node_names()):
+        if not name.endswith('_dram'):
+            continue
+        gemm = name[:-len('_dram')]
+
+        # Multiplicity comes off '_dram', which hangs under `llama` alone. '_arr' is
+        # reachable through the `llama_array` view as well, and aggregate_event_count
+        # sums over every path, so reading it there would double the GEMM.
+        multiplicity = aggregate_event_count(
+            event_graph=event_graph, workload=workload_name, event=name)
+        if multiplicity <= 0:
+            continue
+
+        gemm_bytes = sum(event_graph.get_edge_count(name, lane)
+                         for lane in DRAM_LANES) * multiplicity
+        # workload=None is one instance of the event; the multiplicity scales it
+        array_cycles = query_cycle_count(event_graph=event_graph, metric_dict=metric_dict,
+                                         workload=None, event=f'{gemm}_arr')
+        sram_cycles = query_cycle_count(event_graph=event_graph, metric_dict=metric_dict,
+                                        workload=None, event=f'{gemm}_sram')
+        window = max(array_cycles, sram_cycles) * multiplicity
+        demand.append((gemm, gemm_phase(gemm), gemm_bytes, window))
+
+    return demand
+
+def bandwidth_gbs(data_moved, window_cycles, frequency_mhz):
+    """Decimal GB/s, matching the unit the declared dram bandwidth is written in."""
+    if data_moved <= 0 or window_cycles <= 0:
+        return 0
+    seconds = window_cycles / (float(frequency_mhz) * 1e6)
+    return (data_moved / seconds) / 1e9
+
+def bandwidth_summary(demand, frequency_mhz):
+    """{average, peak, peak_phase, burst, burst_gemm, total_bytes, total_window}.
+
+    average is pooled over every GEMM; peak is pooled per PHASE and the hungrier phase
+    taken. The peak is NOT a per-GEMM maximum: double buffering (mapping.py charges only
+    `bank // 2` as usable, because the other half is filling) smooths traffic across GEMM
+    boundaries, and a per-GEMM row is not contiguous execution anyway -- its multiplicity
+    is how many times it runs across the model, so a decode GEMM is one small instance per
+    token, interleaved with its neighbours. `burst` keeps the superseded per-GEMM number
+    so the gap between the two stays visible.
+    """
+    total_bytes = sum(gemm_bytes for _, _, gemm_bytes, _ in demand)
+    total_window = sum(window for _, _, _, window in demand)
+
+    phase_totals = {}
+    for _, phase, gemm_bytes, window in demand:
+        totals = phase_totals.setdefault(phase, [0.0, 0.0])
+        totals[0] += gemm_bytes
+        totals[1] += window
+    peak_phase, peak = max(
+        ((phase, bandwidth_gbs(phase_bytes, phase_window, frequency_mhz))
+         for phase, (phase_bytes, phase_window) in phase_totals.items()),
+        key=lambda pair: pair[1])
+
+    burst_gemm, burst = max(
+        ((gemm, bandwidth_gbs(gemm_bytes, window, frequency_mhz))
+         for gemm, _, gemm_bytes, window in demand),
+        key=lambda pair: pair[1])
+
+    return {
+        'total_bytes': total_bytes,
+        'total_window': total_window,
+        'average': bandwidth_gbs(total_bytes, total_window, frequency_mhz),
+        'peak': peak,
+        'peak_phase': peak_phase,
+        'burst': burst,
+        'burst_gemm': burst_gemm,
+    }
+
+
+# ---------------------------------------------------------------------------------------
+# fig_4's selection criteria. fig_4 is drawn three times, once per criterion, because
+# "the best design" is not one question -- and the three disagree sharply, which is the
+# point of showing all three rather than picking one.
+#
+#   runtime     argmin of total wall-clock. Does NOT normalise for work: prefill runs
+#               M = batch_size * prefill_seq_len rows and decode M = batch_size
+#               (model.py), so a batch-32 point does a sixteenth of the work of a
+#               batch-512 one and wins on raw time by default. This is the literal
+#               "finishes soonest" reading, and it is here to be contrasted with
+#               throughput rather than to stand alone.
+#   avg_band    argmax of required average DRAM bandwidth. A DEMAND, not a speed: a shape
+#               can score high by being fast OR by having worse reuse and moving more
+#               bytes, so this selects the most memory-hungry design -- what the channel
+#               must be sized to survive.
+#   throughput  argmax of generated tokens per second, which credits a bigger batch for
+#               the extra work it does instead of penalising it for the extra time. This
+#               is the serving metric, and the one that answers "which machine would you
+#               build". Being work-per-time it is the exact inverse of
+#               runtime_ms_per_sequence, so it and the runtime criterion above bracket the
+#               batch question from both ends.
+#
+# Both scripts read this list, so a criterion cannot exist in the query and not the figure.
+# ---------------------------------------------------------------------------------------
+FIG_4_CRITERIA = [
+    {
+        'key': 'runtime',
+        'column': 'runtime_ms',
+        'direction': 'min',
+        'label': 'lowest total runtime',
+        'note': 'not work-normalised: favours small batches',
+    },
+    {
+        'key': 'avg_band',
+        'column': 'average_bandwidth',
+        'direction': 'max',
+        'label': 'highest average DRAM bandwidth',
+        'note': 'most memory-hungry, not fastest',
+    },
+    {
+        'key': 'throughput',
+        'column': 'throughput_tokens_per_s',
+        'direction': 'max',
+        'label': 'highest throughput',
+        'note': 'generated tokens per second, work-normalised',
+    },
+]
+
+def fig_4_paths(criterion_key):
+    """(csv, scientific csv, figure) for one fig_4 criterion."""
+    return (f'zoo/chiplet4ai/results/csv/dram_bandwidth_metrics_{criterion_key}.csv',
+            f'zoo/chiplet4ai/results/csv/dram_bandwidth_metrics_{criterion_key}_scientific.csv',
+            f'zoo/chiplet4ai/results/figs/fig_4_{criterion_key}.pdf')
+
+
+# ---------------------------------------------------------------------------------------
+# Design-point selection: the SMALLEST array within a margin of the best, not the best.
+#
+# WHY NOT JUST THE ARGMAX/ARGMIN. These metrics are close to flat across the shape grid --
+# at DeepSeek's max context the top few configurations sit within 0.1% of each other while
+# spanning a 4x range in PE count -- so a strict extremum reports a 262,144-PE array as
+# "the answer" when a 131,072-PE one was 0.04% behind it. Taking the smallest array inside
+# a tolerance band reports the configuration that is actually worth building.
+#
+# THE MARGIN IS LOAD-BEARING, so it is one constant rather than a per-criterion tweak, and
+# it is worth re-checking against the data when the model changes. At 1%:
+#   avg_band     DeepSeek 512x512 -> 256x512 (half the PEs, 0.04% less bandwidth); the
+#                Llamas are unmoved at 32x512, their runners-up being 4-10% behind.
+#   runtime      collapses to 4K-32K PE arrays for every model. That is not a bug: at
+#                batch 32 these designs are DRAM-bound and the array barely matters, so
+#                the honest answer is that a large one buys nothing.
+#   throughput   DeepSeek 512x512 -> 256x128, the Llamas 128K-256K -> 16K-256K.
+# Set it to 0 to recover the strict extremum.
+SELECTION_MARGIN = 0.01
+
+def select_design_point(group, column, direction, margin=SELECTION_MARGIN):
+    """The row with the fewest PEs whose `column` is within `margin` of the best.
+
+    Ties on PE count are broken by the metric itself, so among equally sized arrays the
+    better one still wins. `group` must carry a `pe_count` column.
+    """
+    best = group[column].max() if direction == 'max' else group[column].min()
+    # a relative band, so it means the same thing for a GB/s column and a milliseconds one
+    within = (group[column] >= best * (1 - margin) if direction == 'max'
+              else group[column] <= best * (1 + margin))
+    band = group[within]
+    band = band.sort_values(['pe_count', column], ascending=[True, direction == 'min'])
+    return band.iloc[0], best
