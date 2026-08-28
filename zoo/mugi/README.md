@@ -6,9 +6,14 @@ Mugi introduces a single, cohesive architecture leveraging value-level paralleli
 To learn more, feel free to read our [paper](https://dl.acm.org/doi/10.1145/3779212.3790189)
 
 ## Artifact Evaluation
+[!IMPORTANT]
+
+[!NOTE]
+This evaluation is built using the newest version of archx, causing some values to differ by inconsequential amounts. To see the results true to the published paper, please run the artifact [here](#zenodo)
+
 To run the artifact to reproduce our results, please first install Archx [here](../../README.md).
 
-After installing, you can call the script from the [archx base directory](../../)
+After installing, you can call the script from the [archx base directory](../)
 
 ```
 bash zoo/mugi/script.sh
