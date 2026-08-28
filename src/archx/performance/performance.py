@@ -8,7 +8,7 @@ import sysconfig
 import tempfile
 import types
 from collections import OrderedDict
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping, MutableMapping, MutableSequence, Sequence
 from loguru import logger
 
 from archx._core import ArchxGraph
@@ -36,10 +36,11 @@ _library_roots = tuple({
                  sys.base_prefix)
     if path
 })
-_cache_version = 12
+_cache_version = 14
 _cache_env = 'ARCHX_PERFORMANCE_CACHE_DIR'
 _disable_cache_env = 'ARCHX_DISABLE_PERFORMANCE_CACHE'
 _missing = ('__archx_missing__',)
+_no_default = object()
 
 
 class _TrackedAccess:
@@ -47,10 +48,13 @@ class _TrackedAccess:
         self.paths = set()
 
     def record(self, root, path):
+        # Every read is recorded, including reads of paths the model wrote itself:
+        # the cache key re-reads each path from the untouched original dict, so an
+        # extra path only makes the key more discriminating, never stale.
         self.paths.add((root, tuple(path)))
 
 
-class _TrackedMapping(Mapping):
+class _TrackedMapping(MutableMapping):
     def __init__(self, value, root, path, tracker):
         self._value = value
         self._root = root
@@ -65,6 +69,12 @@ class _TrackedMapping(Mapping):
             self._tracker,
         )
 
+    def __setitem__(self, key, value):
+        self._value[key] = value
+
+    def __delitem__(self, key):
+        del self._value[key]
+
     def __iter__(self):
         self._tracker.record(self._root, self._path)
         return iter(self._value)
@@ -77,9 +87,27 @@ class _TrackedMapping(Mapping):
         self._tracker.record(self._root, self._path + (key,))
         return key in self._value
 
+    # get, setdefault and pop all test membership through __contains__ so that a
+    # key being absent is recorded as a dependency; the inherited MutableMapping
+    # versions reach __getitem__, which raises KeyError before anything is recorded.
     def get(self, key, default=None):
         if key in self:
             return self[key]
+        return default
+
+    def setdefault(self, key, default=None):
+        if key in self:
+            return self[key]
+        self[key] = default
+        return default
+
+    def pop(self, key, default=_no_default):
+        if key in self:
+            value = self[key]
+            del self[key]
+            return value
+        if default is _no_default:
+            raise KeyError(key)
         return default
 
     def keys(self):
@@ -132,10 +160,31 @@ class _TrackedSequence(Sequence):
         return len(self._value)
 
 
+class _TrackedList(_TrackedSequence, MutableSequence):
+    # A list is addressed by position, so any operation that changes its length shifts
+    # every later index: a positional path recorded afterwards would re-read a different
+    # element from the original. Those operations record the whole-list path instead,
+    # freezing the list into the cache key. Over-discriminating, never stale.
+    def __setitem__(self, index, value):
+        if isinstance(index, slice):
+            self._tracker.record(self._root, self._path)
+        self._value[index] = value
+
+    def __delitem__(self, index):
+        self._tracker.record(self._root, self._path)
+        del self._value[index]
+
+    def insert(self, index, value):
+        self._tracker.record(self._root, self._path)
+        self._value.insert(index, value)
+
+
 def _wrap_tracked(value, root, path, tracker):
     if isinstance(value, Mapping):
         return _TrackedMapping(value, root, path, tracker)
-    if isinstance(value, list) or isinstance(value, tuple):
+    if isinstance(value, list):
+        return _TrackedList(value, root, path, tracker)
+    if isinstance(value, tuple):
         return _TrackedSequence(value, root, path, tracker)
     tracker.record(root, path)
     return value
@@ -326,8 +375,8 @@ def _write_performance_output(output_key, performance_dict):
 def _run_performance_model_with_tracing(performance_model, architecture_dict, workload_dict):
     tracker = _TrackedAccess()
     performance_dict = performance_model(
-        architecture_dict=_TrackedMapping(architecture_dict, 'architecture', (), tracker),
-        workload_dict=_TrackedMapping(workload_dict, 'workload', (), tracker),
+        architecture_dict=_TrackedMapping(copy.deepcopy(architecture_dict), 'architecture', (), tracker),
+        workload_dict=_TrackedMapping(copy.deepcopy(workload_dict), 'workload', (), tracker),
     )
     return performance_dict, tracker.paths
 
@@ -404,8 +453,8 @@ def simulate_performance_one_event(
             _write_performance_output(output_key, performance_dict)
         else:
             performance_dict = performance_model(
-                architecture_dict=architecture_dict,
-                workload_dict=workload_dict,
+                architecture_dict=copy.deepcopy(architecture_dict),
+                workload_dict=copy.deepcopy(workload_dict),
             )
     assert performance_dict is not None, \
         logger.error(f'No performance model returned for event <{event_name}>')

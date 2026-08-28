@@ -1,5 +1,6 @@
 import argparse
 import concurrent.futures
+import contextlib
 import importlib.util
 import os
 import shutil
@@ -294,19 +295,26 @@ def read_run_lines(execute_path):
         return [line.strip() for line in f if line.strip()]
 
 
-def write_failed_runs(failed_lines):
+def failed_runs_path(run_dir):
+    return os.path.abspath(os.path.join(run_dir, FAILED_RUNS_FILE))
+
+
+def write_failed_runs(failed_lines, path):
     if failed_lines:
-        with open(FAILED_RUNS_FILE, 'w') as f:
+        with open(path, 'w') as f:
             for line in failed_lines:
                 f.write(line + '\n')
-    elif os.path.exists(FAILED_RUNS_FILE):
-        os.remove(FAILED_RUNS_FILE)
+    else:
+        with contextlib.suppress(FileNotFoundError):
+            os.remove(path)
 
 
 def execute_runs(execute_path, tabular_mode, parent_args):
+    """Run every configuration line in <execute_path>; returns the number of failed runs."""
     assert os.path.isfile(execute_path), logger.error(f'Invalid execute runs file <{execute_path}>.')
 
     start = time.time()
+    failed_path = failed_runs_path(parent_args.run_dir)
     run_lines = read_run_lines(execute_path)
     workers = os.cpu_count() or 1
     failed_lines = []
@@ -330,20 +338,22 @@ def execute_runs(execute_path, tabular_mode, parent_args):
                 failed_lines.append(line)
                 logger.error(f'Run failed: {line}\n{error}')
 
-    write_failed_runs(failed_lines)
+    write_failed_runs(failed_lines, failed_path)
     runtime = int(time.time() - start)
     logger.success(f'Execution of runs in <{execute_path}> completed in <{runtime}> seconds.')
     if failed_lines:
-        logger.warning(f'Some runs failed. Check <{FAILED_RUNS_FILE}> for failed commands.')
+        logger.warning(f'Some runs failed. Check <{failed_path}> for failed commands.')
+    return len(failed_lines)
 
 
 def run_compile_mode(args, tabular_mode):
+    """Compile the description; with -full also run the batch, returning the failed-run count."""
     compile_module = import_compile_module(args.compile)
     compile_module.description(path=args.run_dir)
     logger.success(f'Compile generation completed in <{args.run_dir}>.')
 
     if not args.full:
-        return
+        return 0
 
     configurations_path = args.run_dir + '/configurations.csv'
     execute_path = runs_path(args)
@@ -352,7 +362,7 @@ def run_compile_mode(args, tabular_mode):
     if args.filter_full:
         filter_runs_from_csv(configurations_path, execute_path)
 
-    execute_runs(execute_path, tabular_mode, args)
+    return execute_runs(execute_path, tabular_mode, args)
 
 
 def run_extract_mode(args):
@@ -366,6 +376,7 @@ def run_filter_mode(args):
 
 
 def main():
+    """Exit code: 0 all runs succeeded, 2 the batch ran but some runs failed."""
     args = parse_commandline_args()
 
     print_banner()
@@ -383,14 +394,16 @@ def main():
     if is_archx_run(args):
         run_archx(args, output_log)
     elif args.compile:
-        run_compile_mode(args, tabular_mode)
+        if run_compile_mode(args, tabular_mode):
+            return 2
     elif args.extract:
         run_extract_mode(args)
     elif args.filter:
         run_filter_mode(args)
     elif args.execute:
-        execute_runs(args.execute, tabular_mode, args)
+        if execute_runs(args.execute, tabular_mode, args):
+            return 2
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

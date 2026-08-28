@@ -224,5 +224,6 @@ src/archx/interface/cacti7/
 src/archx/interface/cacti7/
 
 failed_runs.txt
+run_archx_failed.txt
 .claude/
 .vscode/

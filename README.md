@@ -117,7 +117,7 @@ archx -r <run_dir> -f configurations.csv          # Tkinter GUI to filter -> run
 archx -r <run_dir> -x runs.txt                    # execute all runs in parallel
 ```
 
-`-compile ... -full` chains all of the above in one command (add `-ff` to insert the GUI filter step). `-x` fans the runs out across all CPU cores; failing runs are collected in `failed_runs.txt`.
+`-compile ... -full` chains all of the above in one command (add `-ff` to insert the GUI filter step). `-x` fans the runs out across all CPU cores; failing runs are collected in `failed_runs.txt` inside the `-r` run directory. `-x` (and `-compile ... -full`) exits `2` when the batch ran but some runs failed, and `0` when all succeeded.
 
 ### Writing a description file
 

@@ -3,12 +3,14 @@
 # Usage: bash ./run_script.sh <input_file> <tabular>
 # Each line in the input file should be the config for a single run
 # Be sure to add end of line character at the end of the file
-# Runs that throw errors will be logged in failed_runs.txt
+# Runs that throw errors will be logged in run_archx_failed.txt in the current
+# directory (this script has no batch run directory of its own; each line carries
+# its own -r, and <archx -x> owns failed_runs.txt inside that directory)
 
 start=`date +%s`
 ncore=$(nproc --all)
 counter=0
-error_log="failed_runs.txt"
+error_log="run_archx_failed.txt"
 
 # Clear error log at start
 > $error_log

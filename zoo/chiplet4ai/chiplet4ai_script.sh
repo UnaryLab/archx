@@ -36,9 +36,16 @@ for name in "${designs[@]}"; do
 done
 
 echo "Simulating all runs across cores."
-# archx -x runs the batch in one process pool with a tqdm progress bar
-# (failed runs are collected in failed_runs.txt); -r only holds the batch log
-archx -x "$RUNS" -r zoo/chiplet4ai/log
+# archx -x runs the batch in one process pool with a tqdm progress bar; -r only
+# holds the batch log. A partially failed batch must not stop figure generation.
+status=0
+archx -x "$RUNS" -r zoo/chiplet4ai/log || status=$?
+if [ "${status}" -eq 2 ]; then
+    echo "  ! some runs failed, see zoo/chiplet4ai/log/failed_runs.txt" >&2
+elif [ "${status}" -ne 0 ]; then
+    echo "  ! archx -x failed (exit ${status})" >&2
+    exit "${status}"
+fi
 
 echo "Query performance models and generate figures."
 python -m zoo.chiplet4ai.results.figure_generation
