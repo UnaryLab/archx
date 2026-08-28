@@ -11,7 +11,7 @@ To learn more, feel free to read our [paper](https://dl.acm.org/doi/10.1145/3779
 
 To run the artifact to reproduce our results, please first install Archx [here](../../README.md).
 
-After installing, you can call the script from the [archx base directory](../)
+After installing, you can call the script from the [archx base directory](../../)
 
 ```
 bash zoo/mugi/script.sh
