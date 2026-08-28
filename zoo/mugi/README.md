@@ -1,5 +1,7 @@
 # Mugi: Value Level Parallelism for Efficient LLMs
-Mugi introduces a single, cohesive architecture leveraging value-level parallelism for both general matrix multiplication (GEMM) and nonlinear operations.
+Mugi introduces a single, cohesive architecture leveraging value-level parallelism for both
+- general matrix multiplication (GEMM)
+- nonlinear operations.
 
 To learn more, feel free to read our [paper](https://dl.acm.org/doi/10.1145/3779212.3790189)
 
