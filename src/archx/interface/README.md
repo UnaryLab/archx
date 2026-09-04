@@ -9,7 +9,7 @@ A module selects its interface with the `interface:` key inside its `query` (usu
 - `cacti7/`: wraps the CACTI7 C++ memory model for SRAM/DRAM. Bundles the CACTI7 source under `include/cacti7/` plus `.cfg` templates. Binaries are stored per host as `cacti-<system>-<machine>` (`cacti-Linux-x86_64`, `cacti-Darwin-arm64`); the one matching the host is used, and built from source when absent.
 - `csv_cmos/`: interpolates area/power/energy of logic modules from CMOS synthesis and place-and-route CSVs under `include/csv/`, characterized at 45 nm and 7 nm. `csv_cmos_extract.py` generates those CSVs from synthesis reports; see `csv_cmos/README.md`.
 - `csv_cmos_32nm/`: the same lookup over a 32 nm library under `include/csv/`.
-- `csv_cmos_asplos_2026_ae/`: the same lookup over the 45 nm library the `asplos_2026_ae` branch characterized, used by `zoo/llm`.
+- `csv_cmos_asplos_2026_ae/`: the same lookup over the 45 nm library the `asplos_2026_ae` branch characterized, used by `zoo/mugi`.
 - `chiplet_cmos/`: CMOS CSV lookup for chiplet-based designs (CSVs under `csv/`).
 - `csv_sc/`: stochastic-computing module CSVs.
 - `csv_h200/`: measured H200 power and runtime per GPU kernel.

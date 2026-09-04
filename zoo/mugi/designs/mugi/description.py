@@ -64,13 +64,13 @@ def description(path):
     ###############    Event    ##################
     ##############################################
     # Performance model paths
-    common_hw = 'zoo/llm/designs/mugi/performance/common.performance.py'
-    gemm      = 'zoo/llm/designs/mugi/performance/gemm.performance.py'
-    nonlinear = 'zoo/llm/designs/mugi/performance/nonlinear.performance.py'
-    llama     = 'zoo/llm/common/performance/model/llama.performance.py'
-    model     = 'zoo/llm/common/performance/model/model_architecture.performance.py'
-    memory    = 'zoo/llm/common/performance/memory/memory.performance.py'
-    router    = 'zoo/llm/common/performance/router/router.performance.py'
+    common_hw = 'zoo/mugi/designs/mugi/performance/common.performance.py'
+    gemm      = 'zoo/mugi/designs/mugi/performance/gemm.performance.py'
+    nonlinear = 'zoo/mugi/designs/mugi/performance/nonlinear.performance.py'
+    llama     = 'zoo/mugi/common/performance/model/llama.performance.py'
+    model     = 'zoo/mugi/common/performance/model/model_architecture.performance.py'
+    memory    = 'zoo/mugi/common/performance/memory/memory.performance.py'
+    router    = 'zoo/mugi/common/performance/router/router.performance.py'
 
     # Per-subarchitecture module groups (event sweep candidates ordered lut, vlp)
     nonlinear_preprocess  = ['round', 'sign_mantissa_register', 'exponent_register', 'exp_clamp']

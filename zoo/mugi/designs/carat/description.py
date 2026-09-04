@@ -64,12 +64,12 @@ def description(path):
     ###############    Event    ##################
     ##############################################
     # Performance model paths
-    gemm = 'zoo/llm/designs/carat/performance/gemm.performance.py'
-    nonlinear = 'zoo/llm/designs/carat/performance/nonlinear.performance.py'
-    llama = 'zoo/llm/common/performance/model/llama.performance.py'
-    model = 'zoo/llm/common/performance/model/model_architecture.performance.py'
-    memory = 'zoo/llm/common/performance/memory/memory.performance.py'
-    router = 'zoo/llm/common/performance/router/router.performance.py'
+    gemm = 'zoo/mugi/designs/carat/performance/gemm.performance.py'
+    nonlinear = 'zoo/mugi/designs/carat/performance/nonlinear.performance.py'
+    llama = 'zoo/mugi/common/performance/model/llama.performance.py'
+    model = 'zoo/mugi/common/performance/model/model_architecture.performance.py'
+    memory = 'zoo/mugi/common/performance/memory/memory.performance.py'
+    router = 'zoo/mugi/common/performance/router/router.performance.py'
 
     proj_layers = ['proj_q', 'proj_k', 'proj_v', 'proj_a']
     attn_layers = ['qkt', 'av']

@@ -56,12 +56,12 @@ def description(path):
     ###############    Event    ##################
     ##############################################
     # Performance model paths
-    gemm      = 'zoo/llm/designs/tensor/performance/gemm.performance.py'
-    nonlinear = 'zoo/llm/designs/tensor/performance/nonlinear.performance.py'
-    llama     = 'zoo/llm/common/performance/model/llama.performance.py'
-    model     = 'zoo/llm/common/performance/model/model_architecture.performance.py'
-    memory    = 'zoo/llm/common/performance/memory/memory.performance.py'
-    router    = 'zoo/llm/common/performance/router/router.performance.py'
+    gemm      = 'zoo/mugi/designs/tensor/performance/gemm.performance.py'
+    nonlinear = 'zoo/mugi/designs/tensor/performance/nonlinear.performance.py'
+    llama     = 'zoo/mugi/common/performance/model/llama.performance.py'
+    model     = 'zoo/mugi/common/performance/model/model_architecture.performance.py'
+    memory    = 'zoo/mugi/common/performance/memory/memory.performance.py'
+    router    = 'zoo/mugi/common/performance/router/router.performance.py'
 
     gemm_hw   = ['input_gemm', 'weight_gemm', 'array_gemm', 'vector_gemm']
     mem       = ['isram_offchip_writes', 'isram_onchip_reads',

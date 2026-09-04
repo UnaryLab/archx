@@ -219,11 +219,8 @@ tests/test_*/
 
 # CACTI7 build artifacts (the per-platform cacti-<system>-<machine> binaries are tracked)
 src/archx/interface/cacti7/
-src/archx/interface/cacti7/
-src/archx/interface/cacti7/
-src/archx/interface/cacti7/
 
 failed_runs.txt
 run_archx_failed.txt
 .claude/
-.vscode/
+.vscode/``

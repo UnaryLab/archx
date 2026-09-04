@@ -1,13 +1,13 @@
 # ---- one-pass metrics harvest ----------------------------------------------
 # Extracts, once per run, every scalar the result queries aggregate from a
 # checkpoint (the manifest below mirrors the exact (workload, event/tag/module)
-# pairs used by zoo.llm.results.query.utils helpers) into a single table:
-#   zoo/llm/results/metrics_harvest.csv
+# pairs used by zoo.mugi.results.query.utils helpers) into a single table:
+#   zoo/mugi/results/metrics_harvest.csv
 # The query helpers then read this table instead of deserializing checkpoints.
 # The harvest is incremental: only runs whose checkpoint mtime changed (or new
 # runs) are re-extracted, and rows for deleted runs are dropped.
 #
-#   python -m zoo.llm.results.harvest      # build/refresh the table in parallel
+#   python -m zoo.mugi.results.harvest     # build/refresh the table in parallel
 #
 # figure_generation and utils.load_yaml() call ensure() automatically, so the
 # harvest self-refreshes; running it standalone just pays the cost up front.

@@ -6,10 +6,10 @@ import os, sys, warnings
 
 logger.remove()
 
-input_path = './zoo/llm/designs/'
-csv_path = './zoo/llm/results/csv/'
-fig_path = './zoo/llm/results/figs/'
-table_path = './zoo/llm/results/tables/'
+input_path = './zoo/mugi/designs/'
+csv_path = './zoo/mugi/results/csv/'
+fig_path = './zoo/mugi/results/figs/'
+table_path = './zoo/mugi/results/tables/'
 
 if not os.path.exists(csv_path):
     os.makedirs(csv_path)

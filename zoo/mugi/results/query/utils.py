@@ -13,20 +13,20 @@ import pandas as pd
 from loguru import logger
 
 # ---- new-run-tree resolver + harvested-metrics fast path -------------------
-# Runs live under zoo/llm/designs/<design>/description/ and are indexed by that
+# Runs live under zoo/mugi/designs/<design>/description/ and are indexed by that
 # design's configurations.csv (the source of truth). load_yaml() still accepts
 # the legacy path layout
 #   <root>/<design>/<network>/<subarch>/<dim>/<model>/max_seq_len_N/batch_size_N[/kv_heads_N][/full_termination]
 # and resolves it to the matching run directory. Points that no longer exist in
 # the sweep raise MissingRunError (callers skip them).
 #
-# Metric access goes through zoo/llm/results/metrics_harvest.csv (built by
-# zoo.llm.results.harvest, incrementally, one checkpoint open per run ever):
+# Metric access goes through zoo/mugi/results/metrics_harvest.csv (built by
+# zoo.mugi.results.harvest, incrementally, one checkpoint open per run ever):
 # load_yaml() returns a HarvestRow instead of a deserialized event graph, and
 # the query_* helpers below read the pre-harvested scalars from it. Loading the
 # real checkpoint is still available via load_checkpoint_yaml().
 
-_DESIGN_ROOT = os.path.join('zoo', 'llm', 'designs')
+_DESIGN_ROOT = os.path.join('zoo', 'mugi', 'designs')
 _DESIGNS = ('carat', 'mugi', 'simd', 'systolic', 'tensor')
 _DIM_MODULE = 'adder'  # instance is [node_x, node_y, dim] in every design
 _INDEX_CACHE = {}
@@ -36,11 +36,27 @@ _HARVEST_ROWS = None  # run_path -> harvested row dict
 class MissingRunError(Exception):
     pass
 
+def _design_token_index(tokens):
+    """Index of the design-name token in a split path, or None.
+
+    Anchored on the 'designs' directory that precedes it, so an enclosing
+    directory that happens to share a design's name (zoo/mugi vs the 'mugi'
+    design) cannot shadow the real one. Falls back to a plain scan for paths
+    that carry a design name without the 'designs' parent.
+    """
+    for i in range(len(tokens) - 1, 0, -1):
+        if tokens[i - 1] == 'designs' and tokens[i] in _DESIGNS:
+            return i
+    for i, token in enumerate(tokens):
+        if token in _DESIGNS:
+            return i
+    return None
+
 class HarvestRow:
     """Stand-in for a loaded event graph: helpers read pre-harvested scalars.
 
     A missing column means the harvest manifest does not cover the requested
-    aggregation (extend zoo/llm/results/harvest.py); a NaN value means the
+    aggregation (extend zoo/mugi/results/harvest.py); a NaN value means the
     aggregation raised at harvest time (absent tag/module), so reading it
     raises the same way the live aggregation would.
     """
@@ -50,7 +66,7 @@ class HarvestRow:
     def get(self, key):
         if key not in self._row:
             raise KeyError(f'<{key}> is not in the harvest manifest; add it to '
-                           f'zoo/llm/results/harvest.py and re-run the harvest.')
+                           f'zoo/mugi/results/harvest.py and re-run the harvest.')
         value = self._row[key]
         if pd.isna(value):
             raise ValueError(f'aggregation <{key}> failed at harvest time (absent tag/module).')
@@ -73,10 +89,11 @@ def _harvest_row(run_path):
     mtime = os.stat(run_path + '/checkpoint.json').st_mtime_ns
     if row is None or row['checkpoint_mtime'] != mtime:
         # checkpoint changed since the table was built: re-extract this run in
-        # memory (run `python -m zoo.llm.results.harvest` to persist it)
+        # memory (run `python -m zoo.mugi.results.harvest` to persist it)
         from zoo.mugi.results import harvest
         print(f'  [harvest] refreshing stale metrics for <{run_path}>.')
-        design = next(token for token in run_path.split(os.sep) if token in _DESIGNS)
+        tokens = [token for token in run_path.split(os.sep) if token]
+        design = tokens[_design_token_index(tokens)]
         configurations_df = pd.read_csv(os.path.join(_DESIGN_ROOT, design, 'description', 'configurations.csv'))
         config_row = configurations_df[configurations_df['run_path'] == run_path].iloc[0]
         row = harvest.extract_row({'design': design, 'run_path': run_path,
@@ -124,12 +141,13 @@ def _design_index(design):
 
 def _resolve_run(path):
     tokens = [token for token in os.path.normpath(path).split(os.sep) if token]
-    design = next((token for token in tokens if token in _DESIGNS), None)
-    assert design is not None, f'No design name found in run path <{path}>.'
+    design_idx = _design_token_index(tokens)
+    assert design_idx is not None, f'No design name found in run path <{path}>.'
+    design = tokens[design_idx]
 
     network = subarch = arch_dim = model = None
     max_seq_len = batch_size = kv_heads = None
-    for token in tokens[tokens.index(design) + 1:]:
+    for token in tokens[design_idx + 1:]:
         if token == 'single_node' or token.startswith('multi_node'):
             network = token
         elif re.fullmatch(r'\d+x\d+(x\d+)?', token):
