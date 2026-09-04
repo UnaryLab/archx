@@ -21,5 +21,6 @@ dependencies:
   - maturin>=1.5
   - pip
   - bs4
+  - PyMuPDF
   - pip:
     - ortools

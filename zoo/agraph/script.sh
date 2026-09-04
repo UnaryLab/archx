@@ -1,4 +1,8 @@
 set -e
+
+# zoo/agraph/runtime/ holds the external EDA measurements and the recorded
+# A-Graph runtimes; both are static inputs to res/scripts/runtime_fig.py and are
+# not regenerated here.
 for dir in zoo/agraph/designs/*/; do
     # A partially failed batch must not stop this design's query or later designs.
     status=0

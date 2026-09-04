@@ -8,7 +8,7 @@ import os
 
 logger.remove()
 
-configs = ['config_0']
+configs = ['arch_0']
 
 area_df = None
 power_df = None
@@ -43,8 +43,8 @@ throughput_dict = {
 modules = ['mac', 'mac_splitter', 'weight_splitter', 'input_splitter', 'nrdo']
 
 for config in configs:
-    path = f'{base_path}description/runs/{config}'
-    event_graph = load_event_graph(f'{path}/checkpoint.gt')
+    path = f'{base_path}description/runs/vgg16/{config}/config_0'
+    event_graph = load_event_graph(f'{path}/checkpoint.json')
     architecture = load_architecture_dict(f'{path}/architecture.yaml')
     metric = load_metric_dict(f'{path}/metric.yaml')
 

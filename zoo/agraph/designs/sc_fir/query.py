@@ -8,7 +8,7 @@ import os
 
 logger.remove()
 
-configs = [f'config_{i}' for i in range(0, 14)]
+configs = [f'arch_{i}' for i in range(0, 14)]
 
 area_df = None
 energy_df = None
@@ -74,8 +74,8 @@ power_dict = {
 }
 
 for config in configs:
-    path = f'{base_path}description/runs/{config}'
-    event_graph = load_event_graph(f'{path}/checkpoint.gt')
+    path = f'{base_path}description/runs/fir/{config}/config_0'
+    event_graph = load_event_graph(f'{path}/checkpoint.json')
     architecture = load_architecture_dict(f'{path}/architecture.yaml')
     metric = load_metric_dict(f'{path}/metric.yaml')
 
@@ -88,13 +88,21 @@ for config in configs:
 
     cycle_count = aggregate_event_metric(event_graph=event_graph, metric_dict=metric, metric='cycle_count', workload=workload, event=event)
     runtime = aggregate_event_metric(event_graph=event_graph, metric_dict=metric, metric='runtime', workload=workload, event=event)
-    dynamic_energy = aggregate_tag_metric(event_graph=event_graph, metric_dict=metric, metric='dynamic_energy', workload=workload, tag='mac')
     leakage_power = aggregate_tag_metric(event_graph=event_graph, metric_dict=metric, metric='leakage_power', workload=workload, tag='mac')
     area = aggregate_tag_metric(event_graph=event_graph, metric_dict=metric, metric='area', workload=workload, tag=tag)
     count = aggregate_event_count(event_graph=event_graph, workload=workload, event='mult')
 
-    dynamic_energy['value'] = dynamic_energy['value'] / 1e9
-    dynamic_energy['unit'] = 'J'
+    # Dynamic power is computed per FIR sub-event (mult, adder, control): each
+    # sub-event's dynamic energy is divided by its own runtime, and the three
+    # per-event powers are summed. This uses separate dynamic-energy and runtime
+    # calls per sub-event.
+    dynamic_power_value = 0.0  # W
+    for sub_event in ['fir_mult', 'fir_adder', 'fir_control']:
+        sub_energy = aggregate_event_metric(event_graph=event_graph, metric_dict=metric, metric='dynamic_energy', workload=workload, event=sub_event)
+        sub_runtime = aggregate_event_metric(event_graph=event_graph, metric_dict=metric, metric='runtime', workload=workload, event=sub_event)
+        # (nJ -> J) / (ms -> s) = W
+        dynamic_power_value += (sub_energy['value'] / 1e9) / (sub_runtime['value'] / 1e3)
+
 
     leakage_power['value'] = leakage_power['value'] / 1e3
     leakage_power['unit'] = 'W'
@@ -103,7 +111,7 @@ for config in configs:
     runtime['unit'] = 's'
 
     dynamic_power = {
-        'value': dynamic_energy['value'] / runtime['value'],
+        'value': dynamic_power_value,
         'unit': 'W'
     }
 
@@ -126,8 +134,8 @@ for config in configs:
         throughput_df = pd.DataFrame(columns=['arch', 'bitwidth', f'throughput {throughput["unit"]}', f'baseline_throughput {throughput["unit"]}', 'throughput_percent_dif'])
 
     if split_power_df is None:
-        split_power_df = pd.DataFrame(columns=['arch', 'bitwidth', f'dynamic_power {power["unit"]}', f'leakage_power {power['unit']}', f'baseline dynamic power {power["unit"]}', 
-                                         f'baseline leakage power {power['unit']}', 'dynamic power percent_dif', 'leakage power percent_dif'])
+        split_power_df = pd.DataFrame(columns=['arch', 'bitwidth', f'dynamic_power {power["unit"]}', f'leakage_power {power["unit"]}', f'baseline dynamic power {power["unit"]}', 
+                                         f'baseline leakage power {power["unit"]}', 'dynamic power percent_dif', 'leakage power percent_dif'])
         
     if power_df is None:
         power_df = pd.DataFrame(columns=['arch', 'bitwidth', f'power {power["unit"]}', f'baseline power {power["unit"]}', 'power_percent_dif'])

@@ -189,11 +189,9 @@ plt.tight_layout(pad=1.0)
 if not os.path.exists('zoo/agraph/res/figures/'):
     os.makedirs('zoo/agraph/res/figures/')
 
-png_path = 'zoo/agraph/res/figures/fft_metrics_comparison.png'
-pdf_path = 'zoo/agraph/res/figures/fft_metrics_comparison.pdf'
+pdf_path = 'zoo/agraph/res/figures/fft_validation.pdf'
 
 # Save the figure
-plt.savefig(png_path, dpi=300, bbox_inches='tight', facecolor='white')
 plt.savefig(pdf_path, dpi=300, bbox_inches='tight', facecolor='white')
 
 # Post-process: crop top and bottom of PDF (in points)
@@ -212,5 +210,5 @@ try:
         ))
     doc.save(pdf_path, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
     doc.close()
-except Exception as e:
-    print(f"Warning: Could not crop PDF: {e}")
+except Exception:
+    pass

@@ -9,7 +9,7 @@ import os
 
 logger.remove()
 
-configs = ['config_0']
+configs = ['arch_0']
 
 area_df = None
 energy_df = None
@@ -34,8 +34,8 @@ memory_path = csv_path + 'memory.csv'
 total_kernel_time = 86086.8
 
 for config in configs:
-    path = f'{base_path}description/runs/{config}'
-    event_graph = load_event_graph(f'{path}/checkpoint.gt')
+    path = f'{base_path}description/runs/gemm/{config}/config_0'
+    event_graph = load_event_graph(f'{path}/checkpoint.json')
     architecture = load_architecture_dict(f'{path}/architecture.yaml')
     metric = load_metric_dict(f'{path}/metric.yaml')
     workload = load_workload_dict(f'{path}/workload.yaml')

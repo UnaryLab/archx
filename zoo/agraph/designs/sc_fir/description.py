@@ -19,10 +19,13 @@ def description(path):
     acc = architecture.add_module(name='acc', instance=array_dim, tag=['tap', 'mac'], query={'class': 'sc_balancer'})
     shift_reg = architecture.add_module(name='shift_reg', instance=array_dim, tag=['tap'], query={'class': 'sc_shift_reg'})
     pnm = architecture.add_module(name='pnm', instance=array_dim, tag=['tap'], query={'class': 'sc_pnm',  'width': bitwidth})
-    b2rc = architecture.add_module(name='b2rc', instance=array_dim, tag=['tap'], query={'class': 'sc_b2rc', 'width': 16})
+    # b2rc = architecture.add_module(name='b2rc', instance=array_dim, tag=['tap'], query={'class': 'sc_b2rc', 'width': 16})
     control = architecture.add_module(name='control', instance=[1], tag=['tap'], query={'class': 'sc_fir_control'})
 
-    event.add_event(name='fir', subevent=['mult', 'acc', 'shift_reg', 'pnm', 'b2rc', 'control'], performance='zoo/agraph/designs/sc_fir/performance.py')
+    event.add_event(name='fir', subevent=['fir_mult', 'fir_adder', 'fir_control'], performance='zoo/agraph/designs/sc_fir/performance.py')
+    event.add_event(name='fir_mult', subevent=['mult'], performance='zoo/agraph/designs/sc_fir/performance.py')
+    event.add_event(name='fir_adder', subevent=['acc'], performance='zoo/agraph/designs/sc_fir/performance.py')
+    event.add_event(name='fir_control', subevent=['shift_reg', 'pnm', 'control'], performance='zoo/agraph/designs/sc_fir/performance.py')
 
     metric.add_metric(name='area',           unit='jj',   aggregation='module')
     metric.add_metric(name='leakage_power',  unit='mW',     aggregation='module')
@@ -38,7 +41,7 @@ def description(path):
         acc['instance'],
         shift_reg['instance'],
         pnm['instance'],
-        b2rc['instance']
+        # b2rc['instance']
     ])
 
     return agraph.generate()

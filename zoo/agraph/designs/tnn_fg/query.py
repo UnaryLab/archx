@@ -8,7 +8,7 @@ import os
 
 logger.remove()
 
-configs = ['config_0', 'config_1', 'config_2']
+configs = ['arch_0', 'arch_1', 'arch_2']
 
 area_df = None
 energy_df = None
@@ -51,8 +51,8 @@ arch_power_norm = leakage_power_dict['96x2']
 arch_energy_norm = 0
 
 for config in configs:
-    path = f'{base_path}description/runs/{config}'
-    event_graph = load_event_graph(f'{path}/checkpoint.gt')
+    path = f'{base_path}description/runs/tnn/{config}/config_0'
+    event_graph = load_event_graph(f'{path}/checkpoint.json')
     architecture = load_architecture_dict(f'{path}/architecture.yaml')
     metric = load_metric_dict(f'{path}/metric.yaml')
 

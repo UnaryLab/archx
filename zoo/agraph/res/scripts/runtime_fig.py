@@ -1,29 +1,12 @@
 import os
-import re
 import pandas as pd
 import fitz
 
 runtime_path = 'zoo/agraph/runtime/'
 
-# Dictionary to store runtime data
-runtime_data = {}
-
-# Loop through each text file in the runtime directory
-for filename in os.listdir(runtime_path):
-    if filename.endswith('.txt'):
-        filepath = os.path.join(runtime_path, filename)
-        
-        # Extract case study name (filename without .txt extension)
-        cs_name = filename.replace('.txt', '')
-        
-        # Read the file and extract runtime value
-        with open(filepath, 'r') as f:
-            content = f.read().strip()
-            # Extract the numeric value from "Total runtime: X seconds"
-            match = re.search(r'Total runtime: ([\d.]+) seconds', content)
-            if match:
-                runtime_seconds = float(match.group(1))
-                runtime_data[cs_name] = runtime_seconds
+# Load per-case-study A-Graph runtimes from the consolidated CSV
+runtime_csv = pd.read_csv(runtime_path + 'agraph_runtime.csv')
+runtime_data = dict(zip(runtime_csv['case_study'], runtime_csv['runtime_seconds'].astype(float)))
 
 runtime_df = pd.read_csv(runtime_path + 'eda_runtime_csv.csv')
 
@@ -485,11 +468,9 @@ plt.tight_layout(pad=1.0)
 if not os.path.exists('zoo/agraph/res/figures'):
     os.makedirs('zoo/agraph/res/figures')
 
-png_path = 'zoo/agraph/res/figures/runtime_comparison.png'
 pdf_path = 'zoo/agraph/res/figures/runtime_comparison.pdf'
 
 # Save figure
-plt.savefig(png_path, dpi=300, bbox_inches='tight', facecolor='white')
 plt.savefig(pdf_path, dpi=300, bbox_inches='tight', facecolor='white')
 
 # Post-process: crop top and bottom of PDF (in points)

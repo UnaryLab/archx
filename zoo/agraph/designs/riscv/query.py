@@ -7,9 +7,9 @@ from loguru import logger
 import pandas as pd
 import os
 
-#logger.remove()
+logger.remove()
 
-configs = ['config_0']
+configs = ['arch_0']
 
 area_df = None
 energy_df = None
@@ -44,8 +44,8 @@ dynamic_power_dict = {
 }
 
 for config in configs:
-    path = f'{base_path}description/runs/{config}'
-    event_graph = load_event_graph(f'{path}/checkpoint.gt')
+    path = f'{base_path}description/runs/gemm/{config}/config_0'
+    event_graph = load_event_graph(f'{path}/checkpoint.json')
     architecture = load_architecture_dict(f'{path}/architecture.yaml')
     metric = load_metric_dict(f'{path}/metric.yaml')
     workload = load_workload_dict(f'{path}/workload.yaml')
@@ -63,8 +63,6 @@ for config in configs:
     leakage_power = aggregate_tag_metric(event_graph=event_graph, metric_dict=metric, metric='leakage_power', workload=workload, tag=tag)
     area = aggregate_tag_metric(event_graph=event_graph, metric_dict=metric, metric='area', workload=workload, tag=tag)
     count = aggregate_event_count(event_graph=event_graph, workload=workload, event='instr_fetch')
-
-    print(area)
 
     syn_area = area_dict['1']
     syn_power = leakage_power_dict['1']

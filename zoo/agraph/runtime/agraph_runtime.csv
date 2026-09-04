@@ -1,0 +1,14 @@
+case_study,runtime_seconds
+cnn_sc,1.742978734
+fft_bit_cg,1.932095320
+fft_bit_fg,1.977404789
+fft_course_grain,1.912460985
+fft_fine_grain,1.949752451
+fft_pe,1.912639931
+fir_sc_256,2.080102555
+fir_sc_32,2.066684580
+stnn,.034552797
+systolic_course_grain,2.067982935
+systolic_fine_grain,6.211129067
+tnn,2.002485617
+tnn_cg,1.922957246

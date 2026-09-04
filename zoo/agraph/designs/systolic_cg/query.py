@@ -8,7 +8,7 @@ import os
 
 logger.remove()
 
-configs = ['config_0', 'config_1', 'config_2', 'config_3']
+configs = ['arch_0', 'arch_1', 'arch_2', 'arch_3']
 
 area_df = None
 energy_df = None
@@ -51,9 +51,9 @@ dynamic_power_dict = {
     '32x32': 1694.39253224,
 }
 
-for config in configs:
-    path = f'{base_path}description/runs/{config}'
-    event_graph = load_event_graph(f'{path}/checkpoint.gt')
+for i, config in enumerate(configs):
+    path = f'{base_path}description/runs/gemm/{config}/config_{i}'
+    event_graph = load_event_graph(f'{path}/checkpoint.json')
     architecture = load_architecture_dict(f'{path}/architecture.yaml')
     metric = load_metric_dict(f'{path}/metric.yaml')
     # workload = load_workload_dict(f'{path}/workload.yaml')

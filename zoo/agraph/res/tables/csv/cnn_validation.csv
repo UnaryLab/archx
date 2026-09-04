@@ -1,0 +1,5 @@
+metric,archx,baseline,relative_error_percent
+Area w/o overhead (JJ),13500864.0,15400000.0,-12.332051948051948
+Area w/ overhead (JJ),15335872.0,15400000.0,-0.4164155844155844
+Power (W),3.801088,3.9,-2.536205128205125
+Throughput (TMACs),409.6,409.0,0.14669926650367304
