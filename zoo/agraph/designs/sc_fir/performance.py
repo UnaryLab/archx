@@ -48,7 +48,7 @@ def fir_control(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)
 
     shift_reg_dim = get_prod(architecture_dict['shift_reg']['instance'])
     pnm_dim = get_prod(architecture_dict['pnm']['instance'])
-    # b2rc_dim = get_prod(architecture_dict['b2rc']['instance'])
+    b2rc_dim = 1
     control_dict = get_prod(architecture_dict['control']['instance'])
 
     bitwidth = architecture_dict['pnm']['query']['width']
@@ -58,11 +58,11 @@ def fir_control(architecture_dict: OrderedDict, workload_dict: OrderedDict=None)
 
     shift_reg_dict = OrderedDict({'count': shift_reg_dim})
     pnm_dict = OrderedDict({'count': pnm_dim})
-    # b2rc_dict = OrderedDict({'count': b2rc_dim})
+    b2rc_dict = OrderedDict({'count': b2rc_dim})
     control_dict = OrderedDict({'count': control_dict})
 
     performance_dict['subevent'] = OrderedDict({'shift_reg': shift_reg_dict,
                                                 'pnm': pnm_dict,
-                                                # 'b2rc': b2rc_dict,
+                                                'b2rc': b2rc_dict,
                                                 'control': control_dict})
     return performance_dict
