@@ -1,5 +1,0 @@
-event:
-  butterfly:
-    performance: zoo/agraph/designs/fft_cg/performance.py
-    subevent:
-    - pe

@@ -20,7 +20,6 @@ dependencies:
   - pytest-cov
   - maturin>=1.5
   - pip
+  - bs4
   - pip:
-    # ortools is not on conda-forge/defaults under this name (the conda package
-    # is `ortools-python`); install the canonical wheel via pip instead.
     - ortools

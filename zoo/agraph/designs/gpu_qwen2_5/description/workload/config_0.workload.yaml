@@ -1,4 +1,0 @@
-workload:
-  name: gemm
-  configuration:
-    mapping: 1
