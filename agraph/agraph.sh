@@ -1,4 +1,4 @@
-set -e
+
 
 # Register the interface bundles. The framework ships no interface data; each
 # design queries these characterization libraries at run time, so they must be
