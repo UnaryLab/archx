@@ -4,14 +4,11 @@ An event-based cost-modeling framework for computer-system design-space explorat
 
 ## Overview
 
-Archx computes arbitrary hardware metrics for an architecture running a workload. It does this by:
-
-1. building a directed graph (the A-Graph) of **events** and hardware **modules** connected by **subevent** edges,
-2. populating each hardware module with costs queried from a pluggable hardware **interface** (the CACTI7 memory model, CMOS synthesis CSVs, ...),
-3. running user-supplied Python **performance models** that set per-edge call counts, and
-4. aggregating metrics up the graph to answer queries such as "total energy of a GEMM on this accelerator".
-
-The graph engine is implemented in Rust and exposed to Python as `archx._core`; everything else is Python.
+Archx represents a system by:
+1. building a directed acyclic graph (A-Graph) of **events** and hardware **modules** connected by **subevent** edges,
+2. populating each hardware module with costs, queried from a pluggable hardware **interface**.
+3. running user-supplied Python **performance models** that set per-edge event counts, and
+4. metric aggregation to report results of the resulting application on the target architecture.
 
 Archx models across the system stack, separating into four levels. Each level is described by one of the four inputs to a run, detailed under [Configuration](#configuration).
 
@@ -305,9 +302,9 @@ archx -icopy -iname <name> -idir <dir>   # copy an installed interface out
 
 See [`src/archx/interface/README.md`](src/archx/interface/README.md) for the query contract and how to add your own.
 
-## Citation
+<!-- ## Citation
 
-Not yet published.
+Not yet published. -->
 
 ## License
 
