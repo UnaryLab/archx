@@ -2,11 +2,10 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from loguru import logger
-from chiplet4ai.results.query.utils import query_cycle_count
+from chiplet4ai.results.query.utils import array_compute_cycles, lane_cycles
 from archx.architecture import load_architecture_dict
 from archx.workload import load_workload_dict
 from archx.event import load_event_graph
-from archx.metric import load_metric_dict
 import pandas as pd
 from tqdm import tqdm
 import os
@@ -35,12 +34,10 @@ with open(runs_path, 'r') as f:
         run_arch_path = run_path + '/architecture.yaml'
         run_workload_path = run_path + '/workload.yaml'
         run_event_graph_path = run_path + '/checkpoint.json'
-        run_metric_path = run_path + '/metric.yaml'
 
         architecture_dict = load_architecture_dict(run_arch_path)
         workload_dict = load_workload_dict(run_workload_path)
         event_graph = load_event_graph(run_event_graph_path)
-        metric_dict = load_metric_dict(run_metric_path)
 
         array_dim = architecture_dict['pe']['instance']
 
@@ -67,12 +64,10 @@ with open(runs_path, 'r') as f:
         batch_size = workload_dict['configuration']['batch_size']
         max_seq_len = workload_dict['configuration']['max_seq_len']
 
-        cycle_count = query_cycle_count(
-            event_graph=event_graph,
-            metric_dict=metric_dict,
-            workload=workload_name,
-            event='llama_array'
-        )
+        # THE ARRAY COMPUTE LANE ALONE: the cycles the array spends multiplying, with
+        # weight loading and operand streaming free. See utils.array_compute_cycles.
+        cycle_count = sum(array_compute_cycles(
+            event_graph, lane_cycles(run_event_graph_path), workload_name).values())
 
         array_query_row = {
             'model': workload_name,

@@ -49,7 +49,13 @@ BATCH_SIZE = 512
 FIG_WIDTH = 480 / 72.27
 PANEL_HEIGHT = 1.5
 LEGEND_HEADROOM_IN = 0.62  # reserved at the top of the figure for the shared legend
-FIG_HEIGHT = 4 * PANEL_HEIGHT + LEGEND_HEADROOM_IN
+NOTE_HEIGHT_IN = 0.20      # reserved at the bottom for the cost-model note
+FIG_HEIGHT = 4 * PANEL_HEIGHT + LEGEND_HEADROOM_IN + NOTE_HEIGHT_IN
+
+# The cost model these cycles are measured under, stated on the figure rather than left to
+# the caption: without it a reader takes the curves for wall-clock latency.
+COST_NOTE = ('Cost model: array-compute cycles only -- weight loading and operand '
+             'streaming are free (perfect memory).')
 
 CSV_PATH = 'zoo/chiplet4ai/results/csv/array_shape_performance_metrics.csv'
 FIG_OUT = 'zoo/chiplet4ai/results/figs/fig_6.pdf'
@@ -191,7 +197,9 @@ fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5, .95),
            ncol=len(handles), fontsize=6, columnspacing=0.9, handlelength=1.6,
            title=f'batch {BATCH_SIZE}', title_fontsize=6)
 
-fig.supylabel('Aggregate compute cycles', fontsize=8, x=0.005)
+fig.supylabel('Array compute cycles', fontsize=8, x=0.005)
+fig.text(0.5, 0.012, COST_NOTE, ha='center', va='bottom', fontsize=6)
 
-fig.tight_layout(rect=(0.01, 0, 1, 1 - LEGEND_HEADROOM_IN / FIG_HEIGHT))
+fig.tight_layout(rect=(0.01, NOTE_HEIGHT_IN / FIG_HEIGHT, 1,
+                       1 - LEGEND_HEADROOM_IN / FIG_HEIGHT))
 fig.savefig(FIG_OUT)

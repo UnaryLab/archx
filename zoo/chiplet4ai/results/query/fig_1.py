@@ -29,7 +29,13 @@ plt.rcParams.update({
 FIG_WIDTH = 480 / 72.27
 PANEL_HEIGHT = 1.9
 LEGEND_HEADROOM_IN = 0.55  # reserved at the top of the figure for the shared legend
-FIG_HEIGHT = 3 * PANEL_HEIGHT + LEGEND_HEADROOM_IN
+NOTE_HEIGHT_IN = 0.20      # reserved at the bottom for the cost-model note
+FIG_HEIGHT = 3 * PANEL_HEIGHT + LEGEND_HEADROOM_IN + NOTE_HEIGHT_IN
+
+# The cost model these cycles are measured under, stated on the figure rather than left to
+# the caption: without it a reader takes the curves for wall-clock latency.
+COST_NOTE = ('Cost model: array-compute cycles only -- weight loading and operand '
+             'streaming are free (perfect memory).')
 
 if not os.path.exists('zoo/chiplet4ai/results/figs'):
     os.makedirs('zoo/chiplet4ai/results/figs')
@@ -115,7 +121,8 @@ for ax, (name, title, panel_models) in zip(axes, panels):
 axes[-1].set_xticks(valid_dims)
 axes[-1].set_xticklabels([f'{d}x{d}' for d in valid_dims])
 axes[-1].set_xlabel('Systolic-array dimensions')
-fig.supylabel('Aggregate compute cycles', fontsize=8, x=0.005)
+fig.supylabel('Array compute cycles', fontsize=8, x=0.005)
+fig.text(0.5, 0.012, COST_NOTE, ha='center', va='bottom', fontsize=6)
 
 # Shared legend above the figure. Every panel draws the same model/batch series,
 # so the handles are collected from the first axes only.
@@ -124,5 +131,6 @@ fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5, 0.98),
            ncol=4, fontsize=6, columnspacing=0.8, handlelength=1.6,
            title='Workload', title_fontsize=6)
 
-fig.tight_layout(rect=(0, 0, 1, 1 - LEGEND_HEADROOM_IN / FIG_HEIGHT))
+fig.tight_layout(rect=(0, NOTE_HEIGHT_IN / FIG_HEIGHT, 1,
+                       1 - LEGEND_HEADROOM_IN / FIG_HEIGHT))
 fig.savefig('zoo/chiplet4ai/results/figs/fig_1.pdf')

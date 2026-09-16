@@ -255,7 +255,12 @@ def description(path):
     deepseek_v4_config.add_parameter(parameter_name='n_routed_experts', parameter_value=384)
     deepseek_v4_config.add_parameter(parameter_name='n_shared_experts', parameter_value=1)
     deepseek_v4_config.add_parameter(parameter_name='experts_per_tok', parameter_value=6)
-    deepseek_v4_config.add_parameter(parameter_name='tokens_per_step', parameter_value=2)
+    # 1, not 2: no speculative decoding. The paper (arXiv:2606.19348 sec 4.2.1, "the
+    # multi-token prediction depth is set to 1") sets MTP as a TRAINING objective and
+    # describes no inference-time speculative decoding. Modeling that faithfully would
+    # need an acceptance rate and a non-free draft verification pass, neither of which
+    # this model has.
+    deepseek_v4_config.add_parameter(parameter_name='tokens_per_step', parameter_value=1)
 
     ##############################################
     ###########   Constraints   ##################

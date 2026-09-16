@@ -23,11 +23,13 @@ instead of being emitted three ways.
 BOTH FREQUENCIES ARE KEPT, unlike every other array query, which slices to 1000 MHz. That
 needs care, because the three metrics below do not respond to frequency alike:
 
-  cycle_count        `llama_array`, the COMPUTE-ONLY view. Exactly frequency-INVARIANT:
-                     frequency enters the model only through the DRAM lane's
-                     bytes-per-cycle (mapping.py), which this view excludes. The 2000 MHz
-                     rows reproduce the 1000 MHz ones digit for digit -- that is correct,
-                     not a bug, and it is why fig_6.py plots the 1000 MHz slice alone.
+  cycle_count        the array_compute lane alone -- the cycles the array spends
+                     multiplying, with weight loading and operand streaming free. Exactly
+                     frequency-INVARIANT: frequency enters the model only through the DRAM
+                     lane's bytes-per-cycle (mapping.py), which this lane excludes. The
+                     2000 MHz rows reproduce the 1000 MHz ones digit for digit -- that is
+                     correct, not a bug, and it is why fig_6.py plots the 1000 MHz slice
+                     alone.
   llama_cycle_count  `llama`, the full view. A 2 GHz part gets half the DRAM bytes per
                      cycle, so its stall cycles grow; this is NOT comparable across
                      frequencies as a raw number.
@@ -63,7 +65,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from loguru import logger
 from chiplet4ai.results.query.utils import (query_cycle_count, query_execution_time,
-                                            gemm_demand, bandwidth_summary)
+                                            gemm_demand, bandwidth_summary,
+                                            array_compute_cycles, lane_cycles)
 from archx.architecture import load_architecture_dict
 from archx.workload import load_workload_dict
 from archx.event import load_event_graph
@@ -134,9 +137,9 @@ with open(runs_path, 'r') as f:
         if max_seq_len != MAX_SEQ_LEN.get(workload_name):
             continue
 
-        cycle_count = query_cycle_count(
-            event_graph=event_graph, metric_dict=metric_dict,
-            workload=workload_name, event='llama_array')
+        # THE ARRAY COMPUTE LANE ALONE (see the module docstring).
+        cycle_count = sum(array_compute_cycles(
+            event_graph, lane_cycles(run_event_graph_path), workload_name).values())
         llama_cycle_count = query_cycle_count(
             event_graph=event_graph, metric_dict=metric_dict,
             workload=workload_name, event='llama')
@@ -210,7 +213,7 @@ if not array_query_df.empty:
     if {1000, 2000}.issubset(pivot.columns):
         drift = (pivot[2000] - pivot[1000]).abs().max()
         if drift > 0:
-            print(f'Warning: llama_array cycle_count differs between 1000 and 2000 MHz '
+            print(f'Warning: array compute cycle_count differs between 1000 and 2000 MHz '
                   f'by up to {drift:.3e}; it is expected to be frequency-invariant.')
 else:
     print("Warning: No matching configurations found. CSVs not saved.")

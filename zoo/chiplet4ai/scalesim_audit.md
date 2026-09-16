@@ -46,6 +46,8 @@ All re-verified against the working tree on the stated date. Verification for it
 
 14. **[applied 2026-08-17] Output traffic: pure write-through** (same ruling; reconciliation finding: `write_buffer.py:256` is a drain, ofmap DRAM writes are independent of osram size, and partial sums are never read back). `dram_output_write = output_write_elements` (~`M*N*k_folds`), `dram_output_read = 0` always. The `dram_output_read` event and its model functions are kept with zero counts. osram-side accumulate traffic is unchanged (on-chip). Note for readers of the historical entries: every pre-ruling measured constant in this document that depends on the old traffic laws (e.g. the 458 MB reference `input_read_bytes`, the 2,445,312 / 4,104,192 exact-identity stalls, the 33.5 MB gated writes) predates 13/14 and is a record of the superseded model, not of the current one.
 
+15. **[applied 2026-09-16] MoE prefill FFN was charged at one expert.** `layer_pf` and `llama_pf_array` charged every prefill GEMM at count 1, so DeepSeek's prefill up/gate/down_proj carried a multiplicity of `layers` when the MoE routing says `layers * (experts_per_tok + n_shared_experts)` = `layers * 7` -- commit `8dfb017f` extended the decode multiplier to `llama_dc_array` but left both prefill definitions untouched; fixed by `_prefill_gemm_counts`, mirroring `_decode_gemm_counts` and consumed by both prefill views so they cannot disagree, with `act` defaulting to 1 so dense llama is unchanged.
+
 ---
 
 ## The stall aggregator: accepted design, rulings, and verification
@@ -221,3 +223,83 @@ Recorded so calibration targets are chosen knowingly. Every item is a real defec
 **Then, in order:** Open 1 (reconcile reported bandwidth against supply); Open 4 (scope the weight-window justification); Open 2 only if a requirement metric is actually wanted; the `description.py` separate-root restructure for `aggregate_event_count` doubling (deferred, documented limitation under Resolved 11). All **event-based-feasible**.
 
 **Inherent limitations, document rather than attempt.** Sub-kernel time resolution finer than a phase: any true burst, percentile, or windowed-maximum bandwidth, and any stall depending on the instantaneous interleaving of operand requests, requires a per-cycle or per-line timeline; the per-phase decomposition is the finest resolution this model will have. Address-level reuse and prefetch-window-phase miss costs likewise have no closed form. Bounded prefetch elasticity (Open 1's residual) sits at the boundary: a capacity-aware cap is expressible in closed form, but its accuracy would not be verifiable without a trace.
+
+---
+
+## DeepSeek-V4 workload decisions (2026-09-16)
+
+### Speculative decoding dropped: `tokens_per_step` 2 -> 1
+
+`designs/llama/description.py` declared `tokens_per_step = 2` for `deepseek_v4`. It is now
+explicitly 1. The parameter is kept rather than deleted so the decision stays visible.
+
+**The paper does not support 2** (arXiv:2606.19348):
+
+- §2.1 p.7: "As DeepSeek-V3, DeepSeek-V4 series also set MTP **modules and objectives**.
+  Given that the MTP strategy has been validated in DeepSeek-V3, we adopt the same strategy
+  for DeepSeek-V4 series without modification."
+- §4.2.1 p.24/25: "The multi-token prediction depth is set to 1."
+- §4.2.2 p.25/26: "The MTP loss weight is set to 0.3 for most of the training, and to 0.1
+  upon the start of learning rate decay." MTP is a **training objective**.
+- The word "speculative" appears exactly **once** in the whole paper, in a bibliography
+  entry (EAGLE, Li et al. 2024). No acceptance rate is stated anywhere, and §3.5 Inference
+  Framework never mentions MTP.
+- Reference implementation: `inf_model.py:738` defines `class MTPBlock` and `:789-793`
+  builds `self.mtp`, but `Transformer.forward` (`:802-809`) never references it. DeepSeek's
+  own shipped inference stack neither drafts nor verifies.
+
+**Where the 2 came from**, recorded so nobody reinstates it: the vLLM recipe page for
+DeepSeek-V4-Pro, where one benchmark arm carries
+`--speculative-config '{"method":"mtp","num_speculative_tokens":2}'`. That flag means 2
+**draft** tokens, so a fully accepted step emits 3, not 2; other arms on the same page use 3
+and 7. It is one benchmark knob, not a model property, and it never meant "tokens per step".
+
+**Why modeling it was not an option.** Speculative decoding is only a win at an acceptance
+rate below 1, and the draft and verification passes are not free. This model has neither an
+acceptance rate nor a draft-verification cost, so `tokens_per_step = 2` charged one step for
+two accepted tokens unconditionally -- a free doubling.
+
+**What it actually reached.** `tokens_per_step` never touched the decode step count:
+`_decode_gemm_counts` (`model.py:61`) and `lm_head_dc` (`model.py:210`) always charge the
+full `max_seq_len - prefill_seq_len`. It reached only the decode attention mappings
+(`qkt_dc`/`av_dc`), where it strided the walk by 2 while also doubling `M` to
+`tokens_per_step * heads // kv_heads` (256 rather than 128).
+
+**Measured effect of 2 -> 1** (full rerun, 1265 runs, against a working-tree snapshot):
+
+- **Compute cycles: unchanged.** DeepSeek `cycle_count` moved by at most 0.0008% (fig_1,
+  all three sequence slices) and 0.0002% (fig_6, every matched design point). Striding by 2
+  at `M` 256 and walking every position at `M` 128 charge the same array compute.
+- **DRAM traffic: about 2x.** `total_data_moved` rose by a median 98.0% across fig_6. The
+  old value **under-charged DeepSeek's decode DRAM traffic by roughly half**; the doubled `M`
+  compensated compute but not traffic. The code-level reason traffic does not scale with
+  `M` the way compute does was not traced.
+- **Runtime and throughput follow the traffic** wherever the 256 GB/s channel binds:
+  `runtime_ms` median +93.7% (max +99.6%), `throughput_tokens_per_s` median -48.4%. At
+  256x128 / batch 512 / 1048576, runtime went 69,302,551,429 -> 138,020,913,099 ms and
+  throughput 7.7316 -> 3.8822 tokens/s, with the root now bandwidth-bound (1.380e17 root vs
+  6.930e16 compute) where it was compute-bound before.
+- **fig_8's selected DeepSeek point moved** from 256x128 / batch 512 to 128x128 / batch 128
+  (still 1048576), because the old point's throughput halved while 128x128 / batch 128 was
+  essentially unchanged (3.86665 tokens/s both before and after). The Llama points did not
+  move.
+- **Llama: byte-identical.** Every Llama row of all 30 result CSVs is unchanged.
+
+### Still outstanding: mHC is not charged at all
+
+DeepSeek-V4's mHC (paper §2.2) widens the residual stream 4x and runs 20 Sinkhorn-Knopp
+iterations. That is real added compute, and this model charges **none** of it -- no event, no
+cycles, no traffic. Every DeepSeek number here is optimistic by that amount. Recorded as a
+known omission, not queued as a fix.
+
+### fig_8's per-model maximum context is INTENTIONAL
+
+fig_8 reports DeepSeek at `max_seq_len` 1048576 while the Llama workloads appear at 131072.
+This is deliberate: each model is shown at **its own maximum context**, which is what
+`fig_8_query`'s scope note states. It is not an inconsistency and must not be "corrected" by
+clipping DeepSeek to the Llama context.
+
+One stale text artifact follows from this and is deliberately left alone here:
+`description.py:253`'s comment on `max_seq_len` still reads "clipped to match the llama
+workloads' decode-step count", which no longer describes what the sweep does now that
+1048576 is carried and shown. It needs rewording; no `max_seq_len` value should change.

@@ -1,3 +1,5 @@
+import json
+
 from archx.metric import aggregate_event_metric, aggregate_tag_metric, aggregate_event_count
 from collections import OrderedDict
 
@@ -161,6 +163,73 @@ def query_area(event_graph, metric_dict, workload=None, tag=None, module=None) -
         area = aggregate_tag_metric(event_graph=event_graph, metric_dict=metric_dict, metric='area', workload=workload, tag=tag)['value']
 
     return area
+
+
+# ---------------------------------------------------------------------------------------
+# ARRAY COMPUTE CYCLES -- the cost model fig_1, fig_6 and fig_8 report. One implementation,
+# so the three cannot disagree about what the number means.
+#
+# A GEMM charges array_input, array_weight and array_compute in PARALLEL, so the GEMM's own
+# span is their maximum and the `llama_array` view is that maximum summed over the model.
+# What follows is the COMPUTE LANE ALONE: the cycles the array spends multiplying, with
+# weight loading and operand streaming free -- a perfect-memory machine.
+#
+# mapping.py writes each lane's count already scaled to useful work and puts the true cycles
+# in the edge factor, so count * factor is the lane's cycle count. The event-graph object
+# exposes counts but not factors, so the factors are read from the checkpoint JSON directly.
+# ---------------------------------------------------------------------------------------
+
+def lane_cycles(checkpoint_path):
+    """(source, target) -> that edge's cycle count, i.e. its own count * cycle factor."""
+    with open(checkpoint_path, 'r') as handle:
+        checkpoint = json.load(handle)
+    cycles = {}
+    for edge in checkpoint['edges']:
+        factor = edge.get('factor') or {}
+        cycles[(edge['source'], edge['target'])] = edge['count'] * factor.get('cycle_count', 1.0)
+    return cycles
+
+
+def array_compute_cycles(event_graph, edge_cycles, workload_name):
+    """{gemm: the array_compute lane's cycles across the whole workload}."""
+    per_gemm = OrderedDict()
+
+    for name in sorted(event_graph.get_all_node_names()):
+        if not name.endswith('_arr'):
+            continue
+        gemm = name[:-len('_arr')]
+
+        # Multiplicity comes off '_dram', which hangs under `llama` alone. '_arr' is
+        # reachable through the `llama_array` view as well, and aggregate_event_count sums
+        # over every path, so reading it there would double every GEMM.
+        multiplicity = aggregate_event_count(
+            event_graph=event_graph, workload=workload_name, event=f'{gemm}_dram')
+        if multiplicity <= 0:
+            continue
+
+        per_gemm[gemm] = edge_cycles.get((name, 'array_compute'), 0.0) * multiplicity
+
+    return per_gemm
+
+
+# array_compute hangs under '<gemm>_arr', which the workload root reaches along exactly TWO
+# paths -- once through `llama` and once through the `llama_array` view -- and
+# aggregate_event_metric sums over every path. The engine's aggregate is therefore exactly
+# twice the lane's own cycle count. Measured at 4.4e-16 relative -- float64 round-off --
+# across 75 runs spanning every model, 24 array shapes and both frequencies.
+ARRAY_COMPUTE_PATHS = 2
+
+def array_compute_total(event_graph, metric_dict, workload_name):
+    """The whole model's array_compute cycles, from the engine's own aggregation.
+
+    Deliberately a DIFFERENT route to the quantity `array_compute_cycles` sums out of the
+    checkpoint's edge factors: this one walks the event graph through the Rust aggregator.
+    fig_8 checks its per-operator breakdown against this, so the check compares two
+    independent computations rather than restating one.
+    """
+    return query_cycle_count(
+        event_graph=event_graph, metric_dict=metric_dict,
+        workload=workload_name, event='array_compute') / ARRAY_COMPUTE_PATHS
 
 
 # ---------------------------------------------------------------------------------------

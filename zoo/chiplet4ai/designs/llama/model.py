@@ -72,6 +72,30 @@ def _decode_gemm_counts(cfg: OrderedDict) -> OrderedDict:
 
     return counts
 
+# the same MoE routing on the prefill side: only the FFN GEMMs run once per activated
+# expert, and hidden_dim is the per-expert width, so one expert's GEMM charged once is
+# one expert's worth of work
+MOE_EXPERT_EVENTS_PF = ['up_proj_pf', 'gate_proj_pf', 'down_proj_pf']
+
+def _prefill_gemm_counts(cfg: OrderedDict) -> OrderedDict:
+    """Per-layer prefill multiplicity of every '_pf' GEMM.
+
+    ONE SOURCE FOR BOTH VIEWS, exactly as _decode_gemm_counts is: 'llama' reaches these
+    GEMMs through layer_pf and 'llama_array' reaches their '_arr' nodes through
+    llama_pf_array, so the two must agree GEMM for GEMM or fig_3 reads an impossible
+    utilization off their disagreement.
+    """
+    # dense llama configs lack the MoE keys, so they default to one activated expert,
+    # which reproduces the dense prefill exactly
+    act = cfg.get('experts_per_tok', 1) + cfg.get('n_shared_experts', 0)
+
+    counts = OrderedDict()
+    for event in LAYER_EVENTS_PF:
+        # only the FFN runs per activated expert; attention is shared across them
+        counts[event] = act if event in MOE_EXPERT_EVENTS_PF else 1
+
+    return counts
+
 def llama_2_7b(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> OrderedDict:
     return llama_model(architecture_dict=architecture_dict, workload_dict=workload_dict)
 
@@ -140,9 +164,12 @@ def llama_pf_array(architecture_dict: OrderedDict, workload_dict: OrderedDict = 
     performance_dict = OrderedDict({'subevent': OrderedDict()})
     cfg = workload_dict['configuration']
 
-    for event in LAYER_EVENTS_PF:
-        performance_dict['subevent'][f'{event}_arr'] = OrderedDict({'count': 1, 'aggregation': 'sequential'})
-    
+    # Same multiplicities layer_pf charges on the 'llama' side, including the MoE expert
+    # factor on the FFN. Charging them here without that factor would leave this view
+    # short of the array work it is meant to describe.
+    for event, count in _prefill_gemm_counts(cfg).items():
+        performance_dict['subevent'][f'{event}_arr'] = OrderedDict({'count': count, 'aggregation': 'sequential'})
+
     return performance_dict
 
 def llama_dc_array(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> OrderedDict:
@@ -185,18 +212,13 @@ def decode(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) ->
 
 
 def layer_pf(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> OrderedDict:
+    performance_dict = OrderedDict({'subevent': OrderedDict()})
     cfg = workload_dict['configuration']
-    return OrderedDict({'subevent': OrderedDict({
-        'proj_q_pf': OrderedDict({'count': 1, 'aggregation': 'sequential'}),
-        'proj_k_pf': OrderedDict({'count': 1, 'aggregation': 'sequential'}),
-        'proj_v_pf': OrderedDict({'count': 1, 'aggregation': 'sequential'}),
-        'qkt_pf': OrderedDict({'count': 1, 'aggregation': 'sequential'}),
-        'av_pf': OrderedDict({'count': 1, 'aggregation': 'sequential'}),
-        'a_proj_pf': OrderedDict({'count': 1, 'aggregation': 'sequential'}),
-        'up_proj_pf': OrderedDict({'count': 1, 'aggregation': 'sequential'}),
-        'gate_proj_pf': OrderedDict({'count': 1, 'aggregation': 'sequential'}),
-        'down_proj_pf': OrderedDict({'count': 1, 'aggregation': 'sequential'}),
-    })})
+
+    for event, count in _prefill_gemm_counts(cfg).items():
+        performance_dict['subevent'][event] = OrderedDict({'count': count, 'aggregation': 'sequential'})
+
+    return performance_dict
 
 
 def layer_dc(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> OrderedDict:

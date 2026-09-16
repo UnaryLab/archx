@@ -78,6 +78,9 @@ _GENERATED_OUTPUTS = [
     csv_path + 'array_shape_performance_metrics.csv',            # fig_6_query
     csv_path + 'array_shape_performance_metrics_scientific.csv', # fig_6_query
     fig_path + 'fig_6.pdf',                                 # fig_6
+    csv_path + 'operator_latency_metrics.csv',              # fig_8_query
+    csv_path + 'operator_latency_metrics_scientific.csv',   # fig_8_query
+    fig_path + 'fig_8.pdf',                                 # fig_8
 ]
 
 for path in _GENERATED_OUTPUTS:
@@ -94,8 +97,16 @@ for path in _GENERATED_OUTPUTS:
 #     fig_6_query -> fig_4_query -> fig_2_query
 #
 # fig_1, fig_3 and fig_5 are independent and stay next to their own queries.
+#
+# fig_8 JOINS THAT CHAIN, on the same criterion-CSV dependency fig_2 has: fig_8_query reads
+# fig_4's THROUGHPUT point per model, so it must run after fig_4_query. It is last because
+# nothing reads its output.
+#
+#     fig_6_query -> fig_4_query -> fig_2_query
+#                              \--> fig_8_query
 for name in ['fig_1_query', 'fig_1', 'fig_3_query', 'fig_3', 'fig_5_query', 'fig_5',
-             'fig_6_query', 'fig_6', 'fig_4_query', 'fig_4', 'fig_2_query', 'fig_2']:
+             'fig_6_query', 'fig_6', 'fig_4_query', 'fig_4', 'fig_2_query', 'fig_2',
+             'fig_8_query', 'fig_8']:
     print(f'\nStarting {name}...')
     runpy.run_path(os.path.join(_QUERY_DIR, name + '.py'), run_name='__main__')
     print(f'{name} complete.')
