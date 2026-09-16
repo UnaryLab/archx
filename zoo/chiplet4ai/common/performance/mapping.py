@@ -177,6 +177,28 @@ def _folded_counts(subevents_at, num_steps: int) -> tuple[OrderedDict, OrderedDi
 
     return counts, evaluate(num_steps - 1)
 
+def _compressed_walk(steps, workload_dict: OrderedDict) -> list:
+    # SEQUENCE-AXIS KV COMPRESSION (DeepSeek-V4 CSA/HCA). The cache keeps one entry per
+    # `compress_ratio` tokens, so a step attends over step // compress_ratio compressed
+    # entries rather than over every token. The walk still runs over tokens -- the step
+    # count is the number of generated tokens either way -- and only the context each step
+    # maps changes. Consecutive strides that see the same context map identically, so each
+    # distinct context is mapped once and weighted by how many strides share it.
+    #
+    # Returns [context, strides] pairs; consumers index into it like a range.
+    ratio = int(workload_dict['compress_ratio'])
+    window = int(workload_dict['window'])
+    walk = []
+    for step in steps:
+        # the `window` addend is the SWA branch: the last `window` tokens stay uncompressed
+        # and go through the same core attention as the compressed entries
+        context = step // ratio + window
+        if walk and walk[-1][0] == context:
+            walk[-1][1] += 1
+        else:
+            walk.append([context, 1])
+    return walk
+
 def array_mapping_decode(dim: str, tokens: int, architecture_dict: OrderedDict, workload_dict: OrderedDict) -> OrderedDict:
     performance_dict = OrderedDict()
 
@@ -215,15 +237,26 @@ def array_mapping_decode(dim: str, tokens: int, architecture_dict: OrderedDict, 
     # would shrink every utilization by a factor of `tokens`.
     sampled_steps = 0
 
-    for step in range(min_step + 1, max_step + 1, tokens):
-        sampled_steps += 1
-        step_m, step_k, step_n = _step_dims(M, K, N, step, step_dim)
-        step_dict = array_mapping(
-            architecture_dict, OrderedDict({'M': step_m, 'K': step_k, 'N': step_n}))
+    if 'compress_ratio' in workload_dict:
+        for context, strides in _compressed_walk(range(min_step + 1, max_step + 1, tokens), workload_dict):
+            sampled_steps += strides
+            step_m, step_k, step_n = _step_dims(M, K, N, context, step_dim)
+            step_dict = array_mapping(
+                architecture_dict, OrderedDict({'M': step_m, 'K': step_k, 'N': step_n}))
 
-        for name, subevent in step_dict['subevent'].items():
-            counts[name] = counts.get(name, 0) + subevent['count']
-            utilizations[name] = utilizations.get(name, 0) + 1 / subevent['factor']['cycle_count']
+            for name, subevent in step_dict['subevent'].items():
+                counts[name] = counts.get(name, 0) + subevent['count'] * strides
+                utilizations[name] = utilizations.get(name, 0) + strides / subevent['factor']['cycle_count']
+    else:
+        for step in range(min_step + 1, max_step + 1, tokens):
+            sampled_steps += 1
+            step_m, step_k, step_n = _step_dims(M, K, N, step, step_dim)
+            step_dict = array_mapping(
+                architecture_dict, OrderedDict({'M': step_m, 'K': step_k, 'N': step_n}))
+
+            for name, subevent in step_dict['subevent'].items():
+                counts[name] = counts.get(name, 0) + subevent['count']
+                utilizations[name] = utilizations.get(name, 0) + 1 / subevent['factor']['cycle_count']
 
     # ---------------------------------------------------------
     # 3. Hardware events
@@ -363,6 +396,17 @@ def sram_mapping_decode(dim: str, tokens: int, architecture_dict: OrderedDict, w
         return sram_mapping(
             architecture_dict, OrderedDict({'M': step_m, 'K': step_k, 'N': step_n}))['subevent']
 
+    if 'compress_ratio' in workload_dict:
+        steps = _compressed_walk(steps, workload_dict)
+
+        def subevents_at(index):
+            context, strides = steps[index]
+            step_m, step_k, step_n = _step_dims(M, K, N, context, step_dim)
+            subevents = sram_mapping(
+                architecture_dict, OrderedDict({'M': step_m, 'K': step_k, 'N': step_n}))['subevent']
+            return OrderedDict({name: {**subevent, 'count': subevent['count'] * strides}
+                                for name, subevent in subevents.items()})
+
     counts, step_subevents = _folded_counts(subevents_at, len(steps))
 
     # ---------------------------------------------------------
@@ -491,6 +535,23 @@ def dram_mapping_decode(dim: str, tokens: int, architecture_dict: OrderedDict, w
         return dram_mapping(
             architecture_dict, OrderedDict({'M': step_m, 'K': step_k, 'N': step_n}))['subevent']
 
+    if 'compress_ratio' in workload_dict:
+        steps = _compressed_walk(steps, workload_dict)
+        window = int(workload_dict['window'])
+
+        def subevents_at(index):
+            context, strides = steps[index]
+            step_m, step_k, step_n = _step_dims(M, K, N, context, step_dim)
+            step_dict = OrderedDict({'M': step_m, 'K': step_k, 'N': step_n})
+            # quantized KV entries: the caller states the bytes of one compressed entry and
+            # of one sliding-window entry, so the cache is billed in bytes, not elements
+            if 'entry_bytes' in workload_dict:
+                step_dict['weight_bytes'] = ((context - window) * workload_dict['entry_bytes']
+                                             + window * workload_dict['window_entry_bytes'])
+            subevents = dram_mapping(architecture_dict, step_dict)['subevent']
+            return OrderedDict({name: {**subevent, 'count': subevent['count'] * strides}
+                                for name, subevent in subevents.items()})
+
     counts, step_subevents = _folded_counts(subevents_at, len(steps))
 
     # ---------------------------------------------------------
@@ -541,7 +602,13 @@ def dram_mapping(architecture_dict: OrderedDict, workload_dict: OrderedDict) -> 
     # ---------------------------------------------------------
 
     input_bytes = math.ceil(_dram_fills(M * K, num_n_blocks, isram_elements) * isram_width / 8)
-    weight_bytes = math.ceil(_dram_fills(K * N, num_m_blocks, wsram_elements) * wsram_width / 8)
+    if 'weight_bytes' in workload_dict:
+        # the bytes of one full pass are given, so the elements fetched are billed pro rata;
+        # integer ceiling, because elements x bytes passes 2**53 at DeepSeek's context
+        weight_bytes = -(-_dram_fills(K * N, num_m_blocks, wsram_elements)
+                         * workload_dict['weight_bytes'] // (K * N))
+    else:
+        weight_bytes = math.ceil(_dram_fills(K * N, num_m_blocks, wsram_elements) * wsram_width / 8)
 
     output_write_elements = _dram_fills(M * N, num_k_tiles, osram_elements)
     output_read_elements = output_write_elements - M * N

@@ -132,7 +132,15 @@ def description(path):
     # event configuration
     layer_pf_events = ['proj_q_pf', 'proj_k_pf', 'proj_v_pf', 'qkt_pf', 'av_pf', 'a_proj_pf', 'up_proj_pf', 'gate_proj_pf', 'down_proj_pf']
     layer_dc_events = ['proj_q_dc', 'proj_k_dc', 'proj_v_dc', 'qkt_dc', 'av_dc', 'a_proj_dc', 'up_proj_dc', 'gate_proj_dc', 'down_proj_dc']
-    gemm_events = layer_pf_events + ['lm_head_pf'] + layer_dc_events + ['lm_head_dc']
+    # DeepSeek-V4's CSA and HCA layers: the same decode GEMMs with the attention pair
+    # swapped for the layer type's own compressed-attention GEMMs
+    layer_dc_compressed_events = {
+        kind: [layer.replace('_dc', f'_{kind}_dc') if layer in ('qkt_dc', 'av_dc') else layer
+               for layer in layer_dc_events]
+        for kind in ('csa', 'hca')
+    }
+    compressed_attention_events = [f'{op}_{kind}_dc' for kind in ('csa', 'hca') for op in ('qkt', 'av')]
+    gemm_events = layer_pf_events + ['lm_head_pf'] + layer_dc_events + ['lm_head_dc'] + compressed_attention_events
 
     layer_pf_arr_subevents = [layer + '_arr' for layer in layer_pf_events]
     layer_dc_arr_subevents = [layer + '_arr' for layer in layer_dc_events]
@@ -157,16 +165,20 @@ def description(path):
 
     # model events
     event.add_event(name='llama', subevent=['prefill', 'decode'], performance=model)
-    event.add_event(name='llama_array', subevent=['llama_pf_array', 'llama_dc_array', 'lm_head_pf_arr', 'lm_head_dc_arr'], performance=model)
+    event.add_event(name='llama_array', subevent=['llama_pf_array', 'llama_dc_array', 'llama_dc_csa_array', 'llama_dc_hca_array', 'lm_head_pf_arr', 'lm_head_dc_arr'], performance=model)
     event.add_event(name='llama_pf_array', subevent=layer_pf_arr_subevents.copy(), performance=model)
     event.add_event(name='llama_dc_array', subevent=layer_dc_arr_subevents.copy(), performance=model)
+    for kind, events in layer_dc_compressed_events.items():
+        event.add_event(name=f'llama_dc_{kind}_array', subevent=[layer + '_arr' for layer in events], performance=model)
 
     # model phase events
     event.add_event(name='prefill', subevent=['layer_pf', 'lm_head_pf'], performance=model)
-    event.add_event(name='decode', subevent=['layer_dc', 'layer_dc_moe', 'lm_head_dc'], performance=model)
+    event.add_event(name='decode', subevent=['layer_dc', 'layer_dc_moe', 'layer_dc_csa', 'layer_dc_hca', 'lm_head_dc'], performance=model)
     event.add_event(name='layer_pf', subevent=layer_pf_events.copy(), performance=model)
     event.add_event(name='layer_dc', subevent=layer_dc_events.copy(), performance=model)
     event.add_event(name='layer_dc_moe', subevent=layer_dc_events.copy(), performance=model)
+    for kind, events in layer_dc_compressed_events.items():
+        event.add_event(name=f'layer_dc_{kind}', subevent=events.copy(), performance=model)
 
     # GEMM events: cycle count is the max of array compute, SRAM ports, and the
     # DRAM channel (the '_arr'/'_sram'/'_dram' edges are parallel in model.py)
@@ -247,6 +259,14 @@ def description(path):
     deepseek_v4_config.add_parameter(parameter_name='heads',  parameter_value=128)
     deepseek_v4_config.add_parameter(parameter_name='kv_heads', parameter_value=1)
     deepseek_v4_config.add_parameter(parameter_name='head_dim', parameter_value=512)
+    deepseek_v4_config.add_parameter(parameter_name='qk_rope_head_dim', parameter_value=64)  # BF16 rope suffix of each KV entry
+    # compressed attention, from the shipped config's compress_ratios: layers 0-1 are HCA,
+    # then CSA and HCA alternate starting with CSA (model.py derives the counts)
+    deepseek_v4_config.add_parameter(parameter_name='csa_compress_ratio', parameter_value=4)
+    deepseek_v4_config.add_parameter(parameter_name='hca_compress_ratio', parameter_value=128)
+    deepseek_v4_config.add_parameter(parameter_name='hca_lead_layers', parameter_value=2)
+    deepseek_v4_config.add_parameter(parameter_name='sliding_window', parameter_value=128)
+    deepseek_v4_config.add_parameter(parameter_name='index_head_dim', parameter_value=128)  # CSA indexer keys, cached per compressed entry
     deepseek_v4_config.add_parameter(parameter_name='hidden_dim', parameter_value=3072)  # per-expert moe_intermediate_size; keeps up/gate/down GEMMs per-expert-shaped
     deepseek_v4_config.add_parameter(parameter_name='layers', parameter_value=61)
     deepseek_v4_seq_len = deepseek_v4_config.add_parameter(parameter_name='max_seq_len', parameter_value=[4096, 131072, 1048576], sweep=True)  # model max is 1048576; clipped to match the llama workloads' decode-step count

@@ -122,7 +122,7 @@ DRAM_LANES = {
 # with. The dense layers are where reuse lives. Splitting them makes each visible, and
 # the contrast is the point: capacity buys reuse for projection and FFN, and buys nothing
 # against the KV cache.
-ATTENTION_GEMMS = ('qkt', 'av')
+ATTENTION_GEMMS = ('qkt', 'av', 'qkt_csa', 'av_csa', 'qkt_hca', 'av_hca')
 
 def gemm_class(gemm):
     stem = gemm[:-3] if gemm.endswith(('_pf', '_dc')) else gemm

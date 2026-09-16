@@ -303,3 +303,76 @@ One stale text artifact follows from this and is deliberately left alone here:
 `description.py:253`'s comment on `max_seq_len` still reads "clipped to match the llama
 workloads' decode-step count", which no longer describes what the sweep does now that
 1048576 is carried and shown. It needs rewording; no `max_seq_len` value should change.
+
+### KV cache: CSA/HCA compression, shared entry, quantized bytes (2026-09-16)
+
+DeepSeek-V4 used to run the generic llama attention path: K and V cached separately at
+head_dim 512 each, 16 bits per element, over every token -- 2048 B per token per layer. That
+overstated the KV traffic about 24.8x (measured below). This entry fixes the **KV side only**.
+
+**What changed.**
+- Layer split, from the shipped `compress_ratios`: the first `hca_lead_layers` = 2 layers
+  are HCA, then CSA and HCA alternate starting with CSA. `model._compressed_layers` derives
+  30 CSA / 31 HCA from `layers` = 61; the 62nd entry (MTP, ratio 0) is not a decode layer.
+- `decode()` charges `layer_dc_csa` / `layer_dc_hca` at those counts and `layer_dc_moe` at
+  what is left (0); `llama_array` mirrors this with `llama_dc_csa_array` /
+  `llama_dc_hca_array`. Both views read one helper (`_compressed_gemm_counts`). The layer
+  types differ only in their attention GEMMs (`qkt_csa_dc`, `av_csa_dc`, `qkt_hca_dc`,
+  `av_hca_dc`), because a leaf function cannot see which layer charged it.
+- Sequence-axis compression lives in the decode walks (`mapping._compressed_walk`): a step
+  over `step` tokens maps a context of `step // compress_ratio + window`, and strides that
+  see the same context are mapped once and weighted. Workloads without `compress_ratio`
+  take the unchanged code path. The old `token_compression` flag was NOT reused: it moved
+  the walk's END point to `(S-128)/4+128` (a float), which shortens the number of decode
+  steps instead of compressing the context each step sees.
+- One shared entry is both key and value: `qkt_*` fetches the cache, `av_*`'s
+  `dram_weight_read` is 0 (`_shared_kv`).
+- Bytes, not elements: `dram_mapping` bills a caller-given `weight_bytes` per full pass.
+  Compressed entry = 448 FP8 + 64 x 2 B BF16 rope + 7 B ue8m0 scales = 583 B; CSA adds the
+  indexer's keys, 128 x FP4 + 4 B scales = 68 B, for 651 B. Window entry = 576 B.
+  New config names: `qk_rope_head_dim`, `csa_compress_ratio`, `hca_compress_ratio`,
+  `hca_lead_layers`, `sliding_window`, `index_head_dim` (`head_dim` = 512 reused).
+
+**Measured from the model** (direct calls to `qkt_{csa,hca}_dc_dram`, one decode step,
+batch 1, `num_m_blocks` = 1 so the read is exactly one pass over the cache; per-token value =
+byte difference between S = 524288 and S = 1048576 divided by 524288):
+
+| | measured | target |
+|---|---|---|
+| CSA B/token/layer | 162.75 | 162.75 |
+| HCA B/token/layer | 4.5546875 | 4.56 |
+| blended (30 CSA + 31 HCA)/61 | 82.3557 | 82.36 |
+| 61-layer total per token | 5023.70 B = 4.9060 KiB | 4.91 KiB |
+| SWA adder per request per layer | 73,728 B | 128 x 576 |
+| `av_*` KV read | 0 | 0 (shared) |
+
+Built-graph traffic at deepseek_v4 batch 512 / S = 1048576: per-layer KV weight read was
+5.7646e17 B (`qkt_dc` + `av_dc`), now 2.3220e16 B blended -- 24.83x less.
+
+**ATTENTION CONTEXT IS AN UPPER BOUND, NOT THE FAITHFUL COMPUTE.** Decode `qkt`/`av` attend
+DENSELY over every compressed entry plus the 128-entry sliding window (CSA S/4 + 128, HCA
+S/128 + 128). The real layer attends over a top-k subset picked by the indexer. Dense attention
+never understates, and the indexer's own O(context) compute, which is the main faithful term,
+is still missing. At S = 1048576: blended 1.7461e10 MACs/token/layer with the window,
+1.7444e10 without, against about 2.0e9 for a faithful model. The window term is the SWA
+branch (paper sec 2.3.3) and is its own addend (`sliding_window`); without it HCA
+attention at S = 4096 would be undercounted about 5x (32 compressed entries vs 128).
+
+**Upper-bound traffic attribution.** The 68 B/entry indexer keys are billed on the core
+`qkt_csa_dc` read so the cache SIZE is whole. In the real model the indexer reads them.
+
+**Left alone on purpose.**
+- Prefill is unchanged: `qkt_pf`/`av_pf` still use `dim // heads` = 56 wide and attend over
+  every prefill token.
+- `proj_k_dc` / `proj_v_dc` still WRITE `dim * kv_heads // heads` = 56 + 56 elements =
+  224 B/token/layer, while the reads are now 651 / 583 B per compressed entry. The KV write
+  and read sides no longer describe the same cache. That belongs to the compute stage.
+- The compute stage has NOT been built: no indexer compute, no top-k core attention, no
+  low-rank query (`q_lora_rank`), no grouped output projection (`o_lora_rank`, `o_groups`),
+  no per-head RMSNorm, no attention sink, no mHC.
+
+**Results.** Llama rows are byte-identical in all 30 result CSVs. fig_8 sum-check residuals:
+deepseek_v4 2.135e-16, 405B 0, 70B 0, 8B 1.144e-16. fig_8's DeepSeek point moved from
+128x128 / batch 128 to 128x512 / batch 512, still at 1048576. At that new point, the root
+array_compute went 3.466e16 -> 4.684e15, throughput 3.891 -> 66.41 tokens/s, and
+total_data_moved 3.535e19 -> 1.605e18 B.

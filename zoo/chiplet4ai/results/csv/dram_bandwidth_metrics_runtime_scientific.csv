@@ -1,6 +1,6 @@
 model,array_dim,batch_size,max_seq_len,frequency,sram_size,dram_bandwidth,total_data_moved,window_cycle_count,average_bandwidth,peak_bandwidth,peak_phase,burst_bandwidth,burst_gemm
-deepseek_v4,128x128,32,1048576,1000,83886080,256,2.274e+18,8.879e+15,256.1,381.0,prefill,410.7,gate_proj_pf
-deepseek_v4,128x128,32,1048576,2000,83886080,256,2.274e+18,8.879e+15,512.2,762.0,prefill,821.4,gate_proj_pf
+deepseek_v4,128x512,32,1048576,1000,83886080,256,1.648e+17,3.477e+14,473.8,1577.2,prefill,2021.9,gate_proj_pf
+deepseek_v4,128x512,32,1048576,2000,83886080,256,1.648e+17,3.477e+14,947.6,3154.5,prefill,4043.8,gate_proj_pf
 llama_3_1_405b,32x128,32,131072,1000,83886080,256,2.501e+17,9.699e+14,257.8,402.1,prefill,441.2,lm_head_dc
 llama_3_1_405b,32x128,32,131072,2000,83886080,256,2.501e+17,9.699e+14,515.7,804.3,prefill,882.4,lm_head_dc
 llama_3_1_70b,32x128,32,131072,1000,83886080,256,1.089e+17,4.237e+14,256.9,396.1,prefill,441.3,lm_head_dc

@@ -96,6 +96,83 @@ def _prefill_gemm_counts(cfg: OrderedDict) -> OrderedDict:
 
     return counts
 
+# DEEPSEEK-V4 COMPRESSED ATTENTION. Each decode layer is CSA (one KV entry per
+# csa_compress_ratio tokens) or HCA (one per hca_compress_ratio). A GEMM's leaf function
+# sees only the workload, never which layer charged it, so each layer type gets its own
+# attention GEMMs; every other GEMM is shared with the dense and MoE layers.
+COMPRESSED_LAYER_KINDS = ('csa', 'hca')
+
+def _compressed_layers(cfg: OrderedDict) -> OrderedDict:
+    """{'csa': layer count, 'hca': layer count}; both 0 for a workload without compression.
+
+    The shipped config's compress_ratios: the first hca_lead_layers layers are HCA, then
+    the layers alternate starting with CSA. Its last entry is the MTP layer, which is not
+    one of cfg['layers'] and is not decoded (no speculative decoding).
+    """
+    if 'csa_compress_ratio' not in cfg:
+        return OrderedDict({kind: 0 for kind in COMPRESSED_LAYER_KINDS})
+    alternating = cfg['layers'] - cfg['hca_lead_layers']
+    csa = (alternating + 1) // 2
+    return OrderedDict({'csa': csa, 'hca': cfg['layers'] - csa})
+
+def _compressed_gemm_counts(cfg: OrderedDict, kind: str) -> OrderedDict:
+    """Per-layer decode multiplicity of a CSA or HCA layer's GEMMs.
+
+    The same multiplicities as _decode_gemm_counts with the attention pair renamed to the
+    layer type's own GEMMs, so layer_dc_<kind> and llama_dc_<kind>_array cannot disagree.
+    """
+    return OrderedDict({
+        (f'{event[:-len("_dc")]}_{kind}_dc' if event in ('qkt_dc', 'av_dc') else event): count
+        for event, count in _decode_gemm_counts(cfg).items()
+    })
+
+# KV ENTRY FORMAT (DeepSeek-V4 inference/model.py). The non-rope part of an entry is FP8
+# with one ue8m0 scale byte per 64 elements, the rope suffix stays BF16, and the CSA
+# indexer's keys are FP4 with one ue8m0 scale byte per 32 elements.
+KV_FP8_SCALE_BLOCK = 64
+INDEXER_FP4_SCALE_BLOCK = 32
+
+def _attention_compressed(cfg: OrderedDict, kind: str, dim: str) -> OrderedDict:
+    """The decode walk of a CSA/HCA attention GEMM: qkt (dim 'n') or av (dim 'k').
+
+    Attention is DENSE over every compressed entry plus the sliding window. That is an
+    UPPER BOUND on the real layer, which attends over a top-k subset chosen by an indexer
+    whose own O(context) compute is not modelled here.
+    """
+    tokens_per_step = cfg.get('tokens_per_step', 1)
+    head_dim = cfg.get('head_dim', cfg['dim'] // cfg['heads'])
+    workload = OrderedDict({
+        'M': tokens_per_step * cfg['heads'] // cfg['kv_heads'],
+        'K': head_dim if dim == 'n' else cfg['max_seq_len'],
+        'N': cfg['max_seq_len'] if dim == 'n' else head_dim,
+        'step_start': cfg['prefill_seq_len'],
+        'compress_ratio': cfg.get(f'{kind}_compress_ratio', 1),
+        # the SWA branch: sliding_window uncompressed entries join the compressed ones in
+        # the same core attention on both layer types (paper sec 2.3.3)
+        'window': cfg.get('sliding_window', 0),
+    })
+
+    # ONE SHARED KV ENTRY serves as both key and value, so the cache is fetched once, by
+    # qkt, in bytes of the quantized entry; av's weight read is zeroed (_shared_kv)
+    if dim == 'n':
+        rope = cfg.get('qk_rope_head_dim', 0)
+        window_entry_bytes = (head_dim - rope) + 2 * rope
+        entry_bytes = window_entry_bytes + (head_dim - rope) // KV_FP8_SCALE_BLOCK
+        if kind == 'csa':
+            # the indexer's keys are cached per compressed entry too. They are read by the
+            # indexer, not the core attention, and are billed here only so the cache size
+            # is whole
+            index_head_dim = cfg.get('index_head_dim', 0)
+            entry_bytes += index_head_dim // 2 + index_head_dim // INDEXER_FP4_SCALE_BLOCK
+        workload['entry_bytes'] = entry_bytes
+        workload['window_entry_bytes'] = window_entry_bytes
+
+    return workload
+
+def _shared_kv(performance_dict: OrderedDict) -> OrderedDict:
+    performance_dict['subevent']['dram_weight_read']['count'] = 0
+    return performance_dict
+
 def llama_2_7b(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> OrderedDict:
     return llama_model(architecture_dict=architecture_dict, workload_dict=workload_dict)
 
@@ -153,9 +230,13 @@ def llama(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> 
 
 def llama_array(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> OrderedDict:
     cfg = workload_dict['configuration']
+    compressed = _compressed_layers(cfg)
     return OrderedDict({'subevent': OrderedDict({
         'llama_pf_array': OrderedDict({'count': cfg['layers'], 'aggregation': 'sequential'}),
-        'llama_dc_array': OrderedDict({'count': cfg['layers'], 'aggregation': 'sequential'}),
+        # the same layer split decode() charges on the 'llama' side
+        'llama_dc_array': OrderedDict({'count': cfg['layers'] - sum(compressed.values()), 'aggregation': 'sequential'}),
+        'llama_dc_csa_array': OrderedDict({'count': compressed['csa'], 'aggregation': 'sequential'}),
+        'llama_dc_hca_array': OrderedDict({'count': compressed['hca'], 'aggregation': 'sequential'}),
         'lm_head_pf_arr': OrderedDict({'count': 1, 'aggregation': 'sequential'}),
         'lm_head_dc_arr': OrderedDict({'count': cfg['max_seq_len'] - cfg['prefill_seq_len'], 'aggregation': 'sequential'}),
     })})
@@ -186,6 +267,18 @@ def llama_dc_array(architecture_dict: OrderedDict, workload_dict: OrderedDict = 
 
     return performance_dict
 
+def llama_dc_csa_array(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> OrderedDict:
+    performance_dict = OrderedDict({'subevent': OrderedDict()})
+    for event, count in _compressed_gemm_counts(workload_dict['configuration'], 'csa').items():
+        performance_dict['subevent'][f'{event}_arr'] = OrderedDict({'count': count, 'aggregation': 'sequential'})
+    return performance_dict
+
+def llama_dc_hca_array(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> OrderedDict:
+    performance_dict = OrderedDict({'subevent': OrderedDict()})
+    for event, count in _compressed_gemm_counts(workload_dict['configuration'], 'hca').items():
+        performance_dict['subevent'][f'{event}_arr'] = OrderedDict({'count': count, 'aggregation': 'sequential'})
+    return performance_dict
+
 def prefill(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> OrderedDict:
     cfg = workload_dict['configuration']
 
@@ -202,9 +295,15 @@ def decode(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) ->
     # dense llama charges layer_dc; the event graph carries both children, so the
     # unused variant must still be returned, at count 0 (out-neighbors are mandatory)
     moe = 'experts_per_tok' in cfg
+    # compressed-attention workloads (deepseek) further split their layers into CSA and
+    # HCA; whatever is left runs plain attention
+    compressed = _compressed_layers(cfg)
+    uncompressed = cfg['layers'] - sum(compressed.values())
     return OrderedDict({'subevent': OrderedDict({
-        'layer_dc': OrderedDict({'count': 0 if moe else cfg['layers'], 'aggregation': 'sequential'}),
-        'layer_dc_moe': OrderedDict({'count': cfg['layers'] if moe else 0, 'aggregation': 'sequential'}),
+        'layer_dc': OrderedDict({'count': 0 if moe else uncompressed, 'aggregation': 'sequential'}),
+        'layer_dc_moe': OrderedDict({'count': uncompressed if moe else 0, 'aggregation': 'sequential'}),
+        'layer_dc_csa': OrderedDict({'count': compressed['csa'], 'aggregation': 'sequential'}),
+        'layer_dc_hca': OrderedDict({'count': compressed['hca'], 'aggregation': 'sequential'}),
         # the lm_head GEMM runs once per decode step, same step count as every
         # other '_dc' branch (layer_dc's GEMMs, llama_dc_array, lm_head_dc_arr)
         'lm_head_dc': OrderedDict({'count': cfg['max_seq_len'] - cfg['prefill_seq_len'], 'aggregation': 'sequential'}),
@@ -239,6 +338,18 @@ def layer_dc_moe(architecture_dict: OrderedDict, workload_dict: OrderedDict = No
     for event, count in _decode_gemm_counts(cfg).items():
         performance_dict['subevent'][event] = OrderedDict({'count': count, 'aggregation': 'sequential'})
 
+    return performance_dict
+
+def layer_dc_csa(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> OrderedDict:
+    performance_dict = OrderedDict({'subevent': OrderedDict()})
+    for event, count in _compressed_gemm_counts(workload_dict['configuration'], 'csa').items():
+        performance_dict['subevent'][event] = OrderedDict({'count': count, 'aggregation': 'sequential'})
+    return performance_dict
+
+def layer_dc_hca(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> OrderedDict:
+    performance_dict = OrderedDict({'subevent': OrderedDict()})
+    for event, count in _compressed_gemm_counts(workload_dict['configuration'], 'hca').items():
+        performance_dict['subevent'][event] = OrderedDict({'count': count, 'aggregation': 'sequential'})
     return performance_dict
 
 
@@ -784,6 +895,110 @@ def av_dc_dram(architecture_dict: OrderedDict, workload_dict: OrderedDict = None
         'K': ((cfg['max_seq_len'] - 128) / 4) + 128 if token_compression else cfg['max_seq_len'],
         'N': head_dim if head_dim is not None else cfg['dim'] // cfg['heads'],
         'step_start': cfg['prefill_seq_len']})), cfg['batch_size'] * cfg['kv_heads']))
+
+
+def qkt_csa_dc(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> OrderedDict:
+    return OrderedDict({'subevent': OrderedDict({
+        'qkt_csa_dc_arr': OrderedDict({'count': 1, 'aggregation': 'parallel'}),
+        'qkt_csa_dc_sram': OrderedDict({'count': 1, 'aggregation': 'parallel'}),
+        'qkt_csa_dc_dram': OrderedDict({'count': 1, 'aggregation': 'parallel'}),
+    })})
+
+
+def av_csa_dc(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> OrderedDict:
+    return OrderedDict({'subevent': OrderedDict({
+        'av_csa_dc_arr': OrderedDict({'count': 1, 'aggregation': 'parallel'}),
+        'av_csa_dc_sram': OrderedDict({'count': 1, 'aggregation': 'parallel'}),
+        'av_csa_dc_dram': OrderedDict({'count': 1, 'aggregation': 'parallel'}),
+    })})
+
+
+def qkt_hca_dc(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> OrderedDict:
+    return OrderedDict({'subevent': OrderedDict({
+        'qkt_hca_dc_arr': OrderedDict({'count': 1, 'aggregation': 'parallel'}),
+        'qkt_hca_dc_sram': OrderedDict({'count': 1, 'aggregation': 'parallel'}),
+        'qkt_hca_dc_dram': OrderedDict({'count': 1, 'aggregation': 'parallel'}),
+    })})
+
+
+def av_hca_dc(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> OrderedDict:
+    return OrderedDict({'subevent': OrderedDict({
+        'av_hca_dc_arr': OrderedDict({'count': 1, 'aggregation': 'parallel'}),
+        'av_hca_dc_sram': OrderedDict({'count': 1, 'aggregation': 'parallel'}),
+        'av_hca_dc_dram': OrderedDict({'count': 1, 'aggregation': 'parallel'}),
+    })})
+
+
+def qkt_csa_dc_arr(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> OrderedDict:
+    cfg = workload_dict['configuration']
+    return _batched(common_mapping.array_mapping_decode('n', cfg.get('tokens_per_step', 1), architecture_dict,
+        _attention_compressed(cfg, 'csa', 'n')), cfg['batch_size'] * cfg['kv_heads'])
+
+
+def qkt_csa_dc_sram(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> OrderedDict:
+    cfg = workload_dict['configuration']
+    return _batched(common_mapping.sram_mapping_decode('n', cfg.get('tokens_per_step', 1), architecture_dict,
+        _attention_compressed(cfg, 'csa', 'n')), cfg['batch_size'] * cfg['kv_heads'])
+
+
+def qkt_csa_dc_dram(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> OrderedDict:
+    cfg = workload_dict['configuration']
+    return _onchip_output(_batched(common_mapping.dram_mapping_decode('n', cfg.get('tokens_per_step', 1), architecture_dict,
+        _attention_compressed(cfg, 'csa', 'n')), cfg['batch_size'] * cfg['kv_heads']))
+
+
+def av_csa_dc_arr(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> OrderedDict:
+    cfg = workload_dict['configuration']
+    return _batched(common_mapping.array_mapping_decode('k', cfg.get('tokens_per_step', 1), architecture_dict,
+        _attention_compressed(cfg, 'csa', 'k')), cfg['batch_size'] * cfg['kv_heads'])
+
+
+def av_csa_dc_sram(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> OrderedDict:
+    cfg = workload_dict['configuration']
+    return _batched(common_mapping.sram_mapping_decode('k', cfg.get('tokens_per_step', 1), architecture_dict,
+        _attention_compressed(cfg, 'csa', 'k')), cfg['batch_size'] * cfg['kv_heads'])
+
+
+def av_csa_dc_dram(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> OrderedDict:
+    cfg = workload_dict['configuration']
+    return _shared_kv(_onchip_input(_batched(common_mapping.dram_mapping_decode('k', cfg.get('tokens_per_step', 1), architecture_dict,
+        _attention_compressed(cfg, 'csa', 'k')), cfg['batch_size'] * cfg['kv_heads'])))
+
+
+def qkt_hca_dc_arr(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> OrderedDict:
+    cfg = workload_dict['configuration']
+    return _batched(common_mapping.array_mapping_decode('n', cfg.get('tokens_per_step', 1), architecture_dict,
+        _attention_compressed(cfg, 'hca', 'n')), cfg['batch_size'] * cfg['kv_heads'])
+
+
+def qkt_hca_dc_sram(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> OrderedDict:
+    cfg = workload_dict['configuration']
+    return _batched(common_mapping.sram_mapping_decode('n', cfg.get('tokens_per_step', 1), architecture_dict,
+        _attention_compressed(cfg, 'hca', 'n')), cfg['batch_size'] * cfg['kv_heads'])
+
+
+def qkt_hca_dc_dram(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> OrderedDict:
+    cfg = workload_dict['configuration']
+    return _onchip_output(_batched(common_mapping.dram_mapping_decode('n', cfg.get('tokens_per_step', 1), architecture_dict,
+        _attention_compressed(cfg, 'hca', 'n')), cfg['batch_size'] * cfg['kv_heads']))
+
+
+def av_hca_dc_arr(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> OrderedDict:
+    cfg = workload_dict['configuration']
+    return _batched(common_mapping.array_mapping_decode('k', cfg.get('tokens_per_step', 1), architecture_dict,
+        _attention_compressed(cfg, 'hca', 'k')), cfg['batch_size'] * cfg['kv_heads'])
+
+
+def av_hca_dc_sram(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> OrderedDict:
+    cfg = workload_dict['configuration']
+    return _batched(common_mapping.sram_mapping_decode('k', cfg.get('tokens_per_step', 1), architecture_dict,
+        _attention_compressed(cfg, 'hca', 'k')), cfg['batch_size'] * cfg['kv_heads'])
+
+
+def av_hca_dc_dram(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> OrderedDict:
+    cfg = workload_dict['configuration']
+    return _shared_kv(_onchip_input(_batched(common_mapping.dram_mapping_decode('k', cfg.get('tokens_per_step', 1), architecture_dict,
+        _attention_compressed(cfg, 'hca', 'k')), cfg['batch_size'] * cfg['kv_heads'])))
 
 
 def a_proj_dc_arr(architecture_dict: OrderedDict, workload_dict: OrderedDict = None) -> OrderedDict:
