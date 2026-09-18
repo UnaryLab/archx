@@ -1,3 +1,6 @@
+from pathlib import Path
+import sys
+
 import pandas as pd
 import matplotlib
 import os
@@ -5,6 +8,9 @@ import os
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+from chiplet4ai.results.query.utils import CORE_ARRAY_SIZES
 
 plt.rcParams.update({
     'font.size': 8,
@@ -65,8 +71,8 @@ model_styles = {
     },
 }
 
-# Only keep square array_dim in 32, 64, 128, 256, 512
-valid_dims = [32, 64, 128, 256, 512]
+# Only keep square array_dim in CORE_ARRAY_SIZES
+valid_dims = CORE_ARRAY_SIZES
 
 def load_slice(name):
     df = pd.read_csv(f'zoo/chiplet4ai/results/csv/{name}.csv')

@@ -413,6 +413,16 @@ def fig_4_paths(criterion_key):
 # Set it to 0 to recover the strict extremum.
 SELECTION_MARGIN = 0.01
 
+# THE ARRAY SIDES EVERY FIGURE BUT fig_6 USES. description.py also sweeps 1024-4096 rows and
+# columns, for fig_6 alone; fig_1, fig_3, fig_5 and fig_4's design-point selection (and so
+# fig_2 and fig_8, which take fig_4's points) keep to these sizes.
+CORE_ARRAY_SIZES = [32, 64, 128, 256, 512]
+
+# THE ONE BATCH fig_4, fig_6, fig_7 and fig_8 report. fig_6_query still writes every batch
+# the sweep carries; fig_4_query selects its design points among this batch's rows only (so
+# fig_2 and fig_8, which take fig_4's points, inherit it), and fig_6.py and fig_7.py plot it.
+FIG_BATCH_SIZE = 512
+
 def select_design_point(group, column, direction, margin=SELECTION_MARGIN):
     """The row with the fewest PEs whose `column` is within `margin` of the best.
 

@@ -9,7 +9,11 @@ import os
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
-from matplotlib.patches import Patch
+from matplotlib.legend_handler import HandlerPatch
+from matplotlib.patches import Patch, Rectangle
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+from chiplet4ai.results.query.utils import FIG_BATCH_SIZE
 
 
 def warn(message):
@@ -41,13 +45,7 @@ FIGURE_PATH = 'zoo/chiplet4ai/results/figs/fig_8.pdf'
 FIG_WIDTH = 480 / 72.27
 PANEL_HEIGHT = 2.05
 LEGEND_HEADROOM_IN = 0.78  # reserved at the top of the figure for the shared legend
-NOTE_HEIGHT_IN = 0.20      # reserved at the bottom for the cost-model note
-FIG_HEIGHT = 2 * PANEL_HEIGHT + LEGEND_HEADROOM_IN + NOTE_HEIGHT_IN
-
-# The cost model these cycles are measured under, stated on the figure rather than left to
-# the caption: without it a reader takes the bars for wall-clock latency.
-COST_NOTE = ('Cost model: array-compute cycles only -- weight loading and operand '
-             'streaming are free (perfect memory).')
+FIG_HEIGHT = 2 * PANEL_HEIGHT + LEGEND_HEADROOM_IN
 
 # Labels match fig_1, fig_2 and fig_3 word for word, so the same model reads as the same
 # model across the figure set.
@@ -59,26 +57,26 @@ model_styles = {
 }
 
 # THE HIERARCHY, drawn twice over: hue family carries the operator CLASS, shade within the
-# family carries the individual operator, and the classes are separated along x by a gap
-# with the class total drawn behind them. So the top-level split (attention vs projection
-# vs FFN) is readable at a glance and the per-operator drill-down is readable up close.
+# family carries the individual operator, and the classes are separated along x by a gap.
+# So the top-level split (attention vs projection vs FFN) is readable at a glance and the
+# per-operator drill-down is readable up close.
 #
 # The families are fig_1's model palettes reused -- blues, purples, greens -- so the figure
 # set shares one set of inks. No red/green pairing, and the shades run dark to light in a
 # fixed operator order, so position and lightness both identify a bar if hue is hard to
-# read.
+# read. LM head is orange, a hue no other operator uses.
 class_styles = {
     'projection': {
         'label': 'Projection',
-        'operators': [('proj_q', 'Q proj', '#1045b8'),
-                      ('proj_k', 'K proj', '#4d80dd'),
-                      ('proj_v', 'V proj', '#41a9ee'),
-                      ('a_proj', 'O proj', '#7bcaee')],
+        'operators': [('proj_q', 'Q', '#1045b8'),
+                      ('proj_k', 'K', '#4d80dd'),
+                      ('proj_v', 'V', '#41a9ee')],
     },
     'attention': {
         'label': 'Attention',
         'operators': [('qkt', r'QK$^\mathsf{T}$', '#7d2fa0'),
-                      ('av', 'AV', '#b57cd2')],
+                      ('av', 'AV', '#b57cd2'),
+                      ('a_proj', 'O Projection', '#dcbcec')],
     },
     'ffn': {
         'label': 'FFN',
@@ -88,7 +86,7 @@ class_styles = {
     },
     'lm_head': {
         'label': 'LM head',
-        'operators': [('lm_head', 'LM head', '#8c8c8c')],
+        'operators': [('lm_head', 'LM head', '#f28e2b')],
     },
 }
 
@@ -98,11 +96,6 @@ PANELS = [('prefill', 'Prefill'), ('decode', 'Decode')]
 # bars into four legible groups.
 GROUP_WIDTH = 0.86
 CLASS_GAP_BARS = 0.35
-# The class total sits behind its operators in a pale grey, so each group reads as a whole
-# and its parts at the same time. It must stay clearly DARKER than the 'lightgrey' log
-# minor gridlines behind it (#d3d3d3): at a closer grey the totals read as part of the
-# grid's striping rather than as bars.
-CLASS_TOTAL_COLOR = '#bfbfbf'
 
 df = pd.read_csv(RESULTS_PATH)
 
@@ -123,7 +116,7 @@ for model in sorted(set(df['model']) - set(model_styles)):
     warn(f'{model}: not in model_styles, dropped from the figure')
 
 # Bar offsets within a model slot, laid out once: ten operators in class order, with a gap
-# between classes. Also records each class's span so its total bar can be drawn behind it.
+# between classes.
 operator_order = [(class_name, operator, label, color)
                   for class_name, style in class_styles.items()
                   for operator, label, color in style['operators']]
@@ -131,15 +124,12 @@ bar_width = GROUP_WIDTH / (len(operator_order)
                            + CLASS_GAP_BARS * (len(class_styles) - 1))
 
 offsets = {}
-class_span = {}
 cursor = -GROUP_WIDTH / 2
 previous_class = None
 for class_name, operator, _, _ in operator_order:
     if previous_class is not None and class_name != previous_class:
         cursor += CLASS_GAP_BARS * bar_width
     offsets[(class_name, operator)] = cursor + bar_width / 2
-    span = class_span.setdefault(class_name, [cursor, cursor])
-    span[1] = cursor + bar_width
     cursor += bar_width
     previous_class = class_name
 
@@ -160,37 +150,28 @@ for ax, (phase, title) in zip(axes, PANELS):
             warn(f'{model} {phase}: no rows')
             continue
 
-        # The class total, behind its operators. Read from the query's own column rather
-        # than re-summed here, so the figure cannot disagree with the CSV.
-        for class_name, (left, right) in class_span.items():
-            class_rows = model_df[model_df['operator_class'] == class_name]
-            if class_rows.empty:
-                continue
-            total = class_rows['class_cycle_count'].iloc[0]
-            if total <= 0:
-                continue
-            ax.bar(index + (left + right) / 2, total, width=right - left,
-                   color=CLASS_TOTAL_COLOR, edgecolor='none', zorder=1)
-
         for class_name, operator, _, color in operator_order:
+            # DeepSeek's CSA and HCA layers split qkt/av into qkt_csa + qkt_hca and
+            # av_csa + av_hca; they are summed into the one bar so every model keeps the
+            # same bar layout
             row = model_df[(model_df['operator_class'] == class_name)
-                           & (model_df['operator'] == operator)]
+                           & model_df['operator'].isin(
+                               [operator, f'{operator}_csa', f'{operator}_hca'])]
             if row.empty:
                 warn(f'{model} {phase}: no {operator} row')
                 continue
-            value = row['cycle_count'].iloc[0]
+            value = row['cycle_count'].sum()
             if value <= 0:
                 continue
             ax.bar(index + offsets[(class_name, operator)], value, width=bar_width,
                    color=color, edgecolor='none', zorder=3)
 
     ax.set_yscale('log')
-    # Panel-local limits with log-space padding, so neither the smallest operator nor the
-    # class total is clipped by the frame.
+    # Panel-local limits with log-space padding, so neither the smallest nor the largest
+    # operator is clipped by the frame.
     values = phase_df.loc[phase_df['cycle_count'] > 0, 'cycle_count']
-    tops = phase_df.loc[phase_df['class_cycle_count'] > 0, 'class_cycle_count']
     if not values.empty:
-        ax.set_ylim(values.min() / 4, max(values.max(), tops.max()) * 4)
+        ax.set_ylim(values.min() / 4, values.max() * 4)
     ax.yaxis.set_major_locator(mticker.LogLocator(base=10.0))
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(
         lambda y, pos: f'$10^{{{int(round(math.log10(y)))}}}$' if y > 0 else ''))
@@ -201,43 +182,65 @@ for ax, (phase, title) in zip(axes, PANELS):
     ax.set_title(title, loc='center', fontsize=8, pad=3)
     ax.set_axisbelow(True)
 
-# The design point's array shape and batch belong ON the axis, not only in stdout: each
-# model is reported on its own array at its own batch, so a cross-model reading of absolute
-# latency is only honest if the reader can see which machine, and how much work per step,
-# each set of bars came from. Read from the CSV's own columns, never hardcoded, so the
-# label follows the design point if that moves.
+# The design point's array shape belongs ON the axis, not only in stdout: each model is
+# reported on its own array, so a cross-model reading of absolute latency is only honest if
+# the reader can see which machine each set of bars came from. Read from the CSV's own
+# column, never hardcoded, so the label follows the design point if that moves. The batch
+# is the same for every model and is keyed once in the legend, so it is checked here instead.
 def design_label(model):
     model_rows = df[df['model'] == model]
-    values = []
-    for column in ('array_dim', 'batch_size'):
-        unique = sorted(model_rows[column].unique())
-        if len(unique) != 1:
-            warn(f'{model}: {len(unique)} {column} values in the CSV; labelling with the first')
-        values.append(unique[0])
-    return f'{values[0]}, batch {values[1]}'
+    if set(model_rows['batch_size']) != {FIG_BATCH_SIZE}:
+        warn(f'{model}: batch {sorted(model_rows["batch_size"].unique())} in the CSV, '
+             f'legend says batch {FIG_BATCH_SIZE}')
+    unique = sorted(model_rows['array_dim'].unique())
+    if len(unique) != 1:
+        warn(f'{model}: {len(unique)} array_dim values in the CSV; labelling with the first')
+    return unique[0]
 
 
 axes[-1].set_xticks(range(len(models)))
 axes[-1].set_xticklabels([f"{model_styles[model]['label']}\n{design_label(model)}"
                           for model in models])
 axes[-1].set_xlim(-0.5, len(models) - 0.5)
-fig.supylabel('Operator latency (array compute cycles)', fontsize=8, x=0.005)
-fig.text(0.5, 0.012, COST_NOTE, ha='center', va='bottom', fontsize=6)
+fig.supylabel('Operator array compute cycles', fontsize=8, x=0.005)
 
-# ONE legend carrying both levels: a pale handle for the class total, then the ten operator
-# handles in class order, so the key reads in the same order the bars are drawn.
-handles = [Patch(facecolor=CLASS_TOTAL_COLOR, edgecolor='none', label='Class total')]
-handles += [Patch(facecolor=color, edgecolor='none',
-                  # a single-operator class would otherwise read 'LM head: LM head'
-                  label=label if label == class_styles[class_name]['label']
-                  else f"{class_styles[class_name]['label']}: {label}")
-            for class_name, _, label, color in operator_order]
-fig.legend(handles=handles, loc='upper center', bbox_to_anchor=(0.5, 0.995),
-           ncol=6, fontsize=6, columnspacing=1.0, handlelength=1.6,
+# ONE legend, FOUR ROWS: Projection, Attention, FFN, LM head. Each row is the class
+# name once, then a square patch per operator. A legend fills column-major, so the entries
+# are laid out column by column: the class names first, then each operator column, with
+# invisible blanks padding the shorter rows. LM head is its own single operator, so its
+# square carries no text, and the batch shared by every bar fills the row's next slot.
+legend_rows = [
+    ('Projection', class_styles['projection']['operators'], []),
+    ('Attention', class_styles['attention']['operators'], []),
+    ('FFN', class_styles['ffn']['operators'], []),
+    ('LM head', [(operator, '', color) for operator, _, color in class_styles['lm_head']['operators']],
+     [f'batch {FIG_BATCH_SIZE}']),
+]
+legend_columns = 1 + max(len(operators) + len(notes) for _, operators, notes in legend_rows)
+blank = Patch(facecolor='none', edgecolor='none')
+grid = [[(blank, name)] + [(Patch(facecolor=color, edgecolor='none'), label)
+                           for _, label, color in operators]
+        + [(blank, note) for note in notes]
+        + [(blank, ' ')] * (legend_columns - 1 - len(operators) - len(notes))
+        for name, operators, notes in legend_rows]
+entries = [grid[row][column] for column in range(legend_columns) for row in range(len(grid))]
+
+# ROWS ALIGN ONLY IF EVERY ENTRY IS THE SAME HEIGHT. A legend column stacks its entries by
+# their own heights, and the QK^T superscript makes that entry taller than the rest, which
+# pushed the rows below it down. A handle box taller than any label (1.6 em) sets every entry's
+# height, and the square is drawn 1 em on a side, centred in that box.
+def square_patch(legend, orig_handle, xdescent, ydescent, width, height, fontsize):
+    return Rectangle((-xdescent + (width - fontsize) / 2, -ydescent + (height - fontsize) / 2),
+                     fontsize, fontsize)
+
+
+fig.legend([handle for handle, _ in entries], [label for _, label in entries],
+           loc='upper center', bbox_to_anchor=(0.5, 0.995), ncol=legend_columns,
+           fontsize=6, columnspacing=1.0, handlelength=1.0, handleheight=1.6,
+           handler_map={Patch: HandlerPatch(patch_func=square_patch)},
            title='Operator', title_fontsize=6)
 
-fig.tight_layout(rect=(0, NOTE_HEIGHT_IN / FIG_HEIGHT, 1,
-                       1 - LEGEND_HEADROOM_IN / FIG_HEIGHT))
+fig.tight_layout(rect=(0, 0, 1, 1 - LEGEND_HEADROOM_IN / FIG_HEIGHT))
 
 Path(FIGURE_PATH).parent.mkdir(parents=True, exist_ok=True)
 fig.savefig(FIGURE_PATH, dpi=1200)

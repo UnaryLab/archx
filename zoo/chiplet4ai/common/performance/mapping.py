@@ -177,6 +177,14 @@ def _folded_counts(subevents_at, num_steps: int) -> tuple[OrderedDict, OrderedDi
 
     return counts, evaluate(num_steps - 1)
 
+def _require_finite(values, where: str) -> None:
+    # The compressed-KV branches also run under llama workloads, where their edge count of
+    # 0 is all that keeps them out of the totals -- and 0 x NaN is NaN. Fail loudly rather
+    # than clamp, so a bad value is caught instead of hidden.
+    for value in values:
+        if not math.isfinite(value):
+            raise ValueError(f'{where}: non-finite value {value!r}')
+
 def _compressed_walk(steps, workload_dict: OrderedDict) -> list:
     # SEQUENCE-AXIS KV COMPRESSION (DeepSeek-V4 CSA/HCA). The cache keeps one entry per
     # `compress_ratio` tokens, so a step attends over step // compress_ratio compressed
@@ -188,11 +196,19 @@ def _compressed_walk(steps, workload_dict: OrderedDict) -> list:
     # Returns [context, strides] pairs; consumers index into it like a range.
     ratio = int(workload_dict['compress_ratio'])
     window = int(workload_dict['window'])
+    # DSA TOP-K SELECTION (CSA). The indexer picks at most `top_k` of the compressed
+    # entries and the core attention sees only those, so its context stops growing once
+    # the cache holds more than k. The indexer itself is a separate GEMM over every
+    # entry, and passes no `top_k` -- selection is what it computes, not what it reads.
+    top_k = workload_dict.get('top_k')
     walk = []
     for step in steps:
+        entries = step // ratio
+        if top_k is not None:
+            entries = min(entries, int(top_k))
         # the `window` addend is the SWA branch: the last `window` tokens stay uncompressed
         # and go through the same core attention as the compressed entries
-        context = step // ratio + window
+        context = entries + window
         if walk and walk[-1][0] == context:
             walk[-1][1] += 1
         else:
@@ -247,6 +263,7 @@ def array_mapping_decode(dim: str, tokens: int, architecture_dict: OrderedDict, 
             for name, subevent in step_dict['subevent'].items():
                 counts[name] = counts.get(name, 0) + subevent['count'] * strides
                 utilizations[name] = utilizations.get(name, 0) + strides / subevent['factor']['cycle_count']
+        _require_finite(list(counts.values()) + list(utilizations.values()), 'array_mapping_decode')
     else:
         for step in range(min_step + 1, max_step + 1, tokens):
             sampled_steps += 1
@@ -404,6 +421,7 @@ def sram_mapping_decode(dim: str, tokens: int, architecture_dict: OrderedDict, w
             step_m, step_k, step_n = _step_dims(M, K, N, context, step_dim)
             subevents = sram_mapping(
                 architecture_dict, OrderedDict({'M': step_m, 'K': step_k, 'N': step_n}))['subevent']
+            _require_finite((subevent['count'] for subevent in subevents.values()), 'sram_mapping_decode')
             return OrderedDict({name: {**subevent, 'count': subevent['count'] * strides}
                                 for name, subevent in subevents.items()})
 
@@ -543,12 +561,16 @@ def dram_mapping_decode(dim: str, tokens: int, architecture_dict: OrderedDict, w
             context, strides = steps[index]
             step_m, step_k, step_n = _step_dims(M, K, N, context, step_dim)
             step_dict = OrderedDict({'M': step_m, 'K': step_k, 'N': step_n})
-            # quantized KV entries: the caller states the bytes of one compressed entry and
-            # of one sliding-window entry, so the cache is billed in bytes, not elements
-            if 'entry_bytes' in workload_dict:
-                step_dict['weight_bytes'] = ((context - window) * workload_dict['entry_bytes']
-                                             + window * workload_dict['window_entry_bytes'])
+            # KV entries wider than the GEMM's operand (CSA's carry indexer keys): the caller
+            # states the elements of one compressed entry and of one sliding-window entry,
+            # billed at the weight lane's element width like every other weight read
+            if 'entry_elements' in workload_dict:
+                wsram_width = architecture_dict['wsram']['query']['width']
+                step_dict['weight_bytes'] = -(-((context - window) * workload_dict['entry_elements']
+                                                + window * workload_dict['window_entry_elements'])
+                                              * wsram_width // 8)
             subevents = dram_mapping(architecture_dict, step_dict)['subevent']
+            _require_finite((subevent['count'] for subevent in subevents.values()), 'dram_mapping_decode')
             return OrderedDict({name: {**subevent, 'count': subevent['count'] * strides}
                                 for name, subevent in subevents.items()})
 
@@ -607,6 +629,7 @@ def dram_mapping(architecture_dict: OrderedDict, workload_dict: OrderedDict) -> 
         # integer ceiling, because elements x bytes passes 2**53 at DeepSeek's context
         weight_bytes = -(-_dram_fills(K * N, num_m_blocks, wsram_elements)
                          * workload_dict['weight_bytes'] // (K * N))
+        _require_finite([weight_bytes], 'dram_mapping weight_bytes')
     else:
         weight_bytes = math.ceil(_dram_fills(K * N, num_m_blocks, wsram_elements) * wsram_width / 8)
 

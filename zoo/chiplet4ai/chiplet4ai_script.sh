@@ -22,7 +22,7 @@ else
     done
 fi
 
-echo "Compiling designs (config set + runs.txt per design): ${designs[*]}"
+echo "Compiling designs: ${designs[*]}"
 for name in "${designs[@]}"; do
     dir="zoo/chiplet4ai/designs/$(basename "$name")/"
     if [ ! -f "${dir}description.py" ]; then

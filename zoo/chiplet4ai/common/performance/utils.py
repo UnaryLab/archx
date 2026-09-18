@@ -27,3 +27,18 @@ def _sram_bits(architecture_dict: OrderedDict, sram_name: str) -> int:
     query = architecture_dict['architecture'][sram_name]['query']
     return int(query['width'] * query['bank'] * query['depth'])
 # endregion
+
+# region: nominal sram size
+BASE_SRAM_BITS = 10 * 2**23  # 10 MiB, the reference capacity of every SRAM
+
+def nominal_sram_bits(array_m: int, array_n: int, width: int) -> int:
+    # The reference capacity, doubled until one whole array_m x array_n weight tile fits
+    # the active half of wsram (2 * array_n banks, see mapping._buffer_elements), so
+    # mapping._tiling never shrinks Nt below the array. Every array up to 512x512 already
+    # fits at 10 MiB and keeps it; this only grows the SRAM of arrays whose PE count
+    # outgrows it (2048x2048: 20 MiB, 4096x4096: 80 MiB).
+    bits = BASE_SRAM_BITS
+    while bits < 2 * array_m * array_n * width:
+        bits *= 2
+    return bits
+# endregion

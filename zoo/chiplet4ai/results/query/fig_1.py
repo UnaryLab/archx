@@ -1,5 +1,8 @@
 import math
 
+from pathlib import Path
+import sys
+
 import pandas as pd
 import matplotlib
 import os
@@ -7,6 +10,9 @@ import os
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+from chiplet4ai.results.query.utils import CORE_ARRAY_SIZES
 
 plt.rcParams.update({
     'font.size': 8,
@@ -29,13 +35,7 @@ plt.rcParams.update({
 FIG_WIDTH = 480 / 72.27
 PANEL_HEIGHT = 1.9
 LEGEND_HEADROOM_IN = 0.55  # reserved at the top of the figure for the shared legend
-NOTE_HEIGHT_IN = 0.20      # reserved at the bottom for the cost-model note
-FIG_HEIGHT = 3 * PANEL_HEIGHT + LEGEND_HEADROOM_IN + NOTE_HEIGHT_IN
-
-# The cost model these cycles are measured under, stated on the figure rather than left to
-# the caption: without it a reader takes the curves for wall-clock latency.
-COST_NOTE = ('Cost model: array-compute cycles only -- weight loading and operand '
-             'streaming are free (perfect memory).')
+FIG_HEIGHT = 3 * PANEL_HEIGHT + LEGEND_HEADROOM_IN
 
 if not os.path.exists('zoo/chiplet4ai/results/figs'):
     os.makedirs('zoo/chiplet4ai/results/figs')
@@ -72,8 +72,8 @@ model_styles = {
     },
 }
 
-# Only keep square array_dim in 32, 64, 128, 256, 512
-valid_dims = [32, 64, 128, 256, 512]
+# Only keep square array_dim in CORE_ARRAY_SIZES
+valid_dims = CORE_ARRAY_SIZES
 
 def load_slice(name):
     df = pd.read_csv(f'zoo/chiplet4ai/results/csv/{name}.csv')
@@ -122,7 +122,6 @@ axes[-1].set_xticks(valid_dims)
 axes[-1].set_xticklabels([f'{d}x{d}' for d in valid_dims])
 axes[-1].set_xlabel('Systolic-array dimensions')
 fig.supylabel('Array compute cycles', fontsize=8, x=0.005)
-fig.text(0.5, 0.012, COST_NOTE, ha='center', va='bottom', fontsize=6)
 
 # Shared legend above the figure. Every panel draws the same model/batch series,
 # so the handles are collected from the first axes only.
@@ -131,6 +130,6 @@ fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.5, 0.98),
            ncol=4, fontsize=6, columnspacing=0.8, handlelength=1.6,
            title='Workload', title_fontsize=6)
 
-fig.tight_layout(rect=(0, NOTE_HEIGHT_IN / FIG_HEIGHT, 1,
+fig.tight_layout(rect=(0, 0, 1,
                        1 - LEGEND_HEADROOM_IN / FIG_HEIGHT))
 fig.savefig('zoo/chiplet4ai/results/figs/fig_1.pdf')

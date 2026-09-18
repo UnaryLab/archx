@@ -32,12 +32,11 @@ DIAGONAL of the SRAM sweep, only the configurations where isram, wsram and osram
 same size, so the figure has a single "SRAM size" axis rather than one buffer pooled
 against another.
 
-The design point is not shared across models. DeepSeek is reported on 256x256 at batch
-256, the Llama models on 128x128 at batch 128, because DeepSeek keeps scaling onto the
-wider array where the Llamas have already saturated. description.py generates the sweep
-at exactly these points (`sweep_design_point`, which carries the measurement behind that
-split); if the two ever disagree a model's rows vanish from the output, so a model with
-no surviving row is reported rather than skipped silently.
+The design point is per model: fig_4's avg_band pick, read from
+results/csv/dram_bandwidth_metrics_avg_band.csv (see DESIGN_POINT below). description.py
+generates the off-base SRAM sizes only at its `sram_sweep_point`, which must equal that
+pick; if the two disagree the model is left with fewer than two SRAM sizes, and this
+query raises rather than write a figure with a model missing.
 """
 
 import sys
@@ -46,6 +45,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from loguru import logger
 from chiplet4ai.results.query.utils import query_cycle_count, bandwidth_gbs
 from chiplet4ai.common.performance.mapping import _buffer_elements
+import importlib.util
 from archx.metric import aggregate_event_count
 from archx.architecture import load_architecture_dict
 from archx.workload import load_workload_dict
@@ -91,6 +91,15 @@ def design_point():
     return points
 
 DESIGN_POINT = design_point()
+
+# description.py is not a package module, so it is loaded by path; only its module-level
+# `sram_sweep_point` is read, for the error message below.
+_description_spec = importlib.util.spec_from_file_location(
+    'chiplet4ai_llama_description',
+    Path(__file__).resolve().parents[2] / 'designs' / 'llama' / 'description.py')
+_description = importlib.util.module_from_spec(_description_spec)
+_description_spec.loader.exec_module(_description)
+SRAM_SWEEP_POINT = _description.sram_sweep_point
 
 # ONE SEQUENCE LENGTH PER MODEL: each at its own long-context setting, the same slice
 # fig_1_query calls "mixed". Without this the rows pool sequence lengths -- and because
@@ -281,14 +290,6 @@ with open(runs_path, 'r') as f:
         if architecture_dict['pe']['query']['frequency'] != 1000:
             continue
 
-        # SWEEP FILTER: the design point fig_2 reports.
-        #
-        # NOTE: description.py sweeps SRAM capacity only at `fixed_array_shape`, which is
-        # [512, 512]; every other array shape is pinned to base_sram_size by the
-        # pe/bank/depth conditional constraint. Until that constant moves, this slice has
-        # ONE SRAM size and the figure's x-axis collapses to a single point.
-        
-
         frequency_mhz = architecture_dict['pe']['query']['frequency']
         lane_bytes, totals = collect_demand(
             event_graph=event_graph,
@@ -362,6 +363,24 @@ with open(runs_path, 'r') as f:
           }
 
           array_query_df = pd.concat([array_query_df, pd.DataFrame([array_query_row])], ignore_index=True) if not array_query_df.empty else pd.DataFrame([array_query_row])
+
+    # HARD FAILURE: a capacity curve needs at least two SRAM sizes. Fewer means
+    # description.py's `sram_sweep_point` does not sit at fig_4's avg_band pick, so the
+    # off-base sizes were generated somewhere this query does not read.
+    too_few = []
+    for model, (point_array, point_batch) in sorted(DESIGN_POINT.items()):
+        model_rows = (array_query_df[array_query_df['model'] == model]
+                      if not array_query_df.empty else array_query_df)
+        sram_sizes = model_rows['asram_size'].nunique() if not model_rows.empty else 0
+        if sram_sizes < 2:
+            too_few.append(
+                f'{model} has {sram_sizes} SRAM size(s) at its design point '
+                f'{point_array[0]}x{point_array[1]} batch {point_batch} (fig_4 avg_band); '
+                f'description.py sram_sweep_point is {SRAM_SWEEP_POINT.get(model)}')
+    if too_few:
+        raise SystemExit(
+            'fig_2_query: ' + '; '.join(too_few) + '. Set sram_sweep_point to each design '
+            'point and rerun the sweep.')
 
     if not array_query_df.empty:
         # Sort ONCE, numerically, before anything is stringified. The scientific CSV used to

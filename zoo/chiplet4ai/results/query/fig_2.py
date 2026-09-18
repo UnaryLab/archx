@@ -35,9 +35,9 @@ FIG_HEIGHT = 3 * PANEL_HEIGHT + LEGEND_HEADROOM_IN
 RESULTS_PATH = 'zoo/chiplet4ai/results/csv/bandwidth_performance_metrics.csv'
 FIGURE_PATH = 'zoo/chiplet4ai/results/figs/fig_2.pdf'
 
-# The array and batch are per model and already applied by fig_2_query (DeepSeek on
-# 256x256 at batch 256, the Llama models on 128x128 at batch 128), so this figure applies
-# no design-point filter of its own.
+# The array and batch are per model and already applied by fig_2_query (fig_4's avg_band
+# pick, which description.py's `sram_sweep_point` must match), so this figure applies no
+# design-point filter of its own.
 
 # One size for every marker in the figure, legend included. The open circles carry the
 # attention class, so the edge has to stay legible at this size.
@@ -96,8 +96,8 @@ df = pd.read_csv(RESULTS_PATH)
 # 1000 MHz reference slice. Traffic (bytes moved) is identical at both frequencies.
 df = df[df['frequency'] == 1000]
 
-# fig_2_query already scoped each model to its own (array, batch) design point -- DeepSeek
-# on 256x256 at batch 256, the Llama models on 128x128 at batch 128 -- so every row here
+# fig_2_query already scoped each model to its own (array, batch) design point -- fig_4's
+# avg_band pick, see dram_bandwidth_metrics_avg_band.csv -- so every row here
 # is already the point this figure reports and no batch filter is applied. Report what
 # survived, since a model whose design point stopped being generated would otherwise just
 # go missing from the legend.

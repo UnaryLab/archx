@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from loguru import logger
-from chiplet4ai.results.query.utils import array_compute_cycles, lane_cycles
+from chiplet4ai.results.query.utils import array_compute_cycles, lane_cycles, CORE_ARRAY_SIZES
 from archx.architecture import load_architecture_dict
 from archx.workload import load_workload_dict
 from archx.event import load_event_graph
@@ -41,7 +41,7 @@ with open(runs_path, 'r') as f:
 
         array_dim = architecture_dict['pe']['instance']
 
-        if array_dim[0] != array_dim[1]:
+        if array_dim[0] != array_dim[1] or array_dim[0] not in CORE_ARRAY_SIZES:
             continue
 
         # The design space sweeps frequency (1000/2000 MHz); stall cycles depend on

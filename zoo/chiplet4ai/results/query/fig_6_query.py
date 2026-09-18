@@ -6,14 +6,14 @@ overwrites results/csv/array_shape_performance_metrics.csv.
 WHAT THIS ADDS TO fig_1. fig_1 walks the DIAGONAL of the array design space -- 32x32,
 64x64, ... 512x512 -- so every point doubles the reduction depth and the output width
 together, and the figure can only say how much array helps, never which array. This query
-keeps the full 5x5 cross product of `pe.instance`, so the two sides can be read apart:
+keeps the full 8x8 cross product of `pe.instance` (32 to 4096 per side), so the two sides can be read apart:
 rows are the weight-stationary reduction depth (`array_m`, the K dimension and the cycles
 a weight load costs) and columns are the output width (`array_n`, the N dimension). Shapes
 on a shared anti-diagonal hold the SAME number of PEs, which is what makes an iso-area
 comparison possible at all.
 
 SCOPE, and why it is one slice rather than three. description.py generates the off-diagonal
-shapes only at the 10 MiB reference SRAM and only at each model's MAXIMUM context --
+shapes only at their nominal SRAM size and only at each model's MAXIMUM context --
 131072 for the Llamas, 1048576 for DeepSeek. That is exactly fig_1's and fig_3's 'mixed'
 slice, so fig_6's diagonal reproduces the third panel of both, and the short-context slices
 simply do not exist off the diagonal. The filters below therefore mirror fig_1_query's
@@ -30,6 +30,9 @@ needs care, because the three metrics below do not respond to frequency alike:
                      2000 MHz rows reproduce the 1000 MHz ones digit for digit -- that is
                      correct, not a bug, and it is why fig_6.py plots the 1000 MHz slice
                      alone.
+  decode_cycle_count cycle_count restricted to DECODE GEMMs (utils.gemm_phase), the
+                     generation time fig_7 divides generated tokens by. The prefill
+                     remainder plus this equals cycle_count; the query asserts it.
   llama_cycle_count  `llama`, the full view. A 2 GHz part gets half the DRAM bytes per
                      cycle, so its stall cycles grow; this is NOT comparable across
                      frequencies as a raw number.
@@ -66,7 +69,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from loguru import logger
 from chiplet4ai.results.query.utils import (query_cycle_count, query_execution_time,
                                             gemm_demand, bandwidth_summary,
-                                            array_compute_cycles, lane_cycles)
+                                            array_compute_cycles, lane_cycles, gemm_phase,
+                                            FIG_BATCH_SIZE)
+from chiplet4ai.common.performance.utils import nominal_sram_bits
 from archx.architecture import load_architecture_dict
 from archx.workload import load_workload_dict
 from archx.event import load_event_graph
@@ -76,8 +81,6 @@ from tqdm import tqdm
 import os
 
 logger.remove()
-
-BASE_SRAM_BITS = 10 * 2**23  # the reference capacity every non-sweep configuration carries
 
 # Each model's own maximum context, the point this figure reports. Same mapping fig_1's
 # and fig_3's 'mixed' slice uses.
@@ -99,6 +102,10 @@ def memory_sizes(architecture_dict):
 output_path = 'zoo/chiplet4ai/results/csv/'
 runs_path = f'zoo/chiplet4ai/designs/llama/description/configurations.csv'
 array_query_df = pd.DataFrame()
+# row count and worst relative residual of prefill + decode against cycle_count
+split_rows = 0
+split_worst = 0.0
+SPLIT_TOLERANCE = 1e-9
 
 if not os.path.exists(output_path):
     os.makedirs(output_path)
@@ -124,9 +131,13 @@ with open(runs_path, 'r') as f:
         # module docstring for which metric may be compared across it.
         frequency = architecture_dict['pe']['query']['frequency']
 
-        # Capacity is fig_2's axis, not this one: hold every SRAM at the reference size so
-        # a shape's cycles are not confounded by how much memory it was given.
-        if any(sram != BASE_SRAM_BITS for sram in memory_sizes(architecture_dict)):
+        # Capacity is fig_2's axis, not this one: hold every SRAM at the shape's nominal size
+        # (10 MiB up to 512x512, grown above that only until the SRAM stops clipping the
+        # weight tile), so a shape's compute cycles do not depend on how much memory it was
+        # given.
+        nominal_bits = nominal_sram_bits(array_dim[0], array_dim[1],
+                                         architecture_dict['wsram']['query']['width'])
+        if any(sram != nominal_bits for sram in memory_sizes(architecture_dict)):
             continue
 
         workload_name = workload_dict['name']
@@ -138,8 +149,22 @@ with open(runs_path, 'r') as f:
             continue
 
         # THE ARRAY COMPUTE LANE ALONE (see the module docstring).
-        cycle_count = sum(array_compute_cycles(
-            event_graph, lane_cycles(run_event_graph_path), workload_name).values())
+        per_gemm = array_compute_cycles(
+            event_graph, lane_cycles(run_event_graph_path), workload_name)
+        cycle_count = sum(per_gemm.values())
+        # gemm_phase raises on a GEMM that is neither prefill nor decode, so no work can
+        # drop out of the split silently.
+        phase_cycles = {'prefill': 0.0, 'decode': 0.0}
+        for gemm, cycles in per_gemm.items():
+            phase_cycles[gemm_phase(gemm)] += cycles
+        decode_cycle_count = phase_cycles['decode']
+        split_residual = (abs(phase_cycles['prefill'] + decode_cycle_count - cycle_count)
+                          / cycle_count if cycle_count else 0.0)
+        if split_residual > SPLIT_TOLERANCE:
+            raise SystemExit(f'fig_6_query: {run_path}: prefill + decode cycles differ from '
+                             f'cycle_count by {split_residual:.3e} relative')
+        split_rows += 1
+        split_worst = max(split_worst, split_residual)
         llama_cycle_count = query_cycle_count(
             event_graph=event_graph, metric_dict=metric_dict,
             workload=workload_name, event='llama')
@@ -164,7 +189,9 @@ with open(runs_path, 'r') as f:
             'batch_size': batch_size,
             'frequency': frequency,
             'max_seq_len': max_seq_len,
+            'prefill_seq_len': prefill_seq_len,
             'cycle_count': cycle_count,
+            'decode_cycle_count': decode_cycle_count,
             'llama_cycle_count': llama_cycle_count,
             'runtime_ms': runtime_ms,
             'runtime_ms_per_sequence': runtime_ms / batch_size,
@@ -181,6 +208,9 @@ with open(runs_path, 'r') as f:
 
         array_query_df = pd.concat([array_query_df, pd.DataFrame([array_query_row])], ignore_index=True) if not array_query_df.empty else pd.DataFrame([array_query_row])
 
+print(f'  phase split check: {split_rows} rows, prefill + decode vs cycle_count, '
+      f'worst relative residual {split_worst:.3e}')
+
 if not array_query_df.empty:
     array_query_df = array_query_df.sort_values(
         by=['model', 'frequency', 'array_m', 'array_n', 'batch_size'])
@@ -189,7 +219,7 @@ if not array_query_df.empty:
     array_query_df.to_csv(output_path + f'{out_name}.csv', index=False)
 
     df_sci = array_query_df.copy()
-    for column in ['cycle_count', 'llama_cycle_count', 'runtime_ms',
+    for column in ['cycle_count', 'decode_cycle_count', 'llama_cycle_count', 'runtime_ms',
                    'runtime_ms_per_sequence', 'throughput_tokens_per_s',
                    'total_data_moved', 'window_cycle_count']:
         df_sci[column] = df_sci[column].apply(lambda x: f'{x:.3e}')
@@ -198,12 +228,16 @@ if not array_query_df.empty:
     df_sci.to_csv(output_path + f'{out_name}_scientific.csv', index=False)
 
     # A missing shape would silently leave a blank cell in fig_6's grid, which reads as
-    # "no benefit" rather than "not simulated". Say so here instead.
-    for (model, frequency, batch_size), group in array_query_df.groupby(
+    # "no benefit" rather than "not simulated". Say so here instead. Checked on the slice
+    # fig_6 and fig_7 plot (1000 MHz, FIG_BATCH_SIZE): description.py generates the other
+    # batches only on square arrays and 2000 MHz only up to 512x512.
+    plotted = array_query_df[(array_query_df['frequency'] == 1000)
+                             & (array_query_df['batch_size'] == FIG_BATCH_SIZE)]
+    for (model, frequency, batch_size), group in plotted.groupby(
             ['model', 'frequency', 'batch_size']):
-        if len(group) != 25:
+        if len(group) != 64:
             print(f'Warning: {model} at {frequency} MHz batch {batch_size} has '
-                  f'{len(group)} of 25 array shapes; fig_6 will draw an incomplete grid.')
+                  f'{len(group)} of 64 array shapes; fig_6 will draw an incomplete grid.')
 
     # The compute view cannot move with frequency (see the docstring). If it ever does,
     # something has started reading frequency that should not, and every ranking built on

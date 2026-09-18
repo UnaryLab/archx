@@ -7,9 +7,10 @@ import os
 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
-from chiplet4ai.results.query.utils import FIG_4_CRITERIA, fig_4_paths
+from chiplet4ai.results.query.utils import FIG_4_CRITERIA, FIG_BATCH_SIZE, fig_4_paths
 
 
 def warn(message):
@@ -103,6 +104,10 @@ def render(criterion):
     array_shapes = per_model_value('array_dim')
     batch_sizes = per_model_value('batch_size')
     contexts = per_model_value('max_seq_len')
+    # the batch is keyed once, in the legend, so every model must be at that batch
+    for model, batch in batch_sizes.items():
+        if batch != FIG_BATCH_SIZE:
+            warn(f'{model}: batch {batch} in the CSV, legend says batch {FIG_BATCH_SIZE}')
 
     def context_label(tokens):
         """'128K' / '1M' for a token count, the form fig_1 and fig_6 label their panels with."""
@@ -147,7 +152,7 @@ def render(criterion):
                    label=f'{reference_gbs:g} GB/s reference' if ax is axes[0] else '_nolegend_')
         ax.set_ylabel(panel)
         ax.grid(True, axis='y', color='lightgrey', linewidth=0.5, zorder=0)
-        # (a) stacks a legend row, the three-line design-point tag and the bar labels into
+        # (a) stacks a legend row, the two-line design-point tag and the bar labels into
         # its headroom; (b) only needs room for its bar labels and a one-entry legend.
         # (a) needs enough of it that the tallest bar's value label clears the tag above
         # it: the tag sits at a fixed axes fraction, so more headroom lifts it away from
@@ -157,13 +162,12 @@ def render(criterion):
 
         if ax is axes[0]:
             # THE DESIGN POINT per model group, in the headroom above the tallest bar:
-            # array shape, batch, context. All three are part of the point rather than
-            # properties of the model -- the bars would otherwise be read as a property of
-            # 'Llama 8B' when they are specific to a shape, a batch AND a context -- and
-            # all three are what change between the three fig_4 variants.
+            # array shape and context. Both are part of the point rather than properties of
+            # the model -- the bars would otherwise be read as a property of 'Llama 8B'
+            # when they are specific to a shape AND a context. The batch is the same for
+            # every model, so it is keyed once in the legend instead.
             for model_index, model in enumerate(models):
                 label = (f'{array_shapes[model]}\n'
-                         f'batch {batch_sizes[model]}\n'
                          f'{context_label(contexts[model])} context')
                 ax.text(model_index, 0.86, label, transform=ax.get_xaxis_transform(),
                         ha='center', va='top', fontsize=6, style='italic', linespacing=1.3)
@@ -208,10 +212,15 @@ def render(criterion):
             borderpad=0.2, frameon=False)
         axes[0].add_artist(node_legend)
 
+    # The batch sits beside the reference line as a text-only entry (an invisible handle) in
+    # the same legend, so the two share one row. The negative column spacing takes back the
+    # empty handle's width, leaving the node row's 1.8 em gap before the text.
     if reference_label in by_label:
-        axes[0].legend([by_label[reference_label]], [reference_label],
-                       loc='upper center', bbox_to_anchor=(0.5, 0.955), fontsize=6,
-                       handlelength=2.4, handletextpad=0.5, borderpad=0.2, frameon=False)
+        axes[0].legend([by_label[reference_label], Line2D([], [], linestyle='none')],
+                       [reference_label, f'batch {FIG_BATCH_SIZE}'],
+                       loc='upper center', bbox_to_anchor=(0.5, 0.955), ncol=2, fontsize=6,
+                       columnspacing=1.8 - 2.4 - 0.5, handlelength=2.4, handletextpad=0.5,
+                       borderpad=0.2, frameon=False)
 
     fig.tight_layout(rect=(0, 0, 1, 1 - CAPTION_HEADROOM_IN / FIG_HEIGHT))
 

@@ -25,8 +25,8 @@ follow.
 THE HIERARCHY the figure draws, from the GEMM names model.py actually emits
 (LAYER_EVENTS_PF / LAYER_EVENTS_DC plus the lm_head pair):
 
-    projection   proj_q, proj_k, proj_v, a_proj      the Q/K/V and output projections
-    attention    qkt, av                             the two score/context GEMMs
+    projection   proj_q, proj_k, proj_v              the Q/K/V projections
+    attention    qkt, av, a_proj                     the two score/context GEMMs and the output projection
     ffn          gate_proj, up_proj, down_proj       the feed-forward GEMMs
     lm_head      lm_head                             the vocabulary projection
 
@@ -59,21 +59,13 @@ logger.remove()
 def warn(message):
     print(f'WARNING [fig_8_query]: {message}', file=sys.stderr)
 
-# ONE DESIGN POINT PER MODEL: (array shape, batch), READ FROM fig_4's THROUGHPUT CSV.
+# ONE DESIGN POINT PER MODEL: (array shape, batch), READ FROM fig_4's AVG_BAND CSV -- the
+# same point fig_2_query reads, so fig_2 and fig_8 describe the same machine.
 #
-# WHY THE THROUGHPUT CRITERION and not one of the other two. FIG_4_CRITERIA in utils.py
-# defines all three and says what each selects: `runtime` is not work-normalised and so
-# just crowns whichever batch does the least work, `avg_band` deliberately picks the most
-# memory-hungry design rather than the fastest, and `throughput` credits a bigger batch for
-# the extra work it does -- "the serving metric, and the one that answers 'which machine
-# would you build'". A per-operator LATENCY breakdown is a question about the machine you
-# would actually build, so it is reported on that machine.
-#
-# DERIVED, NEVER TRANSCRIBED, exactly as fig_2_query derives its own point from the
-# avg_band CSV: fig_4_query takes the argmax over fig_6's shape grid, so the point here is
-# an extremum actually measured and cannot drift out of step through a stale copy.
+# DERIVED, NEVER TRANSCRIBED: fig_4_query takes the extremum over fig_6's shape grid, so the
+# point here is one actually measured and cannot drift out of step through a stale copy.
 # figure_generation.py runs fig_6_query -> fig_4_query before this script for that reason.
-FIG_4_THROUGHPUT_CSV = 'zoo/chiplet4ai/results/csv/dram_bandwidth_metrics_throughput.csv'
+FIG_4_AVG_BAND_CSV = 'zoo/chiplet4ai/results/csv/dram_bandwidth_metrics_avg_band.csv'
 
 # fig_1, fig_2 and fig_3 all report the 1000 MHz reference slice; cycle counts are
 # frequency-invariant in the compute view, but the DRAM lane's bytes-per-cycle is not, so
@@ -96,13 +88,16 @@ OPERATOR_CLASS = {
     'proj_q': 'projection',
     'proj_k': 'projection',
     'proj_v': 'projection',
-    'a_proj': 'projection',
     'qkt': 'attention',
     'av': 'attention',
     'qkt_csa': 'attention',
     'av_csa': 'attention',
     'qkt_hca': 'attention',
     'av_hca': 'attention',
+    # the DSA indexer picks which compressed entries CSA's attention pair reads, so its
+    # cycles are attention cycles
+    'index_csa': 'attention',
+    'a_proj': 'attention',
     'gate_proj': 'ffn',
     'up_proj': 'ffn',
     'down_proj': 'ffn',
@@ -111,19 +106,19 @@ OPERATOR_CLASS = {
 
 
 def design_point():
-    """{model: ([array_m, array_n], batch, max_seq_len)} from fig_4's throughput CSV."""
-    if not os.path.isfile(FIG_4_THROUGHPUT_CSV):
+    """{model: ([array_m, array_n], batch, max_seq_len)} from fig_4's avg_band CSV."""
+    if not os.path.isfile(FIG_4_AVG_BAND_CSV):
         raise SystemExit(
-            f'fig_8_query: {FIG_4_THROUGHPUT_CSV} not found. It is written by fig_4_query, '
+            f'fig_8_query: {FIG_4_AVG_BAND_CSV} not found. It is written by fig_4_query, '
             f'which must run first -- figure_generation.py orders them that way.')
 
     points = {}
-    for model, group in pd.read_csv(FIG_4_THROUGHPUT_CSV).groupby('model'):
+    for model, group in pd.read_csv(FIG_4_AVG_BAND_CSV).groupby('model'):
         array_dims = group['array_dim'].unique()
         batches = group['batch_size'].unique()
         contexts = group['max_seq_len'].unique()
         if len(array_dims) != 1 or len(batches) != 1 or len(contexts) != 1:
-            warn(f'{model}: fig_4 throughput reports {len(array_dims)} arrays, '
+            warn(f'{model}: fig_4 avg_band reports {len(array_dims)} arrays, '
                  f'{len(batches)} batches and {len(contexts)} contexts; using the first of each')
         points[model] = ([int(side) for side in array_dims[0].split('x')],
                          int(batches[0]), int(contexts[0]))

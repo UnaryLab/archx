@@ -74,7 +74,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from loguru import logger
 from chiplet4ai.results.query.utils import (query_cycle_count, gemm_demand,
                                             bandwidth_summary, FIG_4_CRITERIA, fig_4_paths,
-                                            select_design_point, SELECTION_MARGIN)
+                                            select_design_point, SELECTION_MARGIN,
+                                            CORE_ARRAY_SIZES, FIG_BATCH_SIZE)
 from archx.metric import aggregate_event_count
 from archx.architecture import load_architecture_dict
 from archx.workload import load_workload_dict
@@ -90,7 +91,7 @@ def warn(message):
     print(f'WARNING [fig_4_query]: {message}', file=sys.stderr)
 
 # THREE DESIGN POINTS PER MODEL, one per criterion in FIG_4_CRITERIA, each DERIVED from
-# fig_6's grid rather than written down here. fig_6_query sweeps all 25 shapes x 5 batches
+# fig_6's grid rather than written down here. fig_6_query reports every shape at batch FIG_BATCH_SIZE
 # at each model's max context and reports the same bandwidth numbers this script does, from
 # the same shared implementation in utils.py; this takes the argmin/argmax of that CSV, so
 # every point fig_4 reports is an extremum actually measured and cannot drift through a
@@ -126,8 +127,11 @@ def design_points():
 
     shapes = pd.read_csv(SHAPE_CSV)
     shapes = shapes[shapes['frequency'] == RANK_FREQUENCY]
+    shapes = shapes[shapes['array_m'].isin(CORE_ARRAY_SIZES) & shapes['array_n'].isin(CORE_ARRAY_SIZES)]
+    shapes = shapes[shapes['batch_size'] == FIG_BATCH_SIZE]
     if shapes.empty:
-        raise SystemExit(f'fig_4_query: no {RANK_FREQUENCY} MHz rows in {SHAPE_CSV}')
+        raise SystemExit(f'fig_4_query: no {RANK_FREQUENCY} MHz batch {FIG_BATCH_SIZE} rows '
+                         f'in {SHAPE_CSV}')
 
     selections = {}
     for criterion in FIG_4_CRITERIA:

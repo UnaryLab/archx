@@ -1,6 +1,36 @@
 from archx.programming.graph.agraph import AGraph
 from copy import deepcopy
 import math
+from chiplet4ai.common.performance.utils import nominal_sram_bits
+from chiplet4ai.results.query.utils import CORE_ARRAY_SIZES, FIG_BATCH_SIZE
+
+# FIG_2'S DESIGN POINT, PER MODEL: (array shape, batch). fig_2 plots required DRAM
+# bandwidth against SRAM CAPACITY, holding the array and batch fixed so the curve
+# carries capacity alone.
+#
+# THIS IS fig_4's avg_band POINT -- the SMALLEST array within `SELECTION_MARGIN` of the
+# `average_bandwidth` maximum over fig_6's grid at 1000 MHz and batch `FIG_BATCH_SIZE`
+# (both in results/query/utils.py), not the strict argmax -- so fig_2's capacity curve
+# and fig_4's bandwidth bars describe the same machine. It is deliberately the most
+# memory-hungry configuration rather than the fastest: a capacity sweep is most informative where capacity is under the most
+# pressure, which is also why three of the four points are 32-row arrays (the
+# shallowest reduction depth in the sweep, so the worst weight reuse and the most DRAM
+# traffic).
+#
+# KEEP IN STEP WITH fig_4_query. These values are transcribed from
+# results/csv/dram_bandwidth_metrics_avg_band.csv, which fig_4_query derives by argmax;
+# fig_2_query re-derives the same point from the same CSV rather than hardcoding it.
+# If a re-run moves the argmax, this list must move with it; fig_2_query imports it and
+# raises when a model's fig_4 point carries fewer than two SRAM sizes. Unlike
+# fig_4's point, this one CANNOT be a free choice at query time: the off-base
+# capacities exist only where this file puts them.
+sram_sweep_point = {
+    'llama_3_1_8b':   ([32, 512], 512),
+    'llama_3_1_70b':  ([32, 512], 512),
+    'llama_3_1_405b': ([32, 512], 512),
+    'deepseek_v4':    ([128, 512], 512),
+}
+
 
 def description(path):
     agraph = AGraph(path=path)
@@ -14,7 +44,7 @@ def description(path):
     ##############################################
     bitwidth = 16
     base_array_size = 128
-    array_shape = [32, 512] # from 32x32 to 512x512, step by powers of 2
+    array_shape = [32, 4096] # from 32x32 to 4096x4096, step by powers of 2
 
     array_range = range(int(math.log2(array_shape[0])), int(math.log2(array_shape[1])) + 1)
 
@@ -23,43 +53,19 @@ def description(path):
     # (columns); mapping.py has always read the two separately -- what pinned them equal
     # was the single SRAM bank tie in the constraints below, not the performance model.
     # fig_6 walks the off-diagonal shapes (32x64, 512x256, ...); fig_1 through fig_5 all
-    # filter back to the diagonal, so their design points are unchanged.
+    # filter back to the diagonal, so their design points are unchanged. The 1024-4096
+    # sides are fig_6's alone: every other query filters to CORE_ARRAY_SIZES
+    # (results/query/utils.py).
     array_sizes = [2**i for i in array_range]
     array_shapes = [[array_m, array_n] for array_m in array_sizes for array_n in array_sizes]
     vector_shapes = [[2**i] for i in array_range]
     vector_sizes = [2**i for i in array_range]
+    # batch has its own list: the 1024-4096 array sides above are for fig_6 alone
+    batch_sizes = [32, 64, 128, 256, 512]
 
-    base_sram_size = 10 * 2**23 # 10MB
     sram_total_sizes = [i * 2**21 for i in range(5, 41)]  # 1 MiB to 10 MiB, in bits
     sram_banks = [x[0] * 2 for x in vector_shapes]
 
-    # FIG_2'S DESIGN POINT, PER MODEL: (array shape, batch). fig_2 plots required DRAM
-    # bandwidth against SRAM CAPACITY, holding the array and batch fixed so the curve
-    # carries capacity alone.
-    #
-    # THIS IS fig_4's avg_band POINT -- the SMALLEST array within `SELECTION_MARGIN` of the
-    # `average_bandwidth` maximum over fig_6's grid at 1000 MHz, not the strict argmax --
-    # so fig_2's capacity curve and fig_4's bandwidth bars describe the same machine.
-    # DeepSeek is 256x512 rather than 512x512 for that reason: half the PEs for 0.04% less
-    # bandwidth. It is deliberately the most memory-hungry configuration rather than the
-    # fastest: a capacity sweep is most informative where capacity is under the most
-    # pressure, which is also why three of the four points are 32-row arrays (the
-    # shallowest reduction depth in the sweep, so the worst weight reuse and the most DRAM
-    # traffic).
-    #
-    # KEEP IN STEP WITH fig_4_query. These values are transcribed from
-    # results/csv/dram_bandwidth_metrics_avg_band.csv, which fig_4_query derives by argmax;
-    # fig_2_query re-derives the same point from the same CSV rather than hardcoding it.
-    # If a re-run moves the argmax, this list must move with it or fig_2_query will filter
-    # for a point the SRAM sweep was never generated at and drop every swept row. Unlike
-    # fig_4's point, this one CANNOT be a free choice at query time: the off-base
-    # capacities exist only where this file puts them.
-    sram_sweep_point = {
-        'llama_3_1_8b':   ([32, 512], 32),
-        'llama_3_1_70b':  ([32, 512], 512),
-        'llama_3_1_405b': ([32, 512], 512),
-        'deepseek_v4':    ([256, 512], 256),
-    }
     sweep_array_shapes = [list(shape) for shape in
                           sorted({tuple(shape) for shape, _ in sram_sweep_point.values()})]
     # BOTH SIDES OF EVERY SWEPT SHAPE. isram is banked to the array's rows and wsram/osram
@@ -84,9 +90,10 @@ def description(path):
     # ONLY THE REACHABLE DEPTHS. Every SRAM's bank count is pinned to 2x the array side it
     # serves by the constraints below -- so it is always one of `sram_banks`, on a
     # rectangular array as much as on a square one -- and only the arrays in
-    # `sweep_array_shapes` sweep capacity; every other shape sits at base_sram_size. So the
-    # depths that can ever survive are the sweep's, at each swept bank, plus one base-size
-    # depth per bank. Taking the cross
+    # `sweep_array_shapes` sweep capacity; every other shape sits at its nominal size
+    # (nominal_sram_bits: 10 MiB up to 512x512, doubled until one array-sized weight tile
+    # fits wsram above that). So the depths that can ever survive are the sweep's, at each
+    # swept bank, plus each shape's nominal-size depth on both of its sides. Taking the cross
     # product of every size with every bank instead would list ~3x as many depths, all of
     # them filtered out later, and each conditional_constraint pays for the whole list
     # when it enumerates its allowed tuples.
@@ -97,9 +104,9 @@ def description(path):
             for sweep_bank in sweep_banks
             if sram_size % (sweep_bank * bitwidth) == 0
         } | {
-            base_sram_size // (sram_bank * bitwidth)
-            for sram_bank in sram_banks
-            if base_sram_size % (sram_bank * bitwidth) == 0
+            nominal_sram_bits(*shape, bitwidth) // (2 * side * bitwidth)
+            for shape in array_shapes
+            for side in shape
         }
     )
 
@@ -132,14 +139,23 @@ def description(path):
     # event configuration
     layer_pf_events = ['proj_q_pf', 'proj_k_pf', 'proj_v_pf', 'qkt_pf', 'av_pf', 'a_proj_pf', 'up_proj_pf', 'gate_proj_pf', 'down_proj_pf']
     layer_dc_events = ['proj_q_dc', 'proj_k_dc', 'proj_v_dc', 'qkt_dc', 'av_dc', 'a_proj_dc', 'up_proj_dc', 'gate_proj_dc', 'down_proj_dc']
-    # DeepSeek-V4's CSA and HCA layers: the same decode GEMMs with the attention pair
-    # swapped for the layer type's own compressed-attention GEMMs
-    layer_dc_compressed_events = {
-        kind: [layer.replace('_dc', f'_{kind}_dc') if layer in ('qkt_dc', 'av_dc') else layer
-               for layer in layer_dc_events]
+    # DeepSeek-V4's CSA and HCA layers: the same prefill and decode GEMMs with the attention
+    # pair swapped for the layer type's own compressed-attention GEMMs
+    # a CSA layer also runs the DSA indexer that picks which compressed entries its
+    # attention pair then reads; HCA has no indexer and attends over all of its own
+    layer_pf_compressed_events = {
+        kind: [layer.replace('_pf', f'_{kind}_pf') if layer in ('qkt_pf', 'av_pf') else layer
+               for layer in layer_pf_events] + ([f'index_{kind}_pf'] if kind == 'csa' else [])
         for kind in ('csa', 'hca')
     }
-    compressed_attention_events = [f'{op}_{kind}_dc' for kind in ('csa', 'hca') for op in ('qkt', 'av')]
+    layer_dc_compressed_events = {
+        kind: [layer.replace('_dc', f'_{kind}_dc') if layer in ('qkt_dc', 'av_dc') else layer
+               for layer in layer_dc_events] + ([f'index_{kind}_dc'] if kind == 'csa' else [])
+        for kind in ('csa', 'hca')
+    }
+    compressed_attention_events = [f'{op}_{kind}_{phase}' for phase in ('pf', 'dc')
+                                   for kind in ('csa', 'hca') for op in ('qkt', 'av')]
+    compressed_attention_events += [f'index_csa_{phase}' for phase in ('pf', 'dc')]
     gemm_events = layer_pf_events + ['lm_head_pf'] + layer_dc_events + ['lm_head_dc'] + compressed_attention_events
 
     layer_pf_arr_subevents = [layer + '_arr' for layer in layer_pf_events]
@@ -165,16 +181,20 @@ def description(path):
 
     # model events
     event.add_event(name='llama', subevent=['prefill', 'decode'], performance=model)
-    event.add_event(name='llama_array', subevent=['llama_pf_array', 'llama_dc_array', 'llama_dc_csa_array', 'llama_dc_hca_array', 'lm_head_pf_arr', 'lm_head_dc_arr'], performance=model)
+    event.add_event(name='llama_array', subevent=['llama_pf_array', 'llama_pf_csa_array', 'llama_pf_hca_array', 'llama_dc_array', 'llama_dc_csa_array', 'llama_dc_hca_array', 'lm_head_pf_arr', 'lm_head_dc_arr'], performance=model)
     event.add_event(name='llama_pf_array', subevent=layer_pf_arr_subevents.copy(), performance=model)
+    for kind, events in layer_pf_compressed_events.items():
+        event.add_event(name=f'llama_pf_{kind}_array', subevent=[layer + '_arr' for layer in events], performance=model)
     event.add_event(name='llama_dc_array', subevent=layer_dc_arr_subevents.copy(), performance=model)
     for kind, events in layer_dc_compressed_events.items():
         event.add_event(name=f'llama_dc_{kind}_array', subevent=[layer + '_arr' for layer in events], performance=model)
 
     # model phase events
-    event.add_event(name='prefill', subevent=['layer_pf', 'lm_head_pf'], performance=model)
+    event.add_event(name='prefill', subevent=['layer_pf', 'layer_pf_csa', 'layer_pf_hca', 'lm_head_pf'], performance=model)
     event.add_event(name='decode', subevent=['layer_dc', 'layer_dc_moe', 'layer_dc_csa', 'layer_dc_hca', 'lm_head_dc'], performance=model)
     event.add_event(name='layer_pf', subevent=layer_pf_events.copy(), performance=model)
+    for kind, events in layer_pf_compressed_events.items():
+        event.add_event(name=f'layer_pf_{kind}', subevent=events.copy(), performance=model)
     event.add_event(name='layer_dc', subevent=layer_dc_events.copy(), performance=model)
     event.add_event(name='layer_dc_moe', subevent=layer_dc_events.copy(), performance=model)
     for kind, events in layer_dc_compressed_events.items():
@@ -221,7 +241,7 @@ def description(path):
     ###############   Workload   #################
     ##############################################
     llama_3_8b_config = workload.add_configuration(name='llama_3_1_8b')
-    llama_3_8b_batch_size = llama_3_8b_config.add_parameter(parameter_name='batch_size', parameter_value=vector_sizes, sweep=True)
+    llama_3_8b_batch_size = llama_3_8b_config.add_parameter(parameter_name='batch_size', parameter_value=batch_sizes, sweep=True)
     llama_3_8b_config.add_parameter(parameter_name='dim', parameter_value=4096)
     llama_3_8b_config.add_parameter(parameter_name='heads',  parameter_value=32)
     llama_3_8b_config.add_parameter(parameter_name='kv_heads', parameter_value=8)
@@ -232,7 +252,7 @@ def description(path):
     llama_3_8b_config.add_parameter(parameter_name='vocab_size', parameter_value=128256)
 
     llama_3_70b_config = workload.add_configuration(name='llama_3_1_70b')
-    llama_3_70b_batch_size = llama_3_70b_config.add_parameter(parameter_name='batch_size', parameter_value=vector_sizes, sweep=True)
+    llama_3_70b_batch_size = llama_3_70b_config.add_parameter(parameter_name='batch_size', parameter_value=batch_sizes, sweep=True)
     llama_3_70b_config.add_parameter(parameter_name='dim', parameter_value=8192)
     llama_3_70b_config.add_parameter(parameter_name='heads',  parameter_value=64)
     llama_3_70b_config.add_parameter(parameter_name='kv_heads', parameter_value=8)
@@ -243,7 +263,7 @@ def description(path):
     llama_3_70b_config.add_parameter(parameter_name='vocab_size', parameter_value=128256)
 
     llama_3_405b_config = workload.add_configuration(name='llama_3_1_405b')
-    llama_3_405b_batch_size = llama_3_405b_config.add_parameter(parameter_name='batch_size', parameter_value=vector_sizes, sweep=True)
+    llama_3_405b_batch_size = llama_3_405b_config.add_parameter(parameter_name='batch_size', parameter_value=batch_sizes, sweep=True)
     llama_3_405b_config.add_parameter(parameter_name='dim', parameter_value=16384)
     llama_3_405b_config.add_parameter(parameter_name='heads',  parameter_value=128)
     llama_3_405b_config.add_parameter(parameter_name='kv_heads', parameter_value=8)
@@ -254,12 +274,11 @@ def description(path):
     llama_3_405b_config.add_parameter(parameter_name='vocab_size', parameter_value=128256)
 
     deepseek_v4_config = workload.add_configuration(name='deepseek_v4')
-    deepseek_v4_batch_size = deepseek_v4_config.add_parameter(parameter_name='batch_size', parameter_value=vector_sizes, sweep=True)
+    deepseek_v4_batch_size = deepseek_v4_config.add_parameter(parameter_name='batch_size', parameter_value=batch_sizes, sweep=True)
     deepseek_v4_config.add_parameter(parameter_name='dim', parameter_value=7168)
     deepseek_v4_config.add_parameter(parameter_name='heads',  parameter_value=128)
     deepseek_v4_config.add_parameter(parameter_name='kv_heads', parameter_value=1)
     deepseek_v4_config.add_parameter(parameter_name='head_dim', parameter_value=512)
-    deepseek_v4_config.add_parameter(parameter_name='qk_rope_head_dim', parameter_value=64)  # BF16 rope suffix of each KV entry
     # compressed attention, from the shipped config's compress_ratios: layers 0-1 are HCA,
     # then CSA and HCA alternate starting with CSA (model.py derives the counts)
     deepseek_v4_config.add_parameter(parameter_name='csa_compress_ratio', parameter_value=4)
@@ -267,6 +286,8 @@ def description(path):
     deepseek_v4_config.add_parameter(parameter_name='hca_lead_layers', parameter_value=2)
     deepseek_v4_config.add_parameter(parameter_name='sliding_window', parameter_value=128)
     deepseek_v4_config.add_parameter(parameter_name='index_head_dim', parameter_value=128)  # CSA indexer keys, cached per compressed entry
+    deepseek_v4_config.add_parameter(parameter_name='index_n_heads', parameter_value=64)    # DSA indexer query heads
+    deepseek_v4_config.add_parameter(parameter_name='index_topk', parameter_value=1024)     # compressed entries the indexer selects per query
     deepseek_v4_config.add_parameter(parameter_name='hidden_dim', parameter_value=3072)  # per-expert moe_intermediate_size; keeps up/gate/down GEMMs per-expert-shaped
     deepseek_v4_config.add_parameter(parameter_name='layers', parameter_value=61)
     deepseek_v4_seq_len = deepseek_v4_config.add_parameter(parameter_name='max_seq_len', parameter_value=[4096, 131072, 1048576], sweep=True)  # model max is 1048576; clipped to match the llama workloads' decode-step count
@@ -292,7 +313,7 @@ def description(path):
     # enumerate the same thing in the same order. The registers are per-PE and share
     # `array_shapes` with the array, so they stay here. The FIFOs do NOT: they are
     # one-dimensional (`vector_shapes`), one per array row or column, and now that
-    # `array_shapes` is the 5x5 cross product rather than the 5-entry diagonal, index
+    # `array_shapes` is the 8x8 cross product rather than the 8-entry diagonal, index
     # equality would silently pin the array to its first five shapes. They are pinned by
     # value instead, in the ififo/wfifo/ofifo conditional constraints below -- which is
     # what actually says which SIDE of the array each FIFO serves.
@@ -389,7 +410,7 @@ def description(path):
                                   condition = lambda pe_inst, bank, depth: (
                                       (pe_inst in sweep_array_shapes and (bank * depth * bitwidth) in sram_total_sizes)
                                       or
-                                      (pe_inst not in sweep_array_shapes and bank * depth * bitwidth == base_sram_size)
+                                      (pe_inst not in sweep_array_shapes and bank * depth * bitwidth == nominal_sram_bits(*pe_inst, bitwidth))
                                   ))
     
     agraph.conditional_constraint(pe_inst = pe['instance'],
@@ -398,7 +419,7 @@ def description(path):
                                   condition = lambda pe_inst, bank, depth: (
                                       (pe_inst in sweep_array_shapes and (bank * depth * bitwidth) in sram_total_sizes)
                                       or
-                                      (pe_inst not in sweep_array_shapes and bank * depth * bitwidth == base_sram_size)
+                                      (pe_inst not in sweep_array_shapes and bank * depth * bitwidth == nominal_sram_bits(*pe_inst, bitwidth))
                                   ))
     
     agraph.conditional_constraint(pe_inst = pe['instance'],
@@ -407,44 +428,53 @@ def description(path):
                                   condition = lambda pe_inst, bank, depth: (
                                       (pe_inst in sweep_array_shapes and (bank * depth * bitwidth) in sram_total_sizes)
                                       or
-                                      (pe_inst not in sweep_array_shapes and bank * depth * bitwidth == base_sram_size)
+                                      (pe_inst not in sweep_array_shapes and bank * depth * bitwidth == nominal_sram_bits(*pe_inst, bitwidth))
                                   ))
 
     agraph.conditional_constraint(freq = attributes['frequency'],
+                                  pe_inst = pe['instance'],
                                   bank = srams['isram']['query']['bank'],
                                   depth = srams['isram']['query']['depth'],
-                                  condition = lambda freq, bank, depth: (freq == 1000 or (freq == 2000 and bank * depth * bitwidth == base_sram_size)
+                                  condition = lambda freq, pe_inst, bank, depth: (freq == 1000 or (freq == 2000 and bank * depth * bitwidth == nominal_sram_bits(*pe_inst, bitwidth))
                                   ))
 
     agraph.conditional_constraint(freq = attributes['frequency'],
+                                  pe_inst = pe['instance'],
                                   bank = srams['wsram']['query']['bank'],
                                   depth = srams['wsram']['query']['depth'],
-                                  condition = lambda freq, bank, depth: (freq == 1000 or (freq == 2000 and bank * depth * bitwidth == base_sram_size)
+                                  condition = lambda freq, pe_inst, bank, depth: (freq == 1000 or (freq == 2000 and bank * depth * bitwidth == nominal_sram_bits(*pe_inst, bitwidth))
                                   ))
 
     agraph.conditional_constraint(freq = attributes['frequency'],
+                                  pe_inst = pe['instance'],
                                   bank = srams['osram']['query']['bank'],
                                   depth = srams['osram']['query']['depth'],
-                                  condition = lambda freq, bank, depth: (freq == 1000 or (freq == 2000 and bank * depth * bitwidth == base_sram_size)
+                                  condition = lambda freq, pe_inst, bank, depth: (freq == 1000 or (freq == 2000 and bank * depth * bitwidth == nominal_sram_bits(*pe_inst, bitwidth))
                                   ))
 
     # ------------------------------------------------------------------------------
     # SCOPE: generate only what a figure plots.
     #
     # Every configuration below is simulated, so an axis crossed with a point no query
-    # reads is pure cost. What the four queries actually consume:
+    # reads is pure cost. The per-model SLICE RULE at the end of this function generates
+    # exactly these four slices and nothing else (all at the nominal SRAM size except D;
+    # max context is 131072 for the Llamas, 1048576 for DeepSeek):
     #
-    #   fig_1, fig_3  every SQUARE array shape and batch, 1000 MHz, all SRAMs at base size
-    #   fig_5         same slice as fig_1/fig_3
-    #   fig_2         sram_sweep_point per model, 1000 MHz, the SRAM sweep, one seq len
-    #   fig_4         one cell of fig_6's grid per model, BOTH frequencies, max seq len
-    #   fig_6         every array shape and batch, BOTH frequencies, base SRAM, MAX seq
-    #                 len only
+    #   slice  figures              shapes                batch      MHz         context
+    #   A      fig_6, fig_7         all 64                FIG_BATCH  1000        max
+    #   B      fig_4 (and fig_8,    all 25 <= 512         FIG_BATCH  2000        max
+    #          fig_2's point)       (1000 MHz is in A)
+    #   C      fig_1, fig_3, fig_5  5 squares <= 512      all 5      1000        4096, 131072,
+    #                                                                            and max
+    #   D      fig_2                sram_sweep_point      its batch  1000        max
+    #                               shape, 35 off-base SRAM sizes
     #
-    # TWO QUERIES NOW READ 2000 MHz, not one, and they read the SAME slice: max context.
-    # fig_6 takes the whole 25-shape x 5-batch grid, fig_4 takes one cell of it per model
-    # and spends its axis on frequency instead. So one rule generates both, and fig_4's
-    # design point can move anywhere in the grid without re-simulating anything.
+    # Per model that is 64 + 25 + (25 x contexts - 5, C's max-context FIG_BATCH_SIZE squares
+    # being in A) + 35 runs: 169 for a Llama, 194 for DeepSeek, 701 in all.
+    # B keeps 2000 MHz on all 25 shapes, not only fig_4's picks, so a pick can never land
+    # outside the sweep. To change a figure's scope, edit its slice in the slice rule; the
+    # older rules above it are weaker than it (it implies each of them), so they only need
+    # loosening if a new scope goes beyond what they allow.
     #
     # NOTE, for anyone extending fig_6's figure: `llama_array` is the COMPUTE-ONLY view
     # and is exactly frequency-invariant (frequency enters only through the DRAM lane's
@@ -486,13 +516,13 @@ def description(path):
                                           # can share a width while differing in the other
                                           # side.
                                           (pe_inst == shape and batch == sbatch and freq == 1000)
-                                          if bank * depth * bitwidth != base_sram_size
+                                          if bank * depth * bitwidth != nominal_sram_bits(*pe_inst, bitwidth)
                                           # base SRAM: batch free at both frequencies
                                           else True
                                       ))
 
     # SHORT CONTEXT ONLY AT THE BASE SRAM. The SRAM sweep is fig_2's axis and fig_2 reads
-    # one sequence length per model, so the other lengths are pinned to base_sram_size
+    # one sequence length per model, so the other lengths are pinned to the nominal size
     # rather than multiplied across all 36 capacities.
     #
     # NAME ONE SRAM, NOT THREE. conditional_constraint builds its allowed-tuple table by
@@ -503,31 +533,35 @@ def description(path):
     # exactly the same condition -- 1.8 billion tuples across these four constraints
     # versus 17.5 thousand. One SRAM stands for all three.
     agraph.conditional_constraint(a = llama_3_8b_seq_len['parameter'],
+                                  pe_inst = pe['instance'],
                                   bank = srams['isram']['query']['bank'],
                                   depth = srams['isram']['query']['depth'],
-                                  condition = lambda a, bank, depth: (
-                                      a == 131072 or (a == 4096 and bank * depth * bitwidth == base_sram_size)
+                                  condition = lambda a, pe_inst, bank, depth: (
+                                      a == 131072 or (a == 4096 and bank * depth * bitwidth == nominal_sram_bits(*pe_inst, bitwidth))
                                   ))
 
     agraph.conditional_constraint(a = llama_3_70b_seq_len['parameter'],
+                                  pe_inst = pe['instance'],
                                   bank = srams['isram']['query']['bank'],
                                   depth = srams['isram']['query']['depth'],
-                                  condition = lambda a, bank, depth: (
-                                      a == 131072 or (a == 4096 and bank * depth * bitwidth == base_sram_size)
+                                  condition = lambda a, pe_inst, bank, depth: (
+                                      a == 131072 or (a == 4096 and bank * depth * bitwidth == nominal_sram_bits(*pe_inst, bitwidth))
                                   ))
 
     agraph.conditional_constraint(a = llama_3_405b_seq_len['parameter'],
+                                  pe_inst = pe['instance'],
                                   bank = srams['isram']['query']['bank'],
                                   depth = srams['isram']['query']['depth'],
-                                  condition = lambda a, bank, depth: (
-                                      a == 131072 or (a == 4096 and bank * depth * bitwidth == base_sram_size)
+                                  condition = lambda a, pe_inst, bank, depth: (
+                                      a == 131072 or (a == 4096 and bank * depth * bitwidth == nominal_sram_bits(*pe_inst, bitwidth))
                                   ))
 
     agraph.conditional_constraint(a = deepseek_v4_seq_len['parameter'],
+                                  pe_inst = pe['instance'],
                                   bank = srams['isram']['query']['bank'],
                                   depth = srams['isram']['query']['depth'],
-                                  condition = lambda a, bank, depth: (
-                                      a == 1048576 or ((a == 4096 or a == 131072) and bank * depth * bitwidth == base_sram_size)
+                                  condition = lambda a, pe_inst, bank, depth: (
+                                      a == 1048576 or ((a == 4096 or a == 131072) and bank * depth * bitwidth == nominal_sram_bits(*pe_inst, bitwidth))
                                   ))
     
     # TWO RULES, ONE LOOP, BOTH PER MODEL, and both saying the same thing about context:
@@ -542,8 +576,7 @@ def description(path):
     #     short contexts stay at 1000 MHz. This is also what keeps 2 GHz out of the
     #     capacity sweep from growing: it is already base-SRAM-only by the freq/size rules.
     #
-    # These are the ONLY thing bounding the added runs. Together they cost 20 x 5 batches
-    # at 1000 MHz plus 25 x 5 at 2000 MHz per model, rather than that times every length.
+    # The slice rule below narrows both further.
     max_seq_len_parameters = [
         (llama_3_8b_seq_len, 131072),
         (llama_3_70b_seq_len, 131072),
@@ -561,6 +594,43 @@ def description(path):
                                       a = seq_len_parameter['parameter'],
                                       condition = lambda freq, a, m=model_max_seq_len: (
                                           freq == 1000 or a == m
+                                      ))
+
+    # THE SLICE RULE: slices A-D of the SCOPE table above, per model, and nothing else. It
+    # names one SRAM for the reason the short-context rule gives.
+    seq_len_parameters = {
+        'llama_3_1_8b': llama_3_8b_seq_len,
+        'llama_3_1_70b': llama_3_70b_seq_len,
+        'llama_3_1_405b': llama_3_405b_seq_len,
+        'deepseek_v4': deepseek_v4_seq_len,
+    }
+    for (model_name, batch_parameter), (_, model_max_seq_len) in zip(
+            batch_parameters.items(), max_seq_len_parameters):
+        sweep_shape, sweep_batch = sram_sweep_point[model_name]
+        agraph.conditional_constraint(batch = batch_parameter['parameter'],
+                                      seq = seq_len_parameters[model_name]['parameter'],
+                                      freq = attributes['frequency'],
+                                      pe_inst = pe['instance'],
+                                      bank = srams['isram']['query']['bank'],
+                                      depth = srams['isram']['query']['depth'],
+                                      condition = lambda batch, seq, freq, pe_inst, bank, depth, \
+                                                         m=model_max_seq_len, shape=sweep_shape, \
+                                                         sbatch=sweep_batch: (
+                                          (bank * depth * bitwidth == nominal_sram_bits(*pe_inst, bitwidth)
+                                           and (
+                                               # A: fig_6/fig_7
+                                               (batch == FIG_BATCH_SIZE and freq == 1000 and seq == m)
+                                               # B: fig_4 at 2000 MHz
+                                               or (batch == FIG_BATCH_SIZE and freq == 2000 and seq == m
+                                                   and pe_inst[0] in CORE_ARRAY_SIZES
+                                                   and pe_inst[1] in CORE_ARRAY_SIZES)
+                                               # C: fig_1/fig_3/fig_5
+                                               or (freq == 1000 and pe_inst[0] == pe_inst[1]
+                                                   and pe_inst[0] in CORE_ARRAY_SIZES)))
+                                          # D: fig_2's SRAM sweep
+                                          or (bank * depth * bitwidth != nominal_sram_bits(*pe_inst, bitwidth)
+                                              and pe_inst == shape and batch == sbatch
+                                              and freq == 1000 and seq == m)
                                       ))
 
     agraph.generate()
