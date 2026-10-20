@@ -1,0 +1,43 @@
+# keys must match the description.py query keys; values are the synthesized RTL parameters
+pe:
+  width: 16
+bus_gin_ifmap_y:
+  width: 16
+  n_dest: 12
+bus_gin_ifmap_x:
+  width: 16
+  n_dest: 14
+bus_gin_filt_y:
+  width: 64
+  n_dest: 12
+bus_gin_filt_x:
+  width: 64
+  n_dest: 14
+bus_gin_psum_y:
+  width: 64
+  n_dest: 12
+bus_gin_psum_x:
+  width: 64
+  n_dest: 14
+bus_gon_psum_y:
+  width: 64
+  n_dest: 12
+bus_gon_psum_x:
+  width: 64
+  n_dest: 14
+rlc_decoder:
+  width: 16
+  pack_width: 64
+  depth: 8
+rlc_encoder:
+  width: 16
+  pack_width: 64
+  depth: 8
+relu:
+  width: 16
+  pack_width: 64
+fifo_pack:
+  in_width: 16
+  reg_width: 16
+  out_width: 16
+  depth: 8

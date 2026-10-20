@@ -1,5 +1,5 @@
 # environment.yaml
-name: archx
+name: archx-agraph
 channels:
   - conda-forge
   - defaults

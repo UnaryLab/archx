@@ -1,0 +1,7 @@
+layer,total_power mW,total_runtime ms,processing_runtime ms,macs G,active_pes,active_pes %,ifmap_zeros %,glb_accesses MB,dram_accesses MB
+conv1,332,20.9,16.5,0.42,154,92,0.01,18.5,5.0
+conv2,288,41.9,39.2,0.90,135,80,38.7,77.6,4.0
+conv3,266,23.6,21.8,0.60,156,93,72.5,50.2,3.0
+conv4,235,18.4,16.0,0.45,156,93,79.3,37.4,2.1
+conv5,236,10.5,10.0,0.30,156,93,77.6,24.9,1.3
+total,278,115.3,103.5,2.66,148,88,57.53,208.5,15.4
