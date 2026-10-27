@@ -1,0 +1,29 @@
+# Synthesized size parameter of each TNN7 module, one key per report folder under TNN7/.
+# The query scales power and area linearly in every key listed here (an unqueried key counts as 1),
+# so only size parameters belong here; fixed settings such as THRESHOLD = 13 do not.
+# RTL paths are relative to TNNGen/tnn_hw/rtl/src/, the source dir of tnn_hw/syn_tcl/run_opt_*.tcl.
+# prabhu: = branch origin/prabhu of A-Graph/auto_syn_pnr, the RTL behind the TNN7/ reports.
+
+# register.sv; WL = 32 from report Design: register_32, critical path ends at q_reg[28]
+register_32:
+  width: 32
+# register.sv WL default = 1; report Design: register; area 7.698 um^2 ~ register_32 247.044 / 32
+tnn_reg:
+  width: 1
+# pulse2edge.sv is one lane; report Design: pulse2edge_96, critical path on pulse_in[5]/edge_out[5]
+pulse2edge_96:
+  width: 96
+# prabhu:src/neuron_body/neuron_body.sv:21 INPUT_SIZE = 1; rtl_list.tcl passes no override
+neuron_body:
+  width: 1
+# prabhu:src/pac/pac.sv:23 INPUT_SIZE = 96; report shows in[84]
+pac:
+  width: 96
+# 4-bit adder, prabhu:src/adder/adder.v:1-5
+tnn_adder:
+  width: 4
+
+# No size parameter, so no key: fixed-width RTL with no `parameter` (edge2pulse.sv, flogic.sv,
+# fsm_output.sv, fsm_simple.sv, fsm_synapse.sv, fsm_weight_update.sv, incdec.sv, less_equal.sv, stdp.sv,
+# stdp_case_gen.sv), tnn_and_gate and adder_clk (no RTL in TNNGen), and wta: prabhu:src/wta/wta.sv:17
+# Q = 2, left out because WTA cost is not linear in Q.

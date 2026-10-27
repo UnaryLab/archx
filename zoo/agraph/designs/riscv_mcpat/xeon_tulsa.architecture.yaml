@@ -1,0 +1,91 @@
+# Intel Xeon Tulsa (dual-core, 65 nm), from mcpat/ProcessorDescriptionFiles/Xeon.xml (cited as Xeon.xml:<line>).
+# `query` holds the hardware description priced by the cost-model interfaces; `gem5` holds only
+# settings that gem5 needs and no interface reads. The gem5 config generator reads both.
+architecture:
+  attribute:
+    technology: 65 # Xeon.xml:19
+    frequency: 3400 # MHz, Xeon.xml:20
+    interface: mcpat
+
+  module:
+    # No McPAT core class exists yet, so this query is not priced. Keys use the Xeon.xml param names.
+    core:
+      tag: [core]
+      instance: [2] # Xeon.xml:5
+      query:
+        class: core
+        number_hardware_threads: 2 # Xeon.xml:51; gem5 runs 1 thread per core
+        fetch_width: 4 # Xeon.xml:55
+        decode_width: 4 # Xeon.xml:58
+        issue_width: 4 # Xeon.xml:61
+        commit_width: 4 # Xeon.xml:65
+        instruction_window_size: 64 # Xeon.xml:88; gem5 has one unified IQ, fp window (Xeon.xml:89) not modeled separately
+        ROB_size: 128 # Xeon.xml:91
+        phy_Regs_IRF_size: 256 # Xeon.xml:98
+        phy_Regs_FRF_size: 256 # Xeon.xml:99
+        store_buffer_size: 96 # Xeon.xml:116
+        load_buffer_size: 48 # Xeon.xml:118
+      gem5:
+        cpu_type: o3
+        isa: x86
+
+    # Cache sizes use the cacti7/mcpat sram keys: width bits per line, depth lines per bank, bank banks.
+    # width is the Xeon.xml block size; gem5 Ruby uses one line size for all caches (l3 gem5.cache_line_size).
+    l1i:
+      tag: [cache, l1]
+      instance: [2]
+      query:
+        class: sram
+        interface: cacti7
+        width: 256 # 32 B block, Xeon.xml:227 (trace cache modeled as a 128 KB icache)
+        depth: 4096
+        bank: 1
+        associativity: 8
+
+    l1d:
+      tag: [cache, l1]
+      instance: [2]
+      query:
+        class: sram
+        interface: cacti7
+        width: 128 # 16 B block, Xeon.xml:244
+        depth: 1024
+        bank: 1
+        associativity: 4
+
+    l2:
+      tag: [cache, l2]
+      instance: [2] # private per core, Xeon.xml:9
+      query:
+        class: l2
+        width: 256 # 1 MB, 32 B block, 8-way, 8 banks, Xeon.xml:308
+        depth: 4096
+        bank: 8
+        associativity: 8
+
+    l3:
+      tag: [cache, l3]
+      instance: [1]
+      query:
+        class: l3
+        frequency: 850 # MHz, Xeon.xml:330; gem5 runs the L3, directory and network at this clock
+        width: 512 # 16 MB, 64 B block, 16-way, 16 banks, Xeon.xml:328
+        depth: 16384
+        bank: 16
+        associativity: 16
+      gem5:
+        cache_line_size: 64 # bytes, system-wide in Ruby
+
+    mc:
+      tag: [memory]
+      instance: [1]
+      query:
+        class: mc
+        mc_clock: 200 # MHz, Xeon.xml:382 (DDR2-400)
+        peak_transfer_rate: 3200 # MB/s, Xeon.xml:385
+        memory_channels_per_mc: 1 # Xeon.xml:389
+        databus_width: 128 # Xeon.xml:395
+      gem5:
+        # gem5 has no DDR2 model; DDR3-1600 is the oldest DDR generation it ships.
+        memory: SingleChannelDDR3_1600
+        size: 512MiB

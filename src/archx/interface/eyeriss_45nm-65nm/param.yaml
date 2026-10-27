@@ -1,5 +1,5 @@
 # keys must match the description.py query keys; values are the synthesized RTL parameters
-pe:
+pe_uncomb:
   width: 16
 bus_gin_ifmap_y:
   width: 16
@@ -41,3 +41,30 @@ fifo_pack:
   reg_width: 16
   out_width: 16
   depth: 8
+fifo_pack_64_16:
+  in_width: 64
+  reg_width: 16
+  out_width: 16
+  depth: 8
+fifo_pack_16_64:
+  in_width: 16
+  reg_width: 16
+  out_width: 64
+  depth: 8
+fifo_pack_64_64:
+  in_width: 64
+  reg_width: 16
+  out_width: 64
+  depth: 8
+adder_fixed_point:
+  width: 16
+multiplier_fixed_point:
+  width: 16
+multiplier_stage_1:
+  width: 16
+multiplier_stage_2:
+  width: 16
+register:
+  width: 16
+mux_2_to_1:
+  width: 16

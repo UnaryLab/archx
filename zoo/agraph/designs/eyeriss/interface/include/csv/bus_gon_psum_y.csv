@@ -1,2 +1,2 @@
 technology,frequency,dynamic_uw,leakage_uw,area_mm2,num_instances,interpolation,width,n_dest
-45,400,0.23709598,0.03959602,0.0022790880000000003,1,linear,64,12
+45,200,0.11854799,0.03959602,0.0022790880000000003,1,linear,64,12

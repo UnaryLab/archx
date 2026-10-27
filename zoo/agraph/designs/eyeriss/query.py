@@ -17,61 +17,71 @@ logger.remove()
 
 configs = ["arch_0"]
 layers = ["conv1", "conv2", "conv3", "conv4", "conv5"]
-tags = ["onchip", "pe", "filter_spad", "glb", "noc", "codec"]
-counted = [
+# area and power rows: each tag's total, then its modules not already listed;
+# the first tag is the whole the percentage is taken of, and no tag here holds dram
+tags = [
+    "onchip",
     "pe",
-    "ifmap_psum_glb",
-    "filt_glb",
-    "dram",
     "filter_spad",
-    "bus_gin_ifmap_y",
-    "bus_gin_ifmap_x",
-    "bus_gin_filt_y",
-    "bus_gin_filt_x",
-    "bus_gin_psum_y",
-    "bus_gin_psum_x",
-    "bus_gon_psum_y",
-    "bus_gon_psum_x",
-    "rlc_decoder",
-    "rlc_encoder",
-    "relu",
+    "glb",
+    "ifmap_noc",
+    "filt_noc",
+    "psum_noc",
+    # after the three nocs, so its buses are already listed and it is a single total line
+    "noc",
+    "codec",
 ]
 
 
-def add_percent_of_onchip(df, value):
-    onchip = df[df["tag"] == "onchip"].set_index("arch")[value]
-    df["percent_of_onchip"] = df[value] / df["arch"].map(onchip) * 100
-    return df
-
-
-def tag_metric(event_graph, metric_dict, metric, workload, tag):
-    # filter_spad has no tag of its own, so query it by module name
-    if tag == "filter_spad":
-        result = aggregate_event_metric(
+def row_metric(event_graph, metric_dict, metric, workload, tag, module):
+    # a module row queries the module itself: the pe module shares its name with the pe tag, which also holds filter_spad
+    if module:
+        return aggregate_event_metric(
             event_graph=event_graph,
             metric_dict=metric_dict,
             metric=metric,
             workload=workload,
-            event=tag,
-        )
-    else:
-        result = aggregate_tag_metric(
-            event_graph=event_graph,
-            metric_dict=metric_dict,
-            metric=metric,
-            workload=workload,
-            tag=tag,
-        )
-    return result["value"]
+            event=module,
+        )["value"]
+    return aggregate_tag_metric(
+        event_graph=event_graph,
+        metric_dict=metric_dict,
+        metric=metric,
+        workload=workload,
+        tag=tag,
+    )["value"]
+
+
+def tag_rows(event_graph, tags):
+    # a tag row leaves module blank
+    # each module is listed once, under the first tag after the whole that holds it, so the whole lists only the rest
+    listed = set()
+    rows = []
+    for tag in tags[1:] + tags[:1]:
+        modules = [m for m in event_graph.get_tag_modules(tag) if m not in listed]
+        listed.update(modules)
+        rows += [(tag, "")] + [(tag, module) for module in modules]
+    return rows
+
+
+def write_breakdown(df, tags, path):
+    # the last column is the total the percentage is taken of
+    value = df.columns[-1]
+    whole = df[(df["tag"] == tags[0]) & (df["module"] == "")].set_index("arch")[value]
+    df[f"percent_of_{tags[0]}"] = df[value] / df["arch"].map(whole) * 100
+    # tags keep their order, each with its total first and then its modules from largest to smallest
+    df["tag_order"] = df["tag"].map(tags.index)
+    df["is_module"] = df["module"] != ""
+    df.sort_values(
+        ["arch", "tag_order", "is_module", value], ascending=[True, True, True, False]
+    ).drop(columns=["tag_order", "is_module"]).to_csv(path, index=False)
 
 
 layer_df = None
-area_df = None
-leakage_df = None
-dynamic_df = None
-energy_df = None
-power_df = None
-count_df = None
+# area rows go to results/ only; power and count rows per layer: the workload's go to results/, each layer's to results/<layer>/
+area_rows = []
+power_rows = {}
+count_rows = {}
 
 base_path = "zoo/agraph/designs/eyeriss/"
 run_path = f"{base_path}description/runs/alexnet/"
@@ -100,12 +110,6 @@ if not os.path.exists(csv_path):
     os.makedirs(csv_path)
 
 layer_path = csv_path + "layer.csv"
-area_path = csv_path + "area.csv"
-leakage_path = csv_path + "leakage_power.csv"
-dynamic_path = csv_path + "dynamic_power.csv"
-energy_path = csv_path + "energy.csv"
-power_path = csv_path + "power.csv"
-count_path = csv_path + "count.csv"
 
 for config in configs:
     path = f"{run_path}{config}/config_0"
@@ -130,7 +134,6 @@ for config in configs:
             columns=[
                 "arch",
                 "layer",
-                "tag",
                 "macs",
                 f'cycle_count {metric["cycle_count"]["unit"]}',
                 f'total_runtime {metric["runtime"]["unit"]}',
@@ -141,7 +144,6 @@ for config in configs:
                 "dynamic_power mW",
                 "leakage_power mW",
                 "total_power mW",
-                "percent_of_onchip",
             ]
         )
 
@@ -160,6 +162,13 @@ for config in configs:
         ]
     }
     dram_word_mb = architecture["dram"]["query"]["width"] / 8 / 1e6
+
+    rows = tag_rows(event_graph, tags)
+
+    # area does not change across layers, so it is only queried for the workload
+    for tag, module in rows:
+        area = row_metric(event_graph, metric, "area", workload, tag, module)
+        area_rows.append([array_dim_str, tag, module, area])
 
     for layer in layers + [workload]:
         cycle_count = aggregate_event_metric(
@@ -196,128 +205,75 @@ for config in configs:
             aggregate_event_count(event_graph=event_graph, workload=layer, event=e)
             for e in ["dram_read", "dram_write"]
         )
-        rows = []
-        for tag in tags:
-            # a layer passed as the workload limits the tag total to that layer
-            energy = tag_metric(event_graph, metric, "dynamic_energy", layer, tag)
-            leakage = tag_metric(event_graph, metric, "leakage_power", layer, tag)
+        for tag, module in rows:
+            # a layer passed as the workload limits the total to that layer
+            energy = row_metric(
+                event_graph, metric, "dynamic_energy", layer, tag, module
+            )
+            leakage = row_metric(
+                event_graph, metric, "leakage_power", layer, tag, module
+            )
+            # nJ / ms = uW, so scale by 1e-3 for mW
             dynamic_power = energy / runtime["value"] * 1e-3
-            rows.append([tag, energy, dynamic_power, leakage, dynamic_power + leakage])
-        onchip_power = rows[0][4]
+            power_rows.setdefault(layer, []).append(
+                [
+                    array_dim_str,
+                    tag,
+                    module,
+                    dynamic_power,
+                    leakage,
+                    dynamic_power + leakage,
+                ]
+            )
 
-        for tag, energy, dynamic_power, leakage, total_power in rows:
-            layer_df.loc[len(layer_df)] = [
-                array_dim_str,
-                "total" if layer == workload else layer,
-                tag,
-                macs[layer],
-                cycle_count["value"],
-                runtime["value"],
-                runtime["value"] - dram_runtime,
-                glb_accesses_mb,
-                dram_accesses * dram_word_mb,
-                energy,
-                dynamic_power,
-                leakage,
-                total_power,
-                total_power / onchip_power * 100,
-            ]
+            if tag == "onchip" and module == "":
+                layer_df.loc[len(layer_df)] = [
+                    array_dim_str,
+                    "total" if layer == workload else layer,
+                    macs[layer],
+                    cycle_count["value"],
+                    runtime["value"],
+                    runtime["value"] - dram_runtime,
+                    glb_accesses_mb,
+                    dram_accesses * dram_word_mb,
+                    energy,
+                    dynamic_power,
+                    leakage,
+                    dynamic_power + leakage,
+                ]
+        # count is the only output that includes dram
+        for module in architecture:
+            count = aggregate_event_count(
+                event_graph=event_graph, workload=layer, event=module
+            )
+            count_rows.setdefault(layer, []).append([array_dim_str, module, count])
 
-    if area_df is None:
-        area_df = pd.DataFrame(
-            columns=["arch", "tag", f'area {metric["area"]["unit"]}']
-        )
-
-    if leakage_df is None:
-        leakage_df = pd.DataFrame(
-            columns=["arch", "tag", f'leakage_power {metric["leakage_power"]["unit"]}']
-        )
-
-    if dynamic_df is None:
-        dynamic_df = pd.DataFrame(columns=["arch", "tag", "dynamic_power mW"])
-
-    if energy_df is None:
-        energy_df = pd.DataFrame(
+layer_df.to_csv(layer_path, index=False)
+write_breakdown(
+    pd.DataFrame(
+        area_rows, columns=["arch", "tag", "module", f'area {metric["area"]["unit"]}']
+    ),
+    tags,
+    f"{csv_path}area.csv",
+)
+for layer in layers + [workload]:
+    out_path = csv_path if layer == workload else f"{csv_path}{layer}/"
+    os.makedirs(out_path, exist_ok=True)
+    write_breakdown(
+        pd.DataFrame(
+            power_rows[layer],
             columns=[
                 "arch",
                 "tag",
-                "dynamic_energy nJ",
-                "leakage_energy nJ",
-                "total_energy nJ",
-            ]
-        )
-
-    if power_df is None:
-        power_df = pd.DataFrame(
-            columns=[
-                "arch",
-                "tag",
+                "module",
                 "dynamic_power mW",
                 "leakage_power mW",
                 "total_power mW",
-            ]
-        )
-
-    workload_runtime = aggregate_event_metric(
-        event_graph=event_graph,
-        metric_dict=metric,
-        metric="runtime",
-        workload=workload,
-        event=workload,
-    )["value"]
-
-    for tag in tags:
-        area = tag_metric(event_graph, metric, "area", workload, tag)
-        leakage_power = tag_metric(event_graph, metric, "leakage_power", workload, tag)
-        dynamic_energy = tag_metric(
-            event_graph, metric, "dynamic_energy", workload, tag
-        )
-
-        area_df.loc[len(area_df)] = [array_dim_str, tag, area]
-        # mW * ms = uJ, so scale by 1e3 for nJ
-        leakage_energy = leakage_power * workload_runtime * 1e3
-        energy_df.loc[len(energy_df)] = [
-            array_dim_str,
-            tag,
-            dynamic_energy,
-            leakage_energy,
-            dynamic_energy + leakage_energy,
-        ]
-        leakage_df.loc[len(leakage_df)] = [array_dim_str, tag, leakage_power]
-        # nJ / ms = uW, so scale by 1e-3 for mW
-        dynamic_power = dynamic_energy / workload_runtime * 1e-3
-        dynamic_df.loc[len(dynamic_df)] = [array_dim_str, tag, dynamic_power]
-        power_df.loc[len(power_df)] = [
-            array_dim_str,
-            tag,
-            dynamic_power,
-            leakage_power,
-            dynamic_power + leakage_power,
-        ]
-
-    if count_df is None:
-        count_df = pd.DataFrame(columns=["arch", "module", "count"])
-
-    for module in counted:
-        count = aggregate_event_count(
-            event_graph=event_graph, workload=workload, event=module
-        )
-        count_df.loc[len(count_df)] = [array_dim_str, module, count]
-
-layer_df.to_csv(layer_path, index=False)
-add_percent_of_onchip(area_df, area_df.columns[2]).sort_values(
-    "percent_of_onchip", ascending=False
-).to_csv(area_path, index=False)
-add_percent_of_onchip(leakage_df, leakage_df.columns[2]).sort_values(
-    "percent_of_onchip", ascending=False
-).to_csv(leakage_path, index=False)
-add_percent_of_onchip(dynamic_df, "dynamic_power mW").sort_values(
-    "percent_of_onchip", ascending=False
-).to_csv(dynamic_path, index=False)
-add_percent_of_onchip(energy_df, "total_energy nJ").sort_values(
-    "percent_of_onchip", ascending=False
-).to_csv(energy_path, index=False)
-add_percent_of_onchip(power_df, "total_power mW").sort_values(
-    "percent_of_onchip", ascending=False
-).to_csv(power_path, index=False)
-count_df.to_csv(count_path, index=False)
+            ],
+        ),
+        tags,
+        f"{out_path}power.csv",
+    )
+    pd.DataFrame(count_rows[layer], columns=["arch", "module", "count"]).astype(
+        {"count": float}
+    ).to_csv(f"{out_path}count.csv", index=False, float_format="%.3e")

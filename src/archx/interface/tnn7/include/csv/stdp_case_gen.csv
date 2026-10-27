@@ -1,0 +1,2 @@
+technology,frequency_mhz,dynamic_mw,leakage_mw,area_mm2,interpolation
+7,100.0,5.892e-05,3.3e-07,9.564e-06,linear

@@ -45,5 +45,5 @@ def extract(technology, frequency):
 
 if __name__ == '__main__':
     technology = 'NanGate45'
-    frequency = 400 # 2.5 ns clock in every *_CRITICAL_PATH.rpt
+    frequency = 200 # 2.5 ns clock in every *_CRITICAL_PATH.rpt
     extract(technology, frequency)

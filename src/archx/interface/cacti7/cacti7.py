@@ -63,7 +63,11 @@ def cacti7_run(
         target.write('-UCA bank count '+ str(bank_count) + '\n')
         target.write('-internal prefetch width '+ str(prefetch) + '\n')
     
+    # a device_type knob replaces the base config's cell and peripheral types
+    device_type = cfg_dict.get('device_type')
     for entry in original:
+        if device_type is not None and entry.startswith(('-Data array cell type', '-Data array peripheral type', '-Tag array cell type', '-Tag array peripheral type')):
+            entry = entry.split('"')[0] + '"' + device_type + '"\n'
         target.write(entry)
     
     original.close()
@@ -224,6 +228,21 @@ def parse_report_dram(
     return activate_energy, energy_rd, energy_wr, precharge_energy, leakage_power_closed_page, leakage_power_open_page, leakage_power_IO, refresh_power, area, max_freq
 
 
+def cacti7_vdd(tech_node_nm, origin_cfg_file, device_type=None):
+    """
+    Supply voltage CACTI models an SRAM at: the -Vdd column of the tech params file matching the
+    data array peripheral type, from device_type or else the base config (itrs-lop is 0.8 V at 65 nm).
+    """
+    flavor = device_type
+    if flavor is None:
+        with open(origin_cfg_file) as cfg:
+            flavor = next(line.split('"')[1] for line in cfg if line.startswith('-Data array peripheral type'))
+    tech_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'include/cacti7/tech_params', str(int(tech_node_nm)) + 'nm.dat')
+    with open(tech_file) as tech:
+        vdd = next(line.split()[2:] for line in tech if line.startswith('-Vdd'))
+    return float(vdd[['itrs-hp', 'itrs-lstp', 'itrs-lop'].index(flavor)])
+
+
 def query(name: str, interface: str, query: OrderedDict, input_dir=None, output_dir=None):
     query = copy.deepcopy(query)
     query_class = query['class'].lower()
@@ -232,6 +251,11 @@ def query(name: str, interface: str, query: OrderedDict, input_dir=None, output_
     del query['class']
     del query['technology']
     del query['frequency']
+    # a post-scale on the report, so it stays out of the report name and signature
+    voltage = query.pop('voltage', None)
+    # itrs device type of the cells and peripherals, written into the config and so part of the signature; defaults to the base config's
+    device_type = query.get('device_type')
+    assert device_type in [None, 'itrs-hp', 'itrs-lstp', 'itrs-lop'], logger.error(f'Invalid device_type <{device_type}> in CACTI7; valid values: [itrs-hp, itrs-lstp, itrs-lop]')
 
     assert os.path.isdir(output_dir), logger.error(f'Invalid output dir <{output_dir}>.')
 
@@ -267,6 +291,12 @@ def query(name: str, interface: str, query: OrderedDict, input_dir=None, output_
 
     if query_class == 'sram':
         energy_per_rd_nJ, energy_per_wr_nJ, leakage_power_mW, total_area_mm2, _, _ = parse_report_sram(cacti_report)
+        if voltage is not None:
+            # dynamic energy scales with V^2 (C V^2); leakage power is also taken as V^2 (V I_leak, with I_leak rising with V)
+            scale = voltage / cacti7_vdd(query_technology, origin_cfg_file, device_type)
+            energy_per_rd_nJ *= scale ** 2
+            energy_per_wr_nJ *= scale ** 2
+            leakage_power_mW *= scale ** 2
     elif query_class in ['dram', 'ddr4']:
         activate_energy, energy_rd, energy_wr, precharge_energy, leakage_power_closed_page, leakage_power_open_page, leakage_power_IO, refresh_power, area, max_freq = parse_report_dram(cacti_report)
         

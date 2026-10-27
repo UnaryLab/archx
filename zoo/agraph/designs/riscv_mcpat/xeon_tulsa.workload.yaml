@@ -1,0 +1,5 @@
+workload:
+  name: gemm64
+  configuration:
+    binary: zoo/agraph/designs/riscv_mcpat/gemm # built by build.sh
+    arguments: [64, 64, 64] # m k n

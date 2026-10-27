@@ -1,0 +1,17 @@
+arch,module,count
+12x14,bus_gin_filt_x,2.788e+05
+12x14,bus_gin_filt_y,2.788e+05
+12x14,bus_gin_ifmap_x,2.255e+06
+12x14,bus_gin_ifmap_y,2.255e+06
+12x14,bus_gin_psum_x,5.808e+05
+12x14,bus_gin_psum_y,5.808e+05
+12x14,bus_gon_psum_x,8.712e+05
+12x14,bus_gon_psum_y,8.712e+05
+12x14,dram,3.315e+05
+12x14,filt_glb,2.788e+05
+12x14,filter_spad,4.294e+08
+12x14,ifmap_psum_glb,2.016e+06
+12x14,pe,4.217e+08
+12x14,relu,1.936e+05
+12x14,rlc_decoder,1.379e+05
+12x14,rlc_encoder,1.936e+05

@@ -1,11 +1,6 @@
-import os
-
 from archx.programming.graph.agraph import AGraph
 
 PERFORMANCE = "zoo/agraph/designs/eyeriss/performance.py"
-EYERISS_INTERFACE = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "interface", "eyeriss_45nm-65nm"
-)
 
 
 def description(path):
@@ -20,7 +15,7 @@ def description(path):
     ##############################################
     # RTL modules use the NanGate45 syn/PnR csv tables, scaled to 65 nm by the interface; cacti7 modules set their own interface
     architecture.add_attributes(
-        technology=65, frequency=200, interface=EYERISS_INTERFACE
+        technology=65, frequency=200, interface="eyeriss_45nm-65nm"
     )
 
     # 'class' is the RTL module name in A-Graph_CMOS_PnR/verilog_modules
@@ -28,145 +23,33 @@ def description(path):
     bitwidth = 16
     pack_width = 64  # packed 4x16b word of the PE fifos, filter/psum buses and RLC
     link_width = 64
+    sram_device_type = "itrs-lop"  # cacti7 device type for the on-chip SRAMs
 
+    # fmt: off
     # pe.v includes the ifmap/psum spads and four 8-entry fifos
-    architecture.add_module(
-        name="pe",
-        instance=pe_array,
-        tag=["pe", "onchip", "pe_array"],
-        query={"class": "pe", "width": bitwidth},
-    )
+    architecture.add_module(name="pe", instance=pe_array, tag=["pe", "onchip"], query={"class": "pe", "width": bitwidth})
 
-    architecture.add_module(
-        name="filter_spad",
-        instance=pe_array,
-        tag=["memory", "onchip_memory", "pe_array", "onchip"],
-        query={
-            "class": "sram",
-            "interface": "cacti7",
-            "width": bitwidth,
-            "depth": 224,
-            "bank": 1,
-        },
-    )
+    architecture.add_module(name="filter_spad", instance=pe_array, tag=["pe", "memory", "onchip"], query={"class": "sram", "interface": "cacti7", "width": bitwidth, "depth": 224, "bank": 1, "voltage": 1.0, "device_type": sram_device_type})
 
-    architecture.add_module(
-        name="ifmap_psum_glb",
-        instance=[25],
-        tag=["glb", "onchip_memory", "onchip"],
-        query={
-            "class": "sram",
-            "interface": "cacti7",
-            "width": link_width,
-            "depth": 512,
-            "bank": 1,
-        },
-    )
-
-    architecture.add_module(
-        name="filt_glb",
-        instance=[1],
-        tag=["glb", "onchip_memory", "onchip"],
-        query={
-            "class": "sram",
-            "interface": "cacti7",
-            "width": link_width,
-            "depth": 512,
-            "bank": 2,
-        },
-    )
+    architecture.add_module(name="ifmap_psum_glb", instance=[25], tag=["memory", "glb", "onchip"], query={"class": "sram", "interface": "cacti7", "width": link_width, "depth": 512, "bank": 1, "voltage": 1.0, "device_type": sram_device_type})
+    architecture.add_module(name="filt_glb", instance=[2], tag=["memory", "glb", "onchip"], query={"class": "sram", "interface": "cacti7", "width": link_width, "depth": 512, "bank": 1, "voltage": 1.0, "device_type": sram_device_type})
 
     # each network: one Y-bus multicasts to 12 X-buses, each X-bus to 14 PEs
-    architecture.add_module(
-        name="bus_gin_ifmap_y",
-        instance=[1],
-        tag=["noc", "onchip"],
-        query={"class": "bus_gin_ifmap_y", "width": 16, "n_dest": 12},
-    )
-    architecture.add_module(
-        name="bus_gin_ifmap_x",
-        instance=[12],
-        tag=["noc", "onchip"],
-        query={"class": "bus_gin_ifmap_x", "width": 16, "n_dest": 14},
-    )
-    architecture.add_module(
-        name="bus_gin_filt_y",
-        instance=[1],
-        tag=["noc", "onchip"],
-        query={"class": "bus_gin_filt_y", "width": 64, "n_dest": 12},
-    )
-    architecture.add_module(
-        name="bus_gin_filt_x",
-        instance=[12],
-        tag=["noc", "onchip"],
-        query={"class": "bus_gin_filt_x", "width": 64, "n_dest": 14},
-    )
-    architecture.add_module(
-        name="bus_gin_psum_y",
-        instance=[1],
-        tag=["noc", "onchip"],
-        query={"class": "bus_gin_psum_y", "width": 64, "n_dest": 12},
-    )
-    architecture.add_module(
-        name="bus_gin_psum_x",
-        instance=[12],
-        tag=["noc", "onchip"],
-        query={"class": "bus_gin_psum_x", "width": 64, "n_dest": 14},
-    )
-    architecture.add_module(
-        name="bus_gon_psum_y",
-        instance=[1],
-        tag=["noc", "onchip"],
-        query={"class": "bus_gon_psum_y", "width": 64, "n_dest": 12},
-    )
-    architecture.add_module(
-        name="bus_gon_psum_x",
-        instance=[12],
-        tag=["noc", "onchip"],
-        query={"class": "bus_gon_psum_x", "width": 64, "n_dest": 14},
-    )
+    architecture.add_module(name="bus_gin_ifmap_y", instance=[1], tag=["noc", "onchip", "ifmap_noc"], query={"class": "bus_gin_ifmap_y", "width": 16, "n_dest": 12})
+    architecture.add_module(name="bus_gin_ifmap_x", instance=[12], tag=["noc", "onchip", "ifmap_noc"], query={"class": "bus_gin_ifmap_x", "width": 16, "n_dest": 14})
+    architecture.add_module(name="bus_gin_filt_y", instance=[1], tag=["noc", "onchip", "filt_noc"], query={"class": "bus_gin_filt_y", "width": 64, "n_dest": 12})
+    architecture.add_module(name="bus_gin_filt_x", instance=[12], tag=["noc", "onchip", "filt_noc"], query={"class": "bus_gin_filt_x", "width": 64, "n_dest": 14})
+    architecture.add_module(name="bus_gin_psum_y", instance=[1], tag=["noc", "onchip", "psum_noc"], query={"class": "bus_gin_psum_y", "width": 64, "n_dest": 12})
+    architecture.add_module(name="bus_gin_psum_x", instance=[12], tag=["noc", "onchip", "psum_noc"], query={"class": "bus_gin_psum_x", "width": 64, "n_dest": 14})
+    architecture.add_module(name="bus_gon_psum_y", instance=[1], tag=["noc", "onchip", "psum_noc"], query={"class": "bus_gon_psum_y", "width": 64, "n_dest": 12})
+    architecture.add_module(name="bus_gon_psum_x", instance=[12], tag=["noc", "onchip", "psum_noc"], query={"class": "bus_gon_psum_x", "width": 64, "n_dest": 14})
 
-    architecture.add_module(
-        name="rlc_decoder",
-        instance=[1],
-        tag=["rlc_decoder", "codec", "onchip"],
-        query={
-            "class": "rlc_decoder",
-            "width": bitwidth,
-            "pack_width": pack_width,
-            "depth": 8,
-        },
-    )
-    architecture.add_module(
-        name="rlc_encoder",
-        instance=[1],
-        tag=["rlc_encoder", "codec", "onchip"],
-        query={
-            "class": "rlc_encoder",
-            "width": bitwidth,
-            "pack_width": pack_width,
-            "depth": 8,
-        },
-    )
-    architecture.add_module(
-        name="relu",
-        instance=[1],
-        tag=["relu", "codec", "onchip"],
-        query={"class": "relu", "width": bitwidth, "pack_width": pack_width},
-    )
+    architecture.add_module(name="rlc_decoder", instance=[1], tag=["rlc_decoder", "codec", "onchip"], query={"class": "rlc_decoder", "width": bitwidth, "pack_width": pack_width, "depth": 8})
+    architecture.add_module(name="rlc_encoder", instance=[1], tag=["rlc_encoder", "codec", "onchip"], query={"class": "rlc_encoder", "width": bitwidth, "pack_width": pack_width, "depth": 8})
+    architecture.add_module(name="relu", instance=[1], tag=["relu", "codec", "onchip"], query={"class": "relu", "width": bitwidth, "pack_width": pack_width})
     # size in bits (1 GB); width is the link width the performance model reads, cacti7 ignores it
-    architecture.add_module(
-        name="dram",
-        instance=[1],
-        tag=["dram", "memory", "offchip"],
-        query={
-            "class": "dram",
-            "interface": "cacti7",
-            "size": 8589934592,
-            "width": link_width,
-            "frequency": 60,
-        },
-    )
+    architecture.add_module(name="dram", instance=[1], tag=["memory"], query={"class": "dram", "interface": "cacti7", "size": 8589934592, "width": link_width, "frequency": 60})
+    # fmt: on
 
     ##############################################
     ###############    Event    ##################
