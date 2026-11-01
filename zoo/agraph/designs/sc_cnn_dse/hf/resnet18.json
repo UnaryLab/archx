@@ -1,0 +1,233 @@
+{
+ "repo": "mobilint/ResNet18",
+ "revision": "5e1bc433e184e9a5ad59b9e05c980f909feb3aba",
+ "file": "resnet18_IMAGENET1K_V1.onnx",
+ "input": [
+  1,
+  3,
+  224,
+  224
+ ],
+ "layers": [
+  {
+   "name": "/conv1/Conv",
+   "R": 112,
+   "C": 112,
+   "M": 64,
+   "K_h": 7,
+   "K_w": 7,
+   "Z": 3,
+   "stride": 2,
+   "group": 1
+  },
+  {
+   "name": "/layer1/layer1.0/conv1/Conv",
+   "R": 56,
+   "C": 56,
+   "M": 64,
+   "K_h": 3,
+   "K_w": 3,
+   "Z": 64,
+   "stride": 1,
+   "group": 1
+  },
+  {
+   "name": "/layer1/layer1.0/conv2/Conv",
+   "R": 56,
+   "C": 56,
+   "M": 64,
+   "K_h": 3,
+   "K_w": 3,
+   "Z": 64,
+   "stride": 1,
+   "group": 1
+  },
+  {
+   "name": "/layer1/layer1.1/conv1/Conv",
+   "R": 56,
+   "C": 56,
+   "M": 64,
+   "K_h": 3,
+   "K_w": 3,
+   "Z": 64,
+   "stride": 1,
+   "group": 1
+  },
+  {
+   "name": "/layer1/layer1.1/conv2/Conv",
+   "R": 56,
+   "C": 56,
+   "M": 64,
+   "K_h": 3,
+   "K_w": 3,
+   "Z": 64,
+   "stride": 1,
+   "group": 1
+  },
+  {
+   "name": "/layer2/layer2.0/conv1/Conv",
+   "R": 28,
+   "C": 28,
+   "M": 128,
+   "K_h": 3,
+   "K_w": 3,
+   "Z": 64,
+   "stride": 2,
+   "group": 1
+  },
+  {
+   "name": "/layer2/layer2.0/conv2/Conv",
+   "R": 28,
+   "C": 28,
+   "M": 128,
+   "K_h": 3,
+   "K_w": 3,
+   "Z": 128,
+   "stride": 1,
+   "group": 1
+  },
+  {
+   "name": "/layer2/layer2.0/downsample/downsample.0/Conv",
+   "R": 28,
+   "C": 28,
+   "M": 128,
+   "K_h": 1,
+   "K_w": 1,
+   "Z": 64,
+   "stride": 2,
+   "group": 1
+  },
+  {
+   "name": "/layer2/layer2.1/conv1/Conv",
+   "R": 28,
+   "C": 28,
+   "M": 128,
+   "K_h": 3,
+   "K_w": 3,
+   "Z": 128,
+   "stride": 1,
+   "group": 1
+  },
+  {
+   "name": "/layer2/layer2.1/conv2/Conv",
+   "R": 28,
+   "C": 28,
+   "M": 128,
+   "K_h": 3,
+   "K_w": 3,
+   "Z": 128,
+   "stride": 1,
+   "group": 1
+  },
+  {
+   "name": "/layer3/layer3.0/conv1/Conv",
+   "R": 14,
+   "C": 14,
+   "M": 256,
+   "K_h": 3,
+   "K_w": 3,
+   "Z": 128,
+   "stride": 2,
+   "group": 1
+  },
+  {
+   "name": "/layer3/layer3.0/conv2/Conv",
+   "R": 14,
+   "C": 14,
+   "M": 256,
+   "K_h": 3,
+   "K_w": 3,
+   "Z": 256,
+   "stride": 1,
+   "group": 1
+  },
+  {
+   "name": "/layer3/layer3.0/downsample/downsample.0/Conv",
+   "R": 14,
+   "C": 14,
+   "M": 256,
+   "K_h": 1,
+   "K_w": 1,
+   "Z": 128,
+   "stride": 2,
+   "group": 1
+  },
+  {
+   "name": "/layer3/layer3.1/conv1/Conv",
+   "R": 14,
+   "C": 14,
+   "M": 256,
+   "K_h": 3,
+   "K_w": 3,
+   "Z": 256,
+   "stride": 1,
+   "group": 1
+  },
+  {
+   "name": "/layer3/layer3.1/conv2/Conv",
+   "R": 14,
+   "C": 14,
+   "M": 256,
+   "K_h": 3,
+   "K_w": 3,
+   "Z": 256,
+   "stride": 1,
+   "group": 1
+  },
+  {
+   "name": "/layer4/layer4.0/conv1/Conv",
+   "R": 7,
+   "C": 7,
+   "M": 512,
+   "K_h": 3,
+   "K_w": 3,
+   "Z": 256,
+   "stride": 2,
+   "group": 1
+  },
+  {
+   "name": "/layer4/layer4.0/conv2/Conv",
+   "R": 7,
+   "C": 7,
+   "M": 512,
+   "K_h": 3,
+   "K_w": 3,
+   "Z": 512,
+   "stride": 1,
+   "group": 1
+  },
+  {
+   "name": "/layer4/layer4.0/downsample/downsample.0/Conv",
+   "R": 7,
+   "C": 7,
+   "M": 512,
+   "K_h": 1,
+   "K_w": 1,
+   "Z": 256,
+   "stride": 2,
+   "group": 1
+  },
+  {
+   "name": "/layer4/layer4.1/conv1/Conv",
+   "R": 7,
+   "C": 7,
+   "M": 512,
+   "K_h": 3,
+   "K_w": 3,
+   "Z": 512,
+   "stride": 1,
+   "group": 1
+  },
+  {
+   "name": "/layer4/layer4.1/conv2/Conv",
+   "R": 7,
+   "C": 7,
+   "M": 512,
+   "K_h": 3,
+   "K_w": 3,
+   "Z": 512,
+   "stride": 1,
+   "group": 1
+  }
+ ]
+}

@@ -1,0 +1,68 @@
+{
+ "repo": "mobilint/AlexNet",
+ "revision": "a8b204d2ce3395a3035abc22e359c8a867f81b5e",
+ "file": "alexnet_IMAGENET1K_V1.onnx",
+ "input": [
+  1,
+  3,
+  224,
+  224
+ ],
+ "layers": [
+  {
+   "name": "/features/features.0/Conv",
+   "R": 55,
+   "C": 55,
+   "M": 64,
+   "K_h": 11,
+   "K_w": 11,
+   "Z": 3,
+   "stride": 4,
+   "group": 1
+  },
+  {
+   "name": "/features/features.3/Conv",
+   "R": 27,
+   "C": 27,
+   "M": 192,
+   "K_h": 5,
+   "K_w": 5,
+   "Z": 64,
+   "stride": 1,
+   "group": 1
+  },
+  {
+   "name": "/features/features.6/Conv",
+   "R": 13,
+   "C": 13,
+   "M": 384,
+   "K_h": 3,
+   "K_w": 3,
+   "Z": 192,
+   "stride": 1,
+   "group": 1
+  },
+  {
+   "name": "/features/features.8/Conv",
+   "R": 13,
+   "C": 13,
+   "M": 256,
+   "K_h": 3,
+   "K_w": 3,
+   "Z": 384,
+   "stride": 1,
+   "group": 1
+  },
+  {
+   "name": "/features/features.10/Conv",
+   "R": 13,
+   "C": 13,
+   "M": 256,
+   "K_h": 3,
+   "K_w": 3,
+   "Z": 256,
+   "stride": 1,
+   "group": 1
+  }
+ ]
+}

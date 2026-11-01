@@ -1,6 +1,9 @@
 #!/bin/sh
-# Compile and query the eyeriss design. Run from the archx base dir.
+# Compile, query and plot figures for both eyeriss variants (cg, fg). Run from the archx base dir.
 set -e
 dir=zoo/agraph/designs/eyeriss
-archx -compile $dir/description.py -r $dir/description -full
-python $dir/query.py
+for v in cg fg; do
+    archx -compile $dir/$v/description.py -r $dir/$v/description -full
+    python $dir/$v/query.py
+    for f in $dir/$v/figure_generation/*.py; do python "$f"; done
+done

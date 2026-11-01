@@ -1,0 +1,72 @@
+{
+ "repo": "scalesim-project/SCALE-Sim",
+ "revision": "9f98c4371055a54c75209c2e02b640b897550532",
+ "file": "topologies/conv_nets/alexnet.csv",
+ "layers": [
+  {
+   "name": "Conv1",
+   "R": 56,
+   "C": 56,
+   "M": 96,
+   "K_h": 11,
+   "K_w": 11,
+   "Z": 3,
+   "stride": 4,
+   "group": 1,
+   "H_in": 224,
+   "W_in": 224
+  },
+  {
+   "name": "Conv2",
+   "R": 27,
+   "C": 27,
+   "M": 256,
+   "K_h": 5,
+   "K_w": 5,
+   "Z": 96,
+   "stride": 1,
+   "group": 1,
+   "H_in": 27,
+   "W_in": 27
+  },
+  {
+   "name": "Conv3",
+   "R": 13,
+   "C": 13,
+   "M": 384,
+   "K_h": 3,
+   "K_w": 3,
+   "Z": 256,
+   "stride": 1,
+   "group": 1,
+   "H_in": 13,
+   "W_in": 13
+  },
+  {
+   "name": "Conv4",
+   "R": 13,
+   "C": 13,
+   "M": 384,
+   "K_h": 3,
+   "K_w": 3,
+   "Z": 384,
+   "stride": 1,
+   "group": 1,
+   "H_in": 13,
+   "W_in": 13
+  },
+  {
+   "name": "Conv5",
+   "R": 13,
+   "C": 13,
+   "M": 256,
+   "K_h": 3,
+   "K_w": 3,
+   "Z": 384,
+   "stride": 1,
+   "group": 1,
+   "H_in": 13,
+   "W_in": 13
+  }
+ ]
+}

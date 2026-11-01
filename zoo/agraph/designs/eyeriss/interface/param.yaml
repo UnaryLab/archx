@@ -1,5 +1,18 @@
 # keys must match the description.py query keys; values are the synthesized RTL parameters
-pe:
+# (A-Graph_CMOS_PnR/verilog_modules/eyeriss/verilog/*/config/*.yaml). Only the scaling parameters are listed;
+# a listed key missing from a query defaults to 1 and scales the module by 1/value.
+adder_fixed_point:
+  width: 16
+and_2_to_1:
+  width: 1
+multiplier_fixed_point:
+  # the 32 b stage register r_prod is modeled on its own (mult_stage_reg): subtract two 16 b registers
+  dif_module: register
+  dif_scale: 2
+  width: 16
+mux_2_to_1:
+  width: 16
+register:
   width: 16
 bus_gin_ifmap_y:
   width: 16
@@ -25,19 +38,85 @@ bus_gon_psum_y:
 bus_gon_psum_x:
   width: 64
   n_dest: 14
-rlc_decoder:
-  width: 16
-  pack_width: 64
-  depth: 8
-rlc_encoder:
-  width: 16
-  pack_width: 64
-  depth: 8
 relu:
   width: 16
   pack_width: 64
-fifo_pack:
+rlc_decoder:
+  width: 16
+  pack_width: 64
+  depth: 4
+rlc_encoder:
+  width: 16
+  pack_width: 64
+  depth: 4
+pe_io_fifo:
+  width: 16
+  pack_width: 64
+  depth: 4
+pe_ifmap_fifo:
   in_width: 16
   reg_width: 16
   out_width: 16
-  depth: 8
+  depth: 4
+pe_filt_fifo:
+  in_width: 64
+  reg_width: 16
+  out_width: 16
+  depth: 4
+pe_psum_ififo:
+  in_width: 64
+  reg_width: 16
+  out_width: 16
+  depth: 4
+pe_psum_ofifo:
+  in_width: 16
+  reg_width: 16
+  out_width: 64
+  depth: 4
+# <x>_wr_off holds the write enable at 0 in its VCD (read power); <x>_rd_off holds the read enable at 0 (write power)
+ifmap_spad:
+  pe_ifmap_spad:
+    action: "leakage"
+    width: 16
+    depth: 12   # IFMAP_SPAD_WIDTH
+  pe_ifmap_spad_rd:
+    action: "read"
+    width: 16
+    depth: 12   # IFMAP_SPAD_WIDTH
+  pe_ifmap_spad_wr:
+    action: "write"
+    width: 16
+    depth: 12
+psum_spad:
+  pe_psum_spad:
+    action: "leakage"
+    width: 16
+    depth: 24   # PSUM_SPAD_WIDTH
+  pe_psum_spad_rd:
+    action: "read"
+    width: 16
+    depth: 24   # PSUM_SPAD_WIDTH
+  pe_psum_spad_wr:
+    action: "write"
+    width: 16
+    depth: 24
+zero_buffer:
+  pe_zero_buffer:
+    action: "leakage"
+    width: 16
+    depth: 12   # IFMAP_SPAD_WIDTH
+  pe_zero_buffer_rd:
+    action: "read"
+    width: 16
+    depth: 12   # IFMAP_SPAD_WIDTH
+  pe_zero_buffer_wr:
+    action: "write"
+    width: 16
+    depth: 12
+pe:
+  pe:
+    action: "mac"
+    width: 16
+  pe_zero_gated:
+    action: "zero_gated"
+    width: 16

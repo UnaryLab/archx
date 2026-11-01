@@ -13,8 +13,8 @@ interpolate = {
     "quadratic": interpolate_oneD_quadratic,
 }
 # 45 nm values relative to 65 nm, DeepScaleTool (Sarangi & Baas, ISCAS 2021)
-SCALE_45_TO_65 = {"area": 0.49, "energy": .68, "power": 0.78}
-SCALE_VOLTAGE = {"dyn_power": 1.1**2, "leak_power": 1.363}
+SCALE_45_TO_65 = {"area": 0.49, "energy": .78, "power": 0.78}
+SCALE_VOLTAGE = {"dyn_power": (1.1/1.01)**2, "leak_power": 1.1/1.01}
 
 
 # a csv with an 'action' column has one PnR power report per action (e.g. pe 'mac' and 'zero_gated'),
