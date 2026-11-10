@@ -182,7 +182,9 @@ def test_cacti_fn_run_writes_finfet_config(monkeypatch, tmp_path):
     cfg = target_cfg.read_text()
     for line in ['-transistor type - "finfet"', '-technology node 0.014', '-wire technology node 0.007',
                  '-operating voltage 0.7', '-size 262144', '-block size 8', '-bus width 64', '-uca bank 32',
-                 '-dummy option 1']:
+                 '-memory type "ram"', '-associativity 1', '-tag size "default"',
+                 '-read-write port 0', '-exclusive read port 1', '-exclusive write port 1',
+                 '-access mode - "normal"', '-dummy option 1']:
         assert line in cfg, line
     assert calls[0]['cmd'] == ['./cacti-Linux-x86_64', '-infile', str(target_cfg)]
     assert calls[0]['check'] is True
@@ -235,6 +237,43 @@ def test_cacti_fn_run_writes_scaled_7nm_config(monkeypatch, tmp_path):
     cfg = target_cfg.read_text()
     assert '-operating voltage 0.7' in cfg
     assert '-device file - "xmls/devices/finfet_7nm_0p7.xml"' in cfg
+
+
+@pytest.mark.parametrize('access_mode', [None, 'sequential'])
+def test_cacti_fn_run_writes_cache_config(monkeypatch, tmp_path, access_mode):
+    monkeypatch.setattr('archx.interface.cacti_fn.cacti_fn.os.path.exists', lambda path: True)
+    monkeypatch.setattr('archx.interface.cacti_fn.cacti_fn.subprocess.run', lambda *args, **kwargs: None)
+    origin_cfg = tmp_path / 'origin.cfg'
+    target_cfg = tmp_path / 'target.cfg'
+    origin_cfg.write_text('')
+
+    knobs = {'size': 2097152 * 8, 'width': 512, 'associativity': 16, 'bank': 16}
+    if access_mode is not None:
+        knobs['access_mode'] = access_mode
+    cacti_fn_run(
+        'cache', 14, knobs,
+        origin_cfg_file=str(origin_cfg), target_cfg_file=str(target_cfg),
+        result_file=str(tmp_path / 'result.rpt'),
+    )
+
+    lines = target_cfg.read_text().splitlines()
+    for line in ['-size 2097152', '-block size 64', '-bus width 512', '-uca bank 16',
+                 '-associativity 16', '-memory type "cache"', '-tag size "default"',
+                 '-read-write port 1', '-exclusive read port 0', '-exclusive write port 0',
+                 f'-access mode - "{access_mode or "normal"}"']:
+        assert line in lines
+
+
+def test_cacti_fn_run_rejects_fully_associative_cache():
+    with pytest.raises(AssertionError):
+        cacti_fn_run('cache', 14, {'size': 2097152 * 8, 'width': 512,
+                                 'associativity': 0, 'bank': 16})
+
+
+def test_cacti_fn_run_rejects_invalid_cache_access_mode():
+    with pytest.raises(AssertionError):
+        cacti_fn_run('cache', 14, {'size': 2097152 * 8, 'width': 512,
+                                 'associativity': 16, 'bank': 16, 'access_mode': 'invalid'})
 
 
 def test_cacti_fn_run_rejects_5nm_devices():

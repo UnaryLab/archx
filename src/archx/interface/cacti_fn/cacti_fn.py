@@ -8,7 +8,7 @@ from loguru import logger
 
 # FN-CACTI (https://github.com/marg-tools/FN-CACTI) is PCACTI patched for FinFET /
 # NC-FinFET. It uses hardcoded 14 nm FinFET data and PCACTI XML device data for
-# 7 nm FinFET and 14/22 nm CMOS. Only scratch-RAM (sram) is modeled.
+# 7 nm FinFET and 14/22 nm CMOS. Scratch-RAM (sram) and cache are modeled.
 
 device_configs = {
     (14, 'finfet'): (0.7, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8),
@@ -68,14 +68,18 @@ def cacti_fn_run(
     result_file=None
 ):
     """
-    Write an SRAM config and run FN-CACTI. Query knobs: width (bits), depth, bank,
+    Write an SRAM or cache config and run FN-CACTI. SRAM uses width (bits), depth,
+    and bank. Cache uses size (bits), width (line bits), associativity, and bank.
+    Cache access_mode is normal (default), sequential, or fast, with one read-write
+    port. SRAM uses normal access, one read port, and one write port.
+    Both accept
     wire_technology (nm, defaults to the device node), transistor (default finfet),
     voltage (V), device_file, and sram_cell_file (paths relative to include/cacti_fn).
     Supported devices: 14 nm FinFET at 0.2 to 0.8 V in 0.1 steps (default 0.7),
     7 nm FinFET at 0.45/0.30 V or first-order scaled 0.7 V, 14 nm CMOS at 0.80/0.55 V, and 22 nm CMOS at
     0.80 V. XML paths default to the first listed voltage; no voltage interpolation.
     """
-    assert mem_type == 'sram', logger.error(f'Invalid <{mem_type}> in cacti_fn; valid values: [sram]')
+    assert mem_type in ['sram', 'cache'], logger.error(f'Invalid <{mem_type}> in cacti_fn; valid values: [sram, cache]')
     tech_node_nm = int(tech_node_nm)
     transistor = cfg_dict.get('transistor', 'finfet')
     supported = '14 nm finfet: 0.2 to 0.8 V in 0.1 steps; 7 nm finfet: 0.45/0.30 V or first-order scaled 0.7 V; 14 nm cmos: 0.80/0.55 V; 22 nm cmos: 0.80 V'
@@ -101,7 +105,19 @@ def cacti_fn_run(
     if block_bytes * 8 != block_bits:
         logger.warning(f'width <{block_bits}> rounded up to {block_bytes * 8} bits ({block_bytes} bytes) for cacti_fn')
     block_bits = block_bytes * 8
-    total_bytes = bank_count * int(cfg_dict['depth']) * block_bytes
+    if mem_type == 'cache':
+        associativity = int(cfg_dict['associativity'])
+        assert associativity == cfg_dict['associativity'] and associativity >= 1 and associativity & (associativity - 1) == 0, logger.error('cache associativity must be an integer power of two >= 1')
+        size_bits = int(cfg_dict['size'])
+        assert size_bits % 8 == 0, logger.error('cache size must be a multiple of 8 bits')
+        total_bytes = size_bits // 8
+        assert total_bytes % (block_bytes * associativity * bank_count) == 0, logger.error('cache size in bytes must be divisible by line bytes * associativity * bank')
+        access_mode = cfg_dict.get('access_mode', 'normal')
+        assert access_mode in ['normal', 'sequential', 'fast'], logger.error('cache access_mode must be normal, sequential, or fast')
+    else:
+        associativity = 1
+        total_bytes = bank_count * int(cfg_dict['depth']) * block_bytes
+        access_mode = 'normal'
 
     with open(origin_cfg_file, 'r') as original, open(target_cfg_file, 'w') as target:
         target.write('-transistor type - "' + transistor + '"\n')
@@ -118,6 +134,13 @@ def cacti_fn_run(
         target.write('-block size ' + str(block_bytes) + '\n')
         target.write('-bus width ' + str(block_bits) + '\n')
         target.write('-uca bank ' + str(bank_count) + '\n')
+        target.write('-memory type "' + ('cache' if mem_type == 'cache' else 'ram') + '"\n')
+        target.write('-associativity ' + str(associativity) + '\n')
+        target.write('-tag size "default"\n')
+        target.write('-read-write port ' + ('1' if mem_type == 'cache' else '0') + '\n')
+        target.write('-exclusive read port ' + ('0' if mem_type == 'cache' else '1') + '\n')
+        target.write('-exclusive write port ' + ('0' if mem_type == 'cache' else '1') + '\n')
+        target.write('-access mode - "' + access_mode + '"\n')
         for entry in original:
             target.write(entry)
 
@@ -191,12 +214,15 @@ def query(name: str, interface: str, query: OrderedDict, input_dir=None, output_
     del query['frequency']
 
     assert os.path.isdir(output_dir), logger.error(f'Invalid output dir <{output_dir}>.')
-    assert query_class == 'sram', logger.error(f'Invalid <{query_class}> in cacti_fn; valid values: [sram]')
+    assert query_class in ['sram', 'cache'], logger.error(f'Invalid <{query_class}> in cacti_fn; valid values: [sram, cache]')
 
     origin_cfg_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sram.cfg')
     assert os.path.isfile(origin_cfg_file), logger.error(f'Invalid FN-CACTI config file <{origin_cfg_file}>.')
 
-    post_fix = '.sram' + '.width' + str(query['width']) + '.depth' + str(query['depth']) + '.bank' + str(query['bank'])
+    if query_class == 'cache':
+        post_fix = '.cache' + '.size' + str(query['size']) + '.width' + str(query['width']) + '.assoc' + str(query['associativity']) + '.bank' + str(query['bank'])
+    else:
+        post_fix = '.sram' + '.width' + str(query['width']) + '.depth' + str(query['depth']) + '.bank' + str(query['bank'])
     post_fix = post_fix + '.tech' + str(query_technology) + '.' + cacti_fn_signature(query_class, query_technology, query, origin_cfg_file)
 
     target_cfg_file = os.path.join(output_dir, name + post_fix + '.cacti_fn.cfg')

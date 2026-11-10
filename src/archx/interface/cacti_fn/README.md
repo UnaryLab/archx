@@ -3,7 +3,7 @@
 ## What it is
 ```cacti_fn``` runs FN-CACTI ([github.com/marg-tools/FN-CACTI](https://github.com/marg-tools/FN-CACTI), TVLSI 2021). FN-CACTI is a patch on USC PCACTI ([sportlab.usc.edu](https://sportlab.usc.edu), ```pcacti.tar```). It adds FinFET and NC-FinFET models with hardcoded 14 nm data. Stock FN-CACTI deletes PCACTI's XML device loader. This copy restores that loader, so more device nodes run.
 
-The interface models scratch RAM only (class ```sram```). DRAM goes through ```cacti7```.
+The interface models scratch RAM (class ```sram```) and caches (class ```cache```). Cache output is the whole-cache total (data + tag), with ECC off. DRAM goes through ```cacti7```.
 
 ## Provenance and build
 The C++ source in ```include/cacti_fn``` comes from the official USC ```pcacti.tar``` and the upstream ```fncacti.patch```. It follows the recipe in upstream ```fncacti_patch.sh```. That script deletes ```xmls/```, ```xmlParser.cc``` and ```xmlParser.h```. We re-added them from PCACTI.
@@ -39,7 +39,9 @@ The gated Ioff tables are in these functions of ```io.cc```:
 
 Neither tool ships data for 5 nm FinFET or 16 to 90 nm CMOS. These nodes stop with an error. There is no voltage interpolation: an unlisted voltage stops with an error. The table lives in ```device_configs``` in ```cacti_fn.py```.
 
-Query keys: ```class``` (must be ```sram```), ```technology```, ```frequency```, ```width``` (bits), ```depth```, ```bank```. Optional keys: ```wire_technology``` (nm, defaults to ```technology```), ```voltage```, ```transistor``` (defaults to ```finfet```), ```device_file```, ```sram_cell_file```. The two file paths are relative to ```include/cacti_fn```. ```sram.cfg``` holds the fixed knobs, for example ASAP7 wires and ```Add ECC``` false.
+Both classes use ```technology``` and ```frequency```. Class ```sram``` uses ```width``` (bits), ```depth```, and ```bank```. Class ```cache``` uses ```size``` (bits), ```width``` (cache line bits), ```associativity``` (an integer power of two >= 1), and ```bank```. Cache size must be a multiple of 8 bits. Its byte count must be divisible by line bytes * associativity * bank. Line width rounds up to whole bytes. Fully associative caches (associativity 0) are not accepted. Cache uses one read-write port and no exclusive ports. Its optional ```access_mode``` is ```normal``` (default), ```sequential```, or ```fast```. SRAM uses one exclusive read port, one exclusive write port, no read-write ports, and ```normal``` access.
+
+Optional keys: ```wire_technology``` (nm, defaults to ```technology```), ```voltage```, ```transistor``` (defaults to ```finfet```), ```device_file```, ```sram_cell_file```. The two file paths are relative to ```include/cacti_fn```. ```sram.cfg``` is the base config for both classes. It holds fixed knobs, for example ASAP7 wires and ```Add ECC``` false. The wrapper sets memory type, associativity, tag size (```default```), ports, and access mode.
 
 ## Model caveats
 The 7 nm path puts PCACTI device data inside FN-CACTI's circuit model. At 4 MB, 4 banks and 0.45 V, it reports about +7% read energy, +7% area and +27% leakage vs native PCACTI. Two FN-CACTI models cause the gap. First, ECC columns count as cells; this has zero effect with ```Add ECC``` false. Second, the leakage width is 2 x Hfin + Wfin, not 2 x Hfin.
@@ -49,4 +51,4 @@ The 7 nm path puts PCACTI device data inside FN-CACTI's circuit model. At 4 MB, 
 The SRAM cell file names its own device file for each cell transistor. So a user ```sram_cell_file``` at 0.7 V loads the cell Ioff from that device, not from ```finfet_7nm_0p7.xml```. The default cell file loads the cell device from the selected device file.
 
 ## Caching
-Each run writes ```<name>.sram.width<W>.depth<D>.bank<B>.tech<T>.<signature>.cacti_fn.cfg```, a ```.rpt``` report and a ```.flag``` file in ```output_dir```. The signature is a hash of the memory type, the node, all query knobs and the contents of ```sram.cfg``` and the XML device and cell files used by the run. A present ```.flag``` file skips the FN-CACTI run. This is the same scheme as ```cacti7```.
+Each SRAM run writes ```<name>.sram.width<W>.depth<D>.bank<B>.tech<T>.<signature>.cacti_fn.cfg```. Cache uses ```<name>.cache.size<S>.width<W>.assoc<A>.bank<B>.tech<T>.<signature>.cacti_fn.cfg```. Each run also writes a ```.rpt``` report and a ```.flag``` file in ```output_dir```. The signature is a hash of the memory type, the node, all query knobs and the contents of ```sram.cfg``` and the XML device and cell files used by the run. A present ```.flag``` file skips the FN-CACTI run. This is the same scheme as ```cacti7```.
