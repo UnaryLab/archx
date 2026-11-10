@@ -12,7 +12,7 @@ from loguru import logger
 
 device_configs = {
     (14, 'finfet'): (0.7, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8),
-    (7, 'finfet'): (0.45, 0.30, 0.7),
+    (7, 'finfet'): (0.7, 0.45, 0.30),
     (14, 'cmos'): (0.80, 0.55),
     (22, 'cmos'): (0.80,),
 }
@@ -42,7 +42,7 @@ def cacti_fn_signature(
     device_key = (int(tech_node_nm), cfg_dict.get('transistor', 'finfet'))
     if device_key != (14, 'finfet') or 'device_file' in cfg_dict:
         default_device = default_xml_device_files.get(device_key)
-        if device_key == (7, 'finfet') and float(cfg_dict.get('voltage', 0.45)) == 0.7:
+        if device_key == (7, 'finfet') and float(cfg_dict.get('voltage', device_configs[device_key][0])) == 0.7:
             default_device = scaled_7nm_device_file
         device_file = cfg_dict.get('device_file', default_device)
         if device_file is not None:
@@ -76,13 +76,14 @@ def cacti_fn_run(
     wire_technology (nm, defaults to the device node), transistor (default finfet),
     voltage (V), device_file, and sram_cell_file (paths relative to include/cacti_fn).
     Supported devices: 14 nm FinFET at 0.2 to 0.8 V in 0.1 steps (default 0.7),
-    7 nm FinFET at 0.45/0.30 V or first-order scaled 0.7 V, 14 nm CMOS at 0.80/0.55 V, and 22 nm CMOS at
+    7 nm FinFET at 0.7 V (default, first-order scaled) or 0.45/0.30 V,
+    14 nm CMOS at 0.80/0.55 V, and 22 nm CMOS at
     0.80 V. XML paths default to the first listed voltage; no voltage interpolation.
     """
     assert mem_type in ['sram', 'cache'], logger.error(f'Invalid <{mem_type}> in cacti_fn; valid values: [sram, cache]')
     tech_node_nm = int(tech_node_nm)
     transistor = cfg_dict.get('transistor', 'finfet')
-    supported = '14 nm finfet: 0.2 to 0.8 V in 0.1 steps; 7 nm finfet: 0.45/0.30 V or first-order scaled 0.7 V; 14 nm cmos: 0.80/0.55 V; 22 nm cmos: 0.80 V'
+    supported = '14 nm finfet: 0.2 to 0.8 V in 0.1 steps; 7 nm finfet: 0.7 V (default, first-order scaled) or 0.45/0.30 V; 14 nm cmos: 0.80/0.55 V; 22 nm cmos: 0.80 V'
     device_key = (tech_node_nm, transistor)
     message = f'Unsupported device <{tech_node_nm} nm {transistor}> in cacti_fn; supported: {supported}.'
     if device_key not in device_configs:

@@ -193,7 +193,7 @@ def test_cacti_fn_run_writes_finfet_config(monkeypatch, tmp_path):
 
 
 @pytest.mark.parametrize('technology,transistor,voltage', [
-    (7, 'finfet', 0.45),
+    (7, 'finfet', 0.7),
     (14, 'cmos', 0.8),
     (22, 'cmos', 0.8),
 ])
@@ -216,7 +216,10 @@ def test_cacti_fn_run_writes_xml_config(monkeypatch, tmp_path, technology, trans
     assert f'-technology node {technology / 1000}' in cfg
     assert f'-transistor type - "{transistor}"' in cfg
     assert f'-operating voltage {voltage}' in cfg
-    assert '-device file' not in cfg
+    if transistor == 'cmos':
+        assert '-device file' not in cfg
+    else:
+        assert '-device file - "xmls/devices/finfet_7nm_0p7.xml"' in cfg
     assert '-sram cell file' not in cfg
 
 
