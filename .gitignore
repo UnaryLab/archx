@@ -219,8 +219,13 @@ tests/test_*/
 
 # CACTI7 build artifacts (the per-platform cacti-<system>-<machine> binaries are tracked)
 src/archx/interface/cacti7/
+# FN-CACTI build artifacts (cacti_fn); per-platform cacti-<system>-<machine> binaries are tracked
+src/archx/interface/cacti_fn/include/cacti_fn/obj_*/
+src/archx/interface/cacti_fn/include/cacti_fn/cacti
+src/archx/interface/cacti_fn/include/cacti_fn/pcacti_report.txt
 
 failed_runs.txt
 run_archx_failed.txt
 .claude/
 .vscode/``
+innovation_summary/

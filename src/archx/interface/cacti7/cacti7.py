@@ -1,4 +1,4 @@
-import subprocess, os, time, copy, platform, hashlib
+import subprocess, os, copy, platform, hashlib
 
 from collections import OrderedDict
 
@@ -42,7 +42,11 @@ def cacti7_run(
     if mem_type == 'sram':
         bank_count = int(cfg_dict['bank'])
         block_bits = int(cfg_dict['width'])
-        block_bytes = int(cfg_dict['width'] / 8)
+        # shortcut: CACTI models whole bytes, so odd widths are over-provisioned to the next byte
+        block_bytes = -(-block_bits // 8)
+        if block_bytes * 8 != block_bits:
+            logger.warning(f'width <{block_bits}> rounded up to {block_bytes * 8} bits ({block_bytes} bytes) for cacti7')
+        block_bits = block_bytes * 8
         total_bytes = int(bank_count * cfg_dict['depth'] * block_bytes)
 
         target.write('-size (bytes) ' + str(total_bytes) + '\n')
@@ -76,11 +80,12 @@ def cacti7_run(
     # (e.g. cacti-Linux-x86_64, cacti-Darwin-arm64). Pick the one matching this
     # host; build it from source via 'make' if it is absent.
     cacti_bin = 'cacti-' + platform.system() + '-' + platform.machine()
-    if not os.path.exists(os.path.join(run_dir, cacti_bin)):
+    bin_path = os.path.join(run_dir, cacti_bin)
+    if not os.path.exists(bin_path):
         logger.info('No CACTI7 binary for <' + cacti_bin + '>; building from source via make.')
-        subprocess.call('make all', shell=True, cwd=run_dir)
-        time.sleep(10)
-        os.replace(os.path.join(run_dir, 'cacti'), os.path.join(run_dir, cacti_bin))
+        subprocess.run(['make', 'all'], cwd=run_dir, check=True)
+        if not os.path.exists(bin_path):
+            os.replace(os.path.join(run_dir, 'cacti'), bin_path)
 
     with open(result_file, 'w') as report:
         subprocess.run(
@@ -253,17 +258,9 @@ def query(name: str, interface: str, query: OrderedDict, input_dir=None, output_
     cacti_report = os.path.join(output_dir, name + post_fix + '.cacti7.rpt')
 
     target_cfg_file_flag = target_cfg_file + '.flag'
-    if not os.path.exists(target_cfg_file_flag):
+    run_needed = not os.path.exists(target_cfg_file_flag)
+    if run_needed:
         cacti7_run(query_class, query_technology, query, origin_cfg_file, target_cfg_file, cacti_report)
-        f = open(target_cfg_file_flag, 'a')
-        f.write(target_cfg_file_flag)
-        f.close()
-    else:
-        broken_rpt = parse_report_line_count(cacti_report, 64)
-        if broken_rpt:
-            os.remove(cacti_report)
-            os.remove(target_cfg_file_flag)
-            cacti7_run(query_class, query_technology, query, origin_cfg_file, target_cfg_file, cacti_report)
 
     if query_class == 'sram':
         energy_per_rd_nJ, energy_per_wr_nJ, leakage_power_mW, total_area_mm2, _, _ = parse_report_sram(cacti_report)
@@ -288,6 +285,10 @@ def query(name: str, interface: str, query: OrderedDict, input_dir=None, output_
         energy_per_wr_nJ = energy_wr
         leakage_power_mW = constant_power
         total_area_mm2 = area
+
+    if run_needed:
+        with open(target_cfg_file_flag, 'a') as f:
+            f.write(target_cfg_file_flag)
 
     output_dict = OrderedDict()
     output_dict['technology'] = OrderedDict({'value': query_technology, 'unit': 'nm'})
